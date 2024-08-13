@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -9,18 +9,12 @@ import {
   Fade,
 } from '@mui/material';
 
-const glassMorphismStyle = {
-  background: 'rgba(255, 255, 255, 0.25)',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-  backdropFilter: 'blur(4px)',
-  WebkitBackdropFilter: 'blur(4px)',
-  borderRadius: '10px',
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-  padding: '20px',
-};
-
 const UserEditModal = ({ open, handleClose, user, onSave }) => {
-  const [editedUser, setEditedUser] = useState(user);
+  const [editedUser, setEditedUser] = useState(user || {});
+
+  useEffect(() => {
+    setEditedUser(user || {});
+  }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -49,7 +43,11 @@ const UserEditModal = ({ open, handleClose, user, onSave }) => {
           left: '50%',
           transform: 'translate(-50%, -50%)',
           width: 400,
-          ...glassMorphismStyle,
+          backgroundColor: 'white',
+          border: '1px solid #ccc',
+          borderRadius: '10px',
+          padding: '20px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
         }}>
           <Typography variant="h6" component="h2" gutterBottom>
             Edit User
@@ -58,7 +56,7 @@ const UserEditModal = ({ open, handleClose, user, onSave }) => {
             fullWidth
             label="Name"
             name="name"
-            value={editedUser.name}
+            value={editedUser.name || ''}
             onChange={handleChange}
             margin="normal"
           />
@@ -66,7 +64,7 @@ const UserEditModal = ({ open, handleClose, user, onSave }) => {
             fullWidth
             label="Phone Number"
             name="phoneNo"
-            value={editedUser.phoneNo}
+            value={editedUser.phoneNo || ''}
             onChange={handleChange}
             margin="normal"
           />
@@ -74,7 +72,7 @@ const UserEditModal = ({ open, handleClose, user, onSave }) => {
             fullWidth
             label="Spread"
             name="spread"
-            value={editedUser.spread}
+            value={editedUser.spread || ''}
             onChange={handleChange}
             margin="normal"
           />
@@ -82,7 +80,7 @@ const UserEditModal = ({ open, handleClose, user, onSave }) => {
             fullWidth
             label="Location"
             name="location"
-            value={editedUser.location}
+            value={editedUser.location || ''}
             onChange={handleChange}
             margin="normal"
           />
