@@ -47,22 +47,21 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
         logo: '',
       });
     }
-  }, [editingBank]);
+  }, [editingBank, open]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setBank({ ...bank, [name]: value });
     
-    // Clear error when field is edited
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
 
-    // Set logo based on bank selection
     if (name === 'bankName') {
+      const logoName = value.split(' ').map(word => word[0].toUpperCase()).join('');
       setBank(prevBank => ({
         ...prevBank,
-        logo: `/src/assets/bank/${value.replace(/\s+/g, '_').toLowerCase()}.png`
+        logo: `/src/assets/bank/${logoName}.jpg`
       }));
     }
   };
@@ -90,6 +89,20 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
         await handleSave(bank);
         toast.success(editingBank ? 'Bank details updated successfully' : 'Bank details added successfully');
         handleClose();
+        if (!editingBank) {
+          setBank({
+            holderName: '',
+            bankName: '',
+            accountNumber: '',
+            iban: '',
+            ifsc: '',
+            swift: '',
+            branch: '',
+            city: '',
+            country: '',
+            logo: '',
+          });
+        }
       } catch (error) {
         toast.error('Failed to save bank details. Please try again.');
       }
@@ -99,7 +112,16 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" >
+    <Dialog 
+      open={open}   
+      onClose={(event, reason) => {
+        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          handleClose();
+        }
+      }}
+      maxWidth="sm" 
+      fullWidth
+    >
       <DialogTitle>{editingBank ? 'Edit Bank Details' : 'Add Bank Details'}</DialogTitle>
       <DialogContent>
         <Box component="form" noValidate autoComplete="off">
@@ -198,10 +220,10 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
               </Grid>
             ))}
             {bank.logo && (
-              <Grid item xs={12}>
-                <img src={bank.logo} alt="Bank Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
-              </Grid>
-            )}
+        <Grid item xs={12}>
+          <img src={bank.logo} alt="Bank Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+        </Grid>
+      )}
           </Grid>
         </Box>
       </DialogContent>

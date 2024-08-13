@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,onClose } from 'react';
 import {
   Box,
   Table,
@@ -22,9 +22,13 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Modal,
+  Backdrop,
+  Fade,
 } from '@mui/material';
 import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+
 
 
 const theme = createTheme({
@@ -101,7 +105,7 @@ const CustomSpreadSection = ({ onAddSpread, spreads, onEditSpread }) => {
             <TextField
               label="Spread Value"
               value={spreadValue}
-              onChange={(e) => setSpreadValue(e.target.value)}
+              onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
               type="number"
               required
               fullWidth
@@ -267,12 +271,75 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   );
 };
 
+const SpreadEditModal = ({ open, handleClose, spread, onSave }) => {
+  const [editedSpread, setEditedSpread] = useState(spread);
+
+  const handleSave = () => {
+    if (editedSpread > 0) {
+      onSave(editedSpread);
+      handleClose();
+    }
+  };
+
+  return (
+      <Modal
+        open={open}
+        onClose={(event, reason) => {
+          if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+            handleClose();
+          }
+        }}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+        }}
+        disableEscapeKeyDown={true}
+        disableBackdropClick={true}
+      >
+      <Fade in={open}>
+        <Box sx={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 400,
+          background: '#f3f4f6',
+          padding: '20px',
+          borderRadius: '10px',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        }}>
+          <Typography variant="h6" gutterBottom>
+            Edit Spread
+          </Typography>
+          <TextField
+            fullWidth
+            variant="outlined"
+            label="Spread Value"
+            value={editedSpread}
+            onChange={(e) => setEditedSpread(Math.max(0, Number(e.target.value)))}
+            type="number"
+            required
+            size="small"
+            inputProps={{ min: 0 }}
+          />
+          <Box sx={{ mt: 2, textAlign: 'right' }}>
+            <Button onClick={handleClose} sx={{ mr: 1 }}>Cancel</Button>
+            <Button onClick={handleSave} variant="contained">Save</Button>
+          </Box>
+        </Box>
+      </Fade>
+    </Modal>
+  );
+};
+
 const UserList = () => {
   const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
+  const [editingSpread, setEditingSpread] = useState(null);
 
   useEffect(() => {
     // Demo data
@@ -290,15 +357,24 @@ const UserList = () => {
   }, []);
 
   const handleAddSpread = (spreadValue) => {
-    setSpreads((prevSpreads) => [...prevSpreads, spreadValue]);
+    const newSpread = Math.max(0, Number(spreadValue));
+    setSpreads((prevSpreads) => [...prevSpreads, newSpread]);
     setShowNotification(true);
     setNotificationMessage('Spread added successfully');
   };
 
   const handleEditSpread = (index) => {
-    // Implement edit spread logic here
+    setEditingSpread({ index, value: spreads[index] });
+  };
+
+  const handleSaveSpread = (editedValue) => {
+    const updatedSpreads = spreads.map((spread, idx) =>
+      idx === editingSpread.index ? editedValue : spread
+    );
+    setSpreads(updatedSpreads);
     setShowNotification(true);
-    setNotificationMessage(`Editing spread at index ${index}`);
+    setNotificationMessage('Spread updated successfully');
+    setEditingSpread(null);
   };
 
   const handleToggleUserBlock = (userId) => {
@@ -348,6 +424,22 @@ const UserList = () => {
           </Box>
         </Container>
 
+        <SpreadEditModal
+          open={!!editingSpread}
+          handleClose={() => setEditingSpread(null)}
+          spread={editingSpread?.value || ''}
+          onSave={handleSaveSpread}
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+              onClose();
+            }
+          }}
+          maxWidth="sm"
+          fullWidth
+          disableBackdropClick={true}
+          disableEscapeKeyDown={true}
+        />
+
         <Snackbar
           open={showNotification}
           autoHideDuration={6000}
@@ -357,10 +449,29 @@ const UserList = () => {
             {notificationMessage}
           </Alert>
         </Snackbar>
-
+        {/* <Dialog 
+          open={open} 
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+              onClose();
+            }
+          }}
+          maxWidth="sm" 
+          fullWidth
+          disableBackdropClick={true}
+          disableEscapeKeyDown={true}
+        ></Dialog> */}
         <Dialog
           open={confirmDialog.isOpen}
-          onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+              onClose();
+            }
+          }}
+          maxWidth="sm" 
+          fullWidth
+          disableBackdropClick={true}
+          disableEscapeKeyDown={true}
         >
           <DialogTitle>{confirmDialog.title}</DialogTitle>
           <DialogContent>
