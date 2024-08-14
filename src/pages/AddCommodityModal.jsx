@@ -38,7 +38,18 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+    open={open} 
+    onClose={(event, reason) => {
+      if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+        onClose();
+      }
+    }} 
+    maxWidth="sm" 
+    fullWidth
+    disableBackdropClick={true}
+    disableEscapeKeyDown={true}
+    >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8f9fa', borderBottom: '1px solid #dee2e6', p: 2 }}>
         <Typography variant="h6">Add New Commodity</Typography>
         <Button onClick={onClose}><CloseIcon /></Button>
