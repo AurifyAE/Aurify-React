@@ -83,23 +83,36 @@ const CurrencySelector = () => {
 
 
 // PriceCard Component
-const PriceCard = ({ title, initialBid, initialSpread, initialPrice }) => {
+const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose }) => {
   const [spread, setSpread] = useState(initialSpread);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
 
-  const handleOpenDialog = () => setOpenDialog(true);
-  const handleCloseDialog = () => setOpenDialog(false);
+  // const handleOpenDialog = () => setOpenDialog(true);
+  // const handleCloseDialog = () => setOpenDialog(false);
 
-  const handleSaveSpread = () => {
+  // const handleSaveSpread = () => {
+  //   setSpread(tempSpread);
+  //   handleCloseDialog();
+  // };
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleSpreadChange = (e) => {
+    setTempSpread(e.target.value);
+  };
+
+  const handleSpreadBlur = () => {
     setSpread(tempSpread);
-    handleCloseDialog();
+    setIsEditing(false);
   };
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
       <button
-      onClick={handleOpenDialog}
+      onClick={handleEditClick}
       className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
       style={{ width: '80px', height: '30px' }} // Adjust width and height as needed
     >
@@ -124,16 +137,35 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice }) => {
         <p className="text-gray-600 font-medium text-sm">{initialBid}</p>
       </div>
       <div className="flex flex-col">
-        <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
-        <p className="text-gray-600 font-medium text-sm">{spread}</p>
-      </div>
+            <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
+            {isEditing ? (
+              <input
+                type="number"
+                value={tempSpread}
+                onChange={handleSpreadChange}
+                onBlur={handleSpreadBlur}
+                className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded"
+                autoFocus
+              />
+            ) : (
+              <p className="text-gray-600 font-medium text-sm">{spread}</p>
+            )}
+          </div>
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
         <p className="text-gray-600 font-medium text-sm">{initialPrice}</p>
       </div>
     </div>
   </div>
-  <Dialog open={openDialog} onClose={handleCloseDialog}>
+  {/* <Dialog open={openDialog}
+  onClose={(event, reason) => {
+    if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+      onClose();
+    }
+  }} 
+  disableBackdropClick={true}
+  disableEscapeKeyDown={true}
+    >
     <DialogTitle>Edit Spread</DialogTitle>
     <DialogContent>
       <input
@@ -149,92 +181,106 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice }) => {
       <Button onClick={handleCloseDialog}>Cancel</Button>
       <Button onClick={handleSaveSpread} className="bg-[#cb0c9f] text-white">Save</Button>
     </DialogActions>
-  </Dialog>
+  </Dialog> */}
 </div>
 
   );
 };
 // ValueCard Component
-const ValueCard = ({ lowValue, highValue, lowMargin, highMargin, lowNewValue, highNewValue }) => {
+const ValueCard = ({ lowValue, highValue, initialLowMargin, initialHighMargin, lowNewValue, highNewValue }) => {
+  const [lowMargin, setLowMargin] = useState(initialLowMargin);
+  const [highMargin, setHighMargin] = useState(initialHighMargin);
   const [editingLow, setEditingLow] = useState(false);
   const [editingHigh, setEditingHigh] = useState(false);
-  const [tempLowMargin, setTempLowMargin] = useState(lowMargin);
-  const [tempHighMargin, setTempHighMargin] = useState(highMargin);
+
+  const handleEditClick = () => {
+    setEditingLow(true);
+    setEditingHigh(true);
+  };
+
+  const handleLowMarginChange = (e) => {
+    setLowMargin(e.target.value);
+  };
+
+  const handleHighMarginChange = (e) => {
+    setHighMargin(e.target.value);
+  };
+
+  const handleMarginBlur = () => {
+    setEditingLow(false);
+    setEditingHigh(false);
+  };
 
   return (
-    <div className="relative bg-white rounded-lg shadow-lg p-6">
-      {/* Edit Button */}
+    <div className="relative bg-white rounded-lg shadow-lg p-4">
       <button
-      // onClick={setEditingLow(!editingLow)}
-      className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
-      style={{ width: '80px', height: '30px' }} // Adjust width and height as needed
-    >
-      <svg
-        className="w-4 h-4 text-pink-500"
-        aria-hidden="true"
-        focusable="false"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 512 512"
+        onClick={handleEditClick}
+        className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
+        style={{ width: '80px', height: '30px' }}
       >
-        <path
-          fill="currentColor"
-          d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
-        ></path>
-      </svg>
-    </button>
+        <svg
+          className="w-4 h-4 text-pink-500"
+          aria-hidden="true"
+          focusable="false"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 512 512"
+        >
+          <path
+            fill="currentColor"
+            d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
+          ></path>
+        </svg>
+      </button>
 
-      <div className="space-y-6 pt-8"> {/* Add padding-top to ensure content isn't hidden behind the button */}
-        {/* Low Value Section */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Low Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{lowValue}</p>
+      <div className="space-y-6 pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Low Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{lowValue}</p>
           </div>
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Margin</h6>
-            <p className="text-gray-500 text-sm font-medium">
-              {editingLow ? (
-                <input
-                  type="number"
-                  value={tempLowMargin}
-                  onChange={(e) => setTempLowMargin(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              ) : (
-                tempLowMargin
-              )}
-            </p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Margin</h6>
+            {editingLow ? (
+              <input
+                type="number"
+                value={initialLowMargin}
+                onChange={handleLowMarginChange}
+                onBlur={handleMarginBlur}
+                className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded"
+                autoFocus
+              />
+            ) : (
+              <p className="text-gray-600 font-medium text-sm">{initialLowMargin}</p>
+            )}
           </div>
-          <div className="col-span-5">
-            <h6 className="text-gray-600 font-bold">Low New Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{lowNewValue}</p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Low New Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{lowNewValue}</p>
           </div>
         </div>
 
-        {/* High Value Section */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">High Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{highValue}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">High Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{highValue}</p>
           </div>
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Margin</h6>
-            <p className="text-gray-500 text-sm font-medium">
-              {editingHigh ? (
-                <input
-                  type="number"
-                  value={tempHighMargin}
-                  onChange={(e) => setTempHighMargin(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                />
-              ) : (
-                tempHighMargin
-              )}
-            </p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Margin</h6>
+            {editingHigh ? (
+              <input
+                type="number"
+                value={initialHighMargin}
+                onChange={handleHighMarginChange}
+                onBlur={handleMarginBlur}
+                className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded"
+              />
+            ) : (
+              <p className="text-gray-600 font-medium text-sm">{initialHighMargin}</p>
+            )}
           </div>
-          <div className="col-span-5">
-            <h6 className="text-gray-600 font-bold">High New Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{highNewValue}</p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">High New Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{highNewValue}</p>
           </div>
         </div>
       </div>
@@ -533,8 +579,8 @@ const SpotRate = () => {
         <ValueCard 
           lowValue={2417.000} 
           highValue={2428.870} 
-          lowMargin={0} 
-          highMargin={0} 
+          initialLowMargin={0} 
+          initialHighMargin={0} 
           lowNewValue={2417.000} 
           highNewValue={2428.870} 
         />
@@ -543,8 +589,8 @@ const SpotRate = () => {
         <ValueCard 
           lowValue={27.4125} 
           highValue={27.762} 
-          lowMargin={0} 
-          highMargin={0} 
+          initialLowMargin={0} 
+          initialHighMargin={0} 
           lowNewValue={27.413} 
           highNewValue={27.762} 
         />
