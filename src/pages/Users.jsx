@@ -26,7 +26,7 @@ import {
   Backdrop,
   Fade,
 } from '@mui/material';
-import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon , Delete as DeleteIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 
@@ -68,111 +68,187 @@ const theme = createTheme({
   },
 });
 
-const CustomSpreadSection = ({ onAddSpread, spreads, onEditSpread }) => {
-  const [spreadValue, setSpreadValue] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  //Edit functionalities are commanded for Future use
+  const CustomSpreadSection = ({ onAddSpread, spreads, onDeleteSpread }) => {
+    const [spreadValue, setSpreadValue] = useState('');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [spreadToDelete, setSpreadToDelete] = useState(null);
+    // const [editModalOpen, setEditModalOpen] = useState(false);
+    // const [editSpreadIndex, setEditSpreadIndex] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onAddSpread(spreadValue);
-    setSpreadValue('');
-  };
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onAddSpread(spreadValue);
+      setSpreadValue('');
+    };
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+    const handleChangePage = (event, newPage) => {
+      setPage(newPage);
+    };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
+    const handleChangeRowsPerPage = (event) => {
+      setRowsPerPage(+event.target.value);
+      setPage(0);
+    };
 
-  const columns = [
-    { id: 'sino', label: '#', },
-    { id: 'value', label: 'Spread', },
-    { id: 'actions', label: 'Actions', },
-  ];
+    const handleDeleteClick = (index) => {
+      setSpreadToDelete(index);
+      setOpenConfirmDialog(true);
+    };
+  
+    const handleConfirmDelete = () => {
+      if (spreadToDelete !== null && typeof onDeleteSpread === 'function') {
+        onDeleteSpread(spreadToDelete);
+        setOpenConfirmDialog(false);
+        setSpreadToDelete(null);
+      }
+    }
 
-  return (
-    <Paper elevation={3} sx={{ p: 3, width: '50%' }}>
-      <Typography variant="h6" gutterBottom>
-        ADD SPREAD VALUE
-      </Typography>
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid item xs={8}>
-            <TextField
-              label="Spread Value"
-              value={spreadValue}
-              onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
-              type="number"
-              required
-              fullWidth
-              variant="outlined"
-              size="small"
-            />
+    const handleCancelDelete = () => {
+      setOpenConfirmDialog(false);
+      setSpreadToDelete(null);
+    };
+    
+
+    // const handleEditClick = (index) => {
+    //   setEditSpreadIndex(index);
+    //   setEditModalOpen(true);
+    // };
+
+    // const handleEditClose = () => {
+    //   setEditModalOpen(false);
+    //   setEditSpreadIndex(null);
+    // };
+
+    // const handleEditSave = (newValue) => {
+    //   onEditSpread(editSpreadIndex, newValue);
+    //   handleEditClose();
+    // };
+
+    const columns = [
+      { id: 'sino', label: '#', },
+      { id: 'value', label: 'Spread', },
+      { id: 'actions', label: 'Actions', },
+    ];
+
+    return (
+      <Paper elevation={3} sx={{ p: 3, width: '100%' }}>
+        <Typography variant="h6" gutterBottom>
+          ADD SPREAD VALUE
+        </Typography>
+        <form onSubmit={handleSubmit}>
+          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+            <Grid item xs={8}>
+              <TextField
+                label="Spread Value"
+                value={spreadValue}
+                onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
+                type="number"
+                required
+                fullWidth
+                variant="outlined"
+                size="small"
+              />
+            </Grid>
+            <Grid item xs={4}>
+              <Button
+                type="submit"
+                variant="contained"
+                startIcon={<AddIcon />}
+                fullWidth
+              >
+                Add
+              </Button>
+            </Grid>
           </Grid>
-          <Grid item xs={4}>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={<AddIcon />}
-              fullWidth
-            >
-              Add
-            </Button>
-          </Grid>
-        </Grid>
-      </form>
+        </form>
 
-      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-        SPREADS
-      </Typography>
-      <TableContainer sx={{ maxHeight: 300 }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align="center"
-                  style={{ width: column.width, fontWeight: 'bold' }}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {spreads
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((spread, index) => (
-                <TableRow hover key={index}>
-                  <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
-                  <TableCell align="center">{spread}</TableCell>
-                  <TableCell align="center">
-                    <IconButton onClick={() => onEditSpread(index)} color="primary" size="small">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
+        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+          SPREADS
+        </Typography>
+        <TableContainer sx={{ maxHeight: 300 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align="center"
+                    style={{ width: column.width, fontWeight: 'bold' }}
+                  >
+                    {column.label}
                   </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={spreads.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
-  );
-};
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {spreads
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((spread, index) => (
+                  <TableRow hover key={index}>
+                    <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell align="center">{spread}</TableCell>
+                    <TableCell align="center">
+                      {/* <IconButton onClick={() => handleEditClick(index)} color="primary" size="small">
+                        <EditIcon fontSize="small" />
+                      </IconButton> */}
+                      <IconButton onClick={() => handleDeleteClick(index)} color="error" size="small">
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={spreads.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+
+        <Dialog
+          open={openConfirmDialog}
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+              handleCancelDelete();
+            }
+          }}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+
+          <DialogTitle id="alert-dialog-title">
+            {"Confirm Deletion"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this spread value?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} color="error" autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* <SpreadEditModal
+          open={editModalOpen}
+          handleClose={handleEditClose}
+          spread={editSpreadIndex !== null ? spreads[editSpreadIndex] : ''}
+          onSave={handleEditSave}
+        /> */}
+      </Paper>
+    );
+  };
 
 const UserDataTable = ({ userData, onToggleUserBlock }) => {
   const [page, setPage] = useState(0);
@@ -271,67 +347,74 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   );
 };
 
-const SpreadEditModal = ({ open, handleClose, spread, onSave }) => {
-  const [editedSpread, setEditedSpread] = useState(spread);
+// const SpreadEditModal = ({ open, handleClose, spread, onSave }) => {
+//   const [editedSpread, setEditedSpread] = useState(spread);
 
-  const handleSave = () => {
-    if (editedSpread > 0) {
-      onSave(editedSpread);
-      handleClose();
-    }
-  };
+//   // Reset editedSpread when the modal opens
+//   useEffect(() => {
+//     if (open) {
+//       setEditedSpread(spread);
+//     }
+//   }, [open, spread]);
 
-  return (
-      <Modal
-        open={open}
-        onClose={(event, reason) => {
-          if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-            handleClose();
-          }
-        }}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
-        }}
-        disableEscapeKeyDown={true}
-        disableBackdropClick={true}
-      >
-      <Fade in={open}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 400,
-          background: '#f3f4f6',
-          padding: '20px',
-          borderRadius: '10px',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-        }}>
-          <Typography variant="h6" gutterBottom>
-            Edit Spread
-          </Typography>
-          <TextField
-            fullWidth
-            variant="outlined"
-            label="Spread Value"
-            value={editedSpread}
-            onChange={(e) => setEditedSpread(Math.max(0, Number(e.target.value)))}
-            type="number"
-            required
-            size="small"
-            inputProps={{ min: 0 }}
-          />
-          <Box sx={{ mt: 2, textAlign: 'right' }}>
-            <Button onClick={handleClose} sx={{ mr: 1 }}>Cancel</Button>
-            <Button onClick={handleSave} variant="contained">Save</Button>
-          </Box>
-        </Box>
-      </Fade>
-    </Modal>
-  );
-};
+//   const handleSave = () => {
+//     if (editedSpread > 0) {
+//       onSave(editedSpread);
+//       handleClose();
+//     }
+//   };
+
+//   return (
+//     <Modal
+//       open={open}
+//       onClose={(event, reason) => {
+//         if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+//           handleClose();
+//         }
+//       }}
+//       closeAfterTransition
+//       BackdropComponent={Backdrop}
+//       BackdropProps={{
+//         timeout: 500,
+//       }}
+//       disableEscapeKeyDown={true}
+//       disableBackdropClick={true}
+//     >
+//       <Fade in={open}>
+//         <Box sx={{
+//           position: 'absolute',
+//           top: '50%',
+//           left: '50%',
+//           transform: 'translate(-50%, -50%)',
+//           width: 400,
+//           background: '#f3f4f6',
+//           padding: '20px',
+//           borderRadius: '10px',
+//           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+//         }}>
+//           <Typography variant="h6" gutterBottom>
+//             Edit Spread
+//           </Typography>
+//           <TextField
+//             fullWidth
+//             variant="outlined"
+//             label="Spread Value"
+//             value={editedSpread}
+//             onChange={(e) => setEditedSpread(Math.max(0, Number(e.target.value)))}
+//             type="number"
+//             required
+//             size="small"
+//             inputProps={{ min: 0 }}
+//           />
+//           <Box sx={{ mt: 2, textAlign: 'right' }}>
+//             <Button onClick={handleClose} sx={{ mr: 1 }}>Cancel</Button>
+//             <Button onClick={handleSave} variant="contained">Save</Button>
+//           </Box>
+//         </Box>
+//       </Fade>
+//     </Modal>
+//   );
+// };
 
 const UserList = () => {
   const [spreads, setSpreads] = useState([]);
@@ -343,7 +426,7 @@ const UserList = () => {
 
   useEffect(() => {
     // Demo data
-    const demoSpreads = [5, 10, 15, 20, 25];
+    // const demoSpreads = [5, 10, 15, 20, 25];
     const demoUsers = [
       { id: 1, name: 'Rhaenyra Targaryen', phoneNo: '123-456-7890', spread: 15, location: 'King\'s Landing', ipAddress: '192.168.1.1', blocked: false },
       { id: 2, name: 'Daemon Targaryen', phoneNo: '234-567-8901', spread: 20, location: 'Dragonstone', ipAddress: '192.168.1.2', blocked: false },
@@ -352,7 +435,7 @@ const UserList = () => {
       { id: 5, name: 'Otto Hightower', phoneNo: '567-890-1234', spread: 5, location: 'King\'s Landing', ipAddress: '192.168.1.5', blocked: false },
     ];
 
-    setSpreads(demoSpreads);
+    // setSpreads(demoSpreads);
     setUserData(demoUsers);
   }, []);
 
@@ -363,9 +446,9 @@ const UserList = () => {
     setNotificationMessage('Spread added successfully');
   };
 
-  const handleEditSpread = (index) => {
-    setEditingSpread({ index, value: spreads[index] });
-  };
+  // const handleEditSpread = (index) => {
+  //   setEditingSpread({ index, value: spreads[index] });
+  // };
 
   const handleSaveSpread = (editedValue) => {
     const updatedSpreads = spreads.map((spread, idx) =>
@@ -401,6 +484,10 @@ const UserList = () => {
   const handleCloseNotification = () => {
     setShowNotification(false);
   };
+  const onDeleteSpread = (index) => {
+    console.log(spreads);
+    setSpreads(prevSpreads => prevSpreads.filter((_, i) => i !== index));
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -408,11 +495,11 @@ const UserList = () => {
         <Container>
           <Grid container spacing={4}>
             <Grid item xs={12}>
-              <CustomSpreadSection 
-                onAddSpread={handleAddSpread} 
-                spreads={spreads}
-                onEditSpread={handleEditSpread}
-              />
+            <CustomSpreadSection
+              spreads={spreads}
+              onAddSpread={handleAddSpread}
+              onDeleteSpread={onDeleteSpread}
+            />
             </Grid>
           </Grid>
 
@@ -424,7 +511,7 @@ const UserList = () => {
           </Box>
         </Container>
 
-        <SpreadEditModal
+        {/* <SpreadEditModal
           open={!!editingSpread}
           handleClose={() => setEditingSpread(null)}
           spread={editingSpread?.value || ''}
@@ -438,7 +525,7 @@ const UserList = () => {
           fullWidth
           disableBackdropClick={true}
           disableEscapeKeyDown={true}
-        />
+        /> */}
 
         <Snackbar
           open={showNotification}
