@@ -5,6 +5,7 @@ import IconButton from '@mui/material/IconButton';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import loginImage from '../../assets/GoldBar.jpg';
+import axiosInstance from '../../axiosInstance';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -13,15 +14,22 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    if (email === 'aurify@gmail.com' && password === 'Aurify@123') {
-      navigate('/dashboard');
-    } else {
-      alert('Invalid email or password');
+  
+    try {
+      const response = await axiosInstance.post('/login', { email, password });
+      if (response.data.success) {
+        // If the authentication is successful, navigate to the dashboard
+        navigate('/dashboard');
+      } else {
+        alert('Login failed: ' + response.data.message);
+      }
+    } catch (err) {
+      alert('Login failed: ' + (err.response?.data?.message || err.message));
     }
   };
+  
 
   const handleRememberMeChange = (event) => {
     setRememberMe(event.target.checked);
