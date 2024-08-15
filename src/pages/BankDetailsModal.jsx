@@ -49,6 +49,65 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
     }
   }, [editingBank]);
 
+  const bankLogoMap = {
+    "Ajman Bank": "AJMAN.jpg",
+    "Al Ahli Bank of Kuwait": "ABK.jpg",
+    "Al Hilal Bank": "AHB.jpg",
+    "AL Khaliji - France S.A": "ALK.jpg",
+    "Al Maryah Community Bank": "AMCB.png",
+    "Arab African International Bank": "AAB.jpg",
+    "Arab Bank": "ARABBANK.jpg",
+    "Arab Bank For Investment and Foreign Trade": "ALMASRAF.jpg",
+    "Abu Dhabi Commercial Bank": "ADCB.jpg",
+    "Abu Dhabi Islamic Bank": "ADIB.jpg",
+    "Bank of Baroda": "bob.jpg",
+    "Bank of China": "BOC.jpg",
+    "Bank Melli Iran": "bmi.jpg",
+    "Bank of Sharjah": "BS.png",
+    "Bank Saderat Iran": "BSI.jpg",
+    "Banque Banorient France": "BBF.jpg",
+    "Banque Misr": "BM.jpg",
+    "Barclays Bank": "BARCLAYS.jpg",
+    "BNP Paribas Head Office": "BNP.jpg",
+    "BOK International": "bok.jpg",
+    "Citi Bank": "CITI.jpg",
+    "Commercial Bank of Dubai": "CBD.jpg",
+    "Commercial Bank International": "CBI.jpg",
+    "Credit Agricole Corporate and Investment Bank": "CA.jpg",
+    "Deutsche Bank": "DB.jpg",
+    "Doha Bank": "doha.jpg",
+    "Dubai Islamic Bank": "DIB.jpg",
+    "Emirates Islamic Bank": "EIB.jpg",
+    "Emirates Investment Bank": "EIN.jpg",
+    "Emirates NBD": "ENBD.jpg",
+    "First Abu Dhabi Bank": "FBAB.jpg",
+    "Foreign Exchange and Remittance Group": "ferg.jpg",
+    "Gulf International Bank": "GIB.jpg",
+    "Habib Bank AG Zurich": "HABIB.jpg",
+    "Habib Bank Limited": "hbl.jpg",
+    "HSBC": "hsbc.jpg",
+    "Industrial and Commercial Bank of China": "icbc.jpg",
+    "International Development Bank": "idb.jpg",
+    "Invest Bank": "IB.jpg",
+    "Mashreq": "MASHREQ.jpg",
+    "Mastercard": "mastercard.png",
+    "National Bank of Bahrain": "nbb.jpg",
+    "National Bank of Fujairah": "NBF.jpg",
+    "National Bank of Kuwait": "nbk.jpg",
+    "National Bank of Umm Al Qaiwain": "NBQ.jpg",
+    "Network International": "NI.jpg",
+    "Nilein Bank": "nile.jpg",
+    "RAKBANK": "RAK.jpg",
+    "Samba Financial Group": "SAMBA.jpg",
+    "Sharjah Islamic Bank": "SIB.png",
+    "Standard Chartered Bank": "scb.jpg",
+    "United Arab Bank": "UAB.jpg",
+    "United Bank Limited": "ubl.jpg",
+    "VISA": "visa.png",
+    "Wio Bank": "wio.png",
+    "Zand Bank": "zand.png"
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setBank({ ...bank, [name]: value });
@@ -60,10 +119,20 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
 
     // Set logo based on bank selection
     if (name === 'bankName') {
-      setBank(prevBank => ({
-        ...prevBank,
-        logo: `/assets/bank/${value.replace(/\s+/g, '_').toLowerCase()}.png`
-      }));
+      const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+      const logoPath = `/src/assets/bank/${logoFilename}`;
+      console.log("Attempting to load logo from:", logoPath); 
+      setBank(prevBank => {
+        console.log('Previous Bank State:', prevBank); // Logs the previous state of bank
+        const updatedBank = {
+          ...prevBank,
+          logo: logoPath
+        };
+        console.log('Updated Bank State:', updatedBank); // Logs the new state before updating
+        return updatedBank;
+      });
+      
+      console.log('all set..........');
     }
   };
 
