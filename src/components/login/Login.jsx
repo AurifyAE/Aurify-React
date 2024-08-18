@@ -21,6 +21,7 @@ const LoginPage = () => {
       const response = await axiosInstance.post('/login', { email, password });
       if (response.data.success) {
         // If the authentication is successful, navigate to the dashboard
+        localStorage.setItem('userEmail', email);
         navigate('/dashboard');
       } else {
         alert('Login failed: ' + response.data.message);

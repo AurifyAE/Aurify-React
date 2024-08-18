@@ -2,10 +2,13 @@ import React, { useState ,useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Grid, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useCurrency } from '../context/CurrencyContext'; 
+import axiosInstance from '../axiosInstance';
 
 const AddCommodityModal = ({ open, onClose, onSave,initialData }) => {
   const { currency, setCurrency } = useCurrency();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [error, setError] = useState({})
+  const [userData, setUserData] = useState(null);
   const [formData, setFormData] = useState({
     metal: 'Gold',
     purity: '999',
@@ -20,6 +23,38 @@ const AddCommodityModal = ({ open, onClose, onSave,initialData }) => {
     sellAED: '',
     sellUSD: '',
   });
+  const [commodities, setCommodities] = useState([]);
+
+  useEffect(() => {
+    const fetchCommodities = async () => {
+      const userEmail = localStorage.getItem('userEmail');
+      if (!userEmail) {
+        setError('User not logged in');
+        return;
+      }
+      try {
+        const response = await axiosInstance.get(`/data/${userEmail}`);
+        const fetchedCommodities = response.data.data.commodities;
+        const goldItems = [
+          { _id: 'gold', symbol: 'Gold' },
+          { _id: 'gold-kilobar', symbol: 'Gold Kilobar' },
+          { _id: 'gold-tola', symbol: 'Gold Tola' },
+          { _id: 'gold-ten-tola', symbol: 'Gold Ten Tola' },
+          { _id: 'gold-coin', symbol: 'Gold Coin' },
+          { _id: 'minted-bar', symbol: 'Minted Bar' }
+        ];
+        const nonGoldItems = fetchedCommodities.filter(item => !goldItems.find(goldItem => goldItem.symbol === item.symbol));
+        const combinedCommodities = [...goldItems, ...nonGoldItems];
+
+        setCommodities(combinedCommodities);
+        console.log(commodities);
+      } catch (error) {
+        console.error('Error fetching commodities:', error);
+      }
+    };
+
+    fetchCommodities();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,6 +63,9 @@ const AddCommodityModal = ({ open, onClose, onSave,initialData }) => {
       [name]: value
     }));
   };
+
+  
+  
 
   const handleSave = () => {
     onSave(formData, isEditMode);
@@ -46,6 +84,8 @@ const AddCommodityModal = ({ open, onClose, onSave,initialData }) => {
       setIsEditMode(true);
     }
   }, [initialData]);
+
+ 
 
   return (
     <Dialog 
@@ -76,14 +116,15 @@ const AddCommodityModal = ({ open, onClose, onSave,initialData }) => {
               size="small"
               sx={inputStyle}
             >
-              <MenuItem value="Gold">Gold</MenuItem>
-              <MenuItem value="Gold kilobar">Gold kilobar</MenuItem>
-              <MenuItem value="Gold TOLA">Gold TOLA</MenuItem>
-              <MenuItem value="Gold TEN TOLA">Gold TEN TOLA</MenuItem>
-              <MenuItem value="Gold Coin">Gold Coin</MenuItem>
-              <MenuItem value="Minted Bar">Minted Bar</MenuItem>
-              <MenuItem value="Silver">Silver</MenuItem>
-              <MenuItem value="Platinum" disabled>Platinum</MenuItem>
+              {commodities.length > 0 ? (
+                commodities.map((commodity) => (
+                  <MenuItem key={commodity._id} value={commodity.symbol}>
+                    {commodity.symbol}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem value="">Loading...</MenuItem>
+              )}
             </Select>
           </Grid>
           <Grid item xs={3}>

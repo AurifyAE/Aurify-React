@@ -15,8 +15,8 @@ import {
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 
-const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
-  const [bank, setBank] = useState({
+const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, onClose }) => {
+  const initialBankState = {
     holderName: '',
     bankName: '',
     accountNumber: '',
@@ -27,27 +27,19 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
     city: '',
     country: '',
     logo: '',
-  });
+  };
+
+  const [bank, setBank] = useState(initialBankState);
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (editingBank) {
       setBank(editingBank);
     } else {
-      setBank({
-        holderName: '',
-        bankName: '',
-        accountNumber: '',
-        iban: '',
-        ifsc: '',
-        swift: '',
-        branch: '',
-        city: '',
-        country: '',
-        logo: '',
-      });
+      setBank(initialBankState);
     }
-  }, [editingBank]);
+  }, [editingBank, open]);
+
 
   const bankLogoMap = {
     "Ajman Bank": "AJMAN.jpg",
@@ -110,31 +102,41 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setBank({ ...bank, [name]: value });
-    
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
-    }
-
-    // Set logo based on bank selection
-    if (name === 'bankName') {
-      const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
-      const logoPath = `/src/assets/bank/${logoFilename}`;
-      console.log("Attempting to load logo from:", logoPath); 
-      setBank(prevBank => {
-        console.log('Previous Bank State:', prevBank); // Logs the previous state of bank
-        const updatedBank = {
-          ...prevBank,
-          logo: logoPath
-        };
-        console.log('Updated Bank State:', updatedBank); // Logs the new state before updating
-        return updatedBank;
-      });
+    setBank(prevBank => {
+      const updatedBank = { ...prevBank, [name]: value };
       
-      console.log('all set..........');
+      if (name === 'bankName') {
+        const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+        const logoPath = `/src/assets/bank/${logoFilename}`;
+        updatedBank.logo = logoPath;
+      }
+      
+      return updatedBank;
+    });
+    
+    if (errors[name]) {
+      setErrors(prevErrors => ({ ...prevErrors, [name]: '' }));
     }
   };
+
+  //   // Set logo based on bank selection
+  //   if (name === 'bankName') {
+  //     const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+  //     const logoPath = `/src/assets/bank/${logoFilename}`;
+  //     console.log("Attempting to load logo from:", logoPath); 
+  //     setBank(prevBank => {
+  //       console.log('Previous Bank State:', prevBank); // Logs the previous state of bank
+  //       const updatedBank = {
+  //         ...prevBank,
+  //         logo: logoPath
+  //       };
+  //       console.log('Updated Bank State:', updatedBank); // Logs the new state before updating
+  //       return updatedBank;
+  //     });
+      
+  //     console.log('all set..........');
+  //   }
+  // };
 
   const validateForm = () => {
     const newErrors = {};
@@ -168,10 +170,20 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" >
+    <Dialog 
+      open={open} 
+      onClose={(event, reason) => {
+        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          onClose();
+        }
+      }}
+      maxWidth="xs" 
+      fullWidth
+      disableEscapeKeyDown
+    >
       <DialogTitle>{editingBank ? 'Edit Bank Details' : 'Add Bank Details'}</DialogTitle>
       <DialogContent>
-        <Box component="form" noValidate autoComplete="off">
+        <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {[
               { name: 'holderName', label: 'Holder Name', type: 'text' },
@@ -268,7 +280,7 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
             ))}
             {bank.logo && (
               <Grid item xs={12}>
-                <img src={bank.logo} alt="Bank Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                <img src={bank.logo}  style={{ maxWidth: '100px', maxHeight: '100px' }} />
               </Grid>
             )}
           </Grid>
@@ -285,6 +297,3 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
 };
 
 export default BankDetailsModal;
-
-
-

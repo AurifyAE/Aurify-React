@@ -90,7 +90,7 @@ const BankDetails = () => {
   return (
     <Container sx={{ backgroundColor: '#f3f4f6', minHeight: '100vh', fontFamily: 'Open Sans, sans-serif' }}>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} pt={3}>
-        <Typography variant="h4" component="h1" sx={{ color: '#333' }}>
+        <Typography variant="h4" component="h1" sx={{ color: '#828ea2', fontWeight : 'bold' }}>
           Bank Details
         </Typography>
         <AddButton variant="contained" onClick={handleOpen}>

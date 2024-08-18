@@ -30,7 +30,10 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../context/CurrencyContext'; // Adjust the import path as needed
 import io from 'socket.io-client'; //spot calc
-const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
+import axiosInstance from '../axiosInstance';
+// import { updateSpotRate } from '../api/adminAPi';
+// const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
+
 
 
 
@@ -77,7 +80,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
 
 
 // PriceCard Component
-const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type }) => {
+const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type, onSpreadUpdate }) => {
   const [bid, setBid] = useState(initialBid);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
@@ -85,6 +88,8 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
   });
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
+
+  
    
 
   const handleEditClick = () => {
@@ -101,6 +106,9 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
     setIsEditing(false);
     setSpread(tempSpread);
     localStorage.setItem(`spread_${metal}_${type}`, tempSpread.toString());
+    if (onSpreadUpdate) {
+      onSpreadUpdate(metal, type, tempSpread);
+    }
   };
 
 
@@ -324,11 +332,61 @@ const SpotRate = () => {
   const [marketData, setMarketData] = useState({});
   const [error, setError] = useState(null);
   const [symbols] = useState(["GOLD", "SILVER"]);
+  const [serverURL, setServerURL] = useState('');
+  const [userId, setUserId] = useState('');
+  const [spotRateData, setSpotRateData] = useState(null);
   const [commodities, setCommodities] = useState([
     { id: 1, metal: 'Gold', purity: 9999, unit: '1 KG', sellAED: 308521.0448, buyAED: 308021.0948, sellPremiumAED: '', buyPremiumAED: '' },
     { id: 2, metal: 'Gold', purity: 995, unit: '1 KG', sellAED: 307009.1405, buyAED: 306511.6405, sellPremiumAED: '', buyPremiumAED: '' },
   ]);
 
+  
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const email = localStorage.getItem('userEmail'); // or however you store the user's email
+        const response = await axiosInstance.get(`/data/${email}`);
+        setUserId(response.data.data._id);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+
+    fetchUserId();
+  }, []);
+
+  const handleSpreadUpdate = async (metal, type, newSpread) => {
+    console.log('hello');
+    try {
+      const response = await axiosInstance.post('/update-spread', {
+        userId,
+        metal,
+        type,
+        spread: newSpread
+      });
+      
+      if (response.status === 200) {
+        console.log('Spread updated successfully');
+        // Optionally, update local state or fetch updated data
+      }
+    } catch (error) {
+      console.error('Error updating spread:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchServerURL = async () => {
+      try {
+        // console.log('hereherhe  ',userID);
+        const response = await axiosInstance.get('/server-url');
+        setServerURL(response.data.selectedServerURL);
+      } catch (error) {
+        console.error('Error fetching server URL:', error);
+      }
+    };
+  
+    fetchServerURL();
+  }, []);
 
   const getSpreadFromLocalStorage = (metal, type) => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
@@ -336,7 +394,9 @@ const SpotRate = () => {
   };
   
   const fetchMarketData = useCallback((symbols) => {
-    const socket = io(SOCKET_SERVER_URL, {
+
+    console.log('serverURL',serverURL);
+    const socket = io(serverURL, {
       query: { secret: "aurify@123" }, // Pass secret key as query parameter
     });
 
@@ -377,13 +437,13 @@ const SpotRate = () => {
     return () => {
       socket.disconnect();
     };
-  }, [symbols]);
+  }, [symbols, serverURL]);
 
   useEffect(() => {
     console.log("Market Data:", marketData);
     const cleanup = fetchMarketData(symbols);
     return cleanup;
-  }, [symbols, fetchMarketData]);
+  }, [symbols, fetchMarketData, serverURL]);
 
 
   //save for edit and add
@@ -432,19 +492,21 @@ const SpotRate = () => {
       </div>
     </div>
 
+    
+
       
     <div className="p-3 grid gap-4 grid-cols-1 md:grid-cols-2 mx-16 py-2">
     <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" />
+        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid"/>
+        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask"/>
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask"/>
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
         <ValueCard 
@@ -473,58 +535,58 @@ const SpotRate = () => {
 
 
     <Box sx={{ p: 10 }}>
-        <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
-          <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='text-bold' color="text.secondary">
-                Gold      1GM (in USD)
-              </Typography>
-              <Typography className="font-bold ml-2">
-                {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='font-bold' color="text.secondary">
-                Silver   1GM (in USD)
-              </Typography>
-              <Typography className="font-bold ml-2">
-              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='text-bold' color="text.secondary">
-                Gold 1GM (in {currency})
-              </Typography>
-              <Typography className="font-bold ml-2">
-                {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='font-bold' color="text.secondary">
-                Silver 1GM (in {currency})
-              </Typography>
-              <Typography className="font-bold ml-8">
-                {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
+    <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold  1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
           </div>
-          <Button
-            variant="contained"
-            onClick={handleOpenModal}
-            sx={{
-              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-              color: 'white',
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderRadius: '0.375rem',
-              '&:hover': {
-                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-              },
-            }}
-          >
-            ADD COMMODITY
-          </Button>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver   1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
         </div>
+        <Button
+          variant="contained"
+          onClick={handleOpenModal}
+          sx={{
+            background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+            color: 'white',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: '0.375rem',
+            '&:hover': {
+              background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+            },
+          }}
+        >
+          ADD COMMODITY
+        </Button>
+      </div>
         <TableContainer component={Paper} className="shadow-lg">
           <Table sx={{ minWidth: 650 }} aria-label="commodity table">
             <TableHead>
