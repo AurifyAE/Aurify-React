@@ -65,7 +65,7 @@ const Shop = () => {
             onClick={() => window.open(item.img, '_blank')}
           >
             <AiOutlineClose
-              className="absolute top-2 right-2 text-red-500 cursor-pointer"
+              className="absolute bottom-3 right-2 text-red-500 cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation();
                 handleDeleteItem(item.id);

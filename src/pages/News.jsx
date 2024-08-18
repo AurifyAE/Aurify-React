@@ -1,62 +1,108 @@
 import React, { useState } from 'react';
 
-const News = () => {
+const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
+  const [newsItems, setNewsItems] = useState([]);
 
   const handleChange = (event) => {
     setSelectedOption(event.target.value);
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const newItem = {
+      title: event.target.title.value,
+      content: event.target.content.value,
+      date: new Date().toLocaleDateString(),
+    };
+    setNewsItems([newItem, ...newsItems]);
+    event.target.reset();
+  };
+
   return (
-    <div className="max-w-md mx-auto mt-10 p-8 bg-white rounded-xl shadow-lg">
-      <h2 className="text-3xl font-bold mb-6 text-gray-800 text-center">News Upload</h2>
+    <div className="max-w-7xl mx-auto p-6 ">
+      {/* <h1 className="text-4xl font-bold mb-6 text-gray">Gold Trading Platform</h1> */}
       
-      <div className="mb-6">
-        <label htmlFor="uploadOption" className="block text-lg font-medium text-gray-700 mb-2">
-          Select Option:
-        </label>
-        <div className="relative">
+      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Upload News</h2>
+        
+        <div className="mb-4">
+          <label htmlFor="uploadOption" className="block text-sm font-medium text-gray-700 mb-1">
+            Select Option:
+          </label>
           <select
             id="uploadOption"
             value={selectedOption}
             onChange={handleChange}
-            className="block appearance-none w-full bg-white border border-gray-300 text-gray-700 py-3 px-4 pr-8 rounded-lg leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 "
           >
-            <option value="Automated">Automated</option>
+            <option value="Automated">Automated (API)</option>
             <option value="Manual">Manual</option>
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-            </svg>
-          </div>
         </div>
+        
+        {selectedOption === 'Manual' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                Title:
+              </label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 "
+                placeholder="Enter news title"
+                required
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
+                Content:
+              </label>
+              <textarea
+                id="content"
+                name="content"
+                rows="4"
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
+                placeholder="Enter news content"
+                required
+              ></textarea>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md font-medium  focus:outline-none focus:ring-2"
+            >
+              Submit
+            </button>
+          </form>
+        )}
       </div>
       
-      {selectedOption === 'Manual' && (
-        <div className="mt-6">
-          <label htmlFor="fileUpload" className="block text-lg font-medium text-gray-700 mb-2">
-            Upload News File:
-          </label>
-          <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
-            <div className="space-y-1 text-center">
-              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="flex text-sm text-gray-600">
-                <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
-                  <span className="px-3 py-2">Upload a file</span>
-                  <input id="file-upload" name="file-upload" type="file" className="sr-only" />
-                </label>
-                <p className="pl-1 pt-2">or drag and drop</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {newsItems.map((item, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
+              <p className="text-gray-600 mb-4">{item.content}</p>
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <span>{item.date}</span>
+                <div className="flex items-center">
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                  <span>236 views</span>
+                </div>
               </div>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
             </div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
 
-export default News;
+export default NewsUpload;

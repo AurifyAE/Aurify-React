@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import axiosInstance from '../axiosInstance';
 import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  TextField, 
-  Select, 
-  MenuItem, 
-  FormControl, 
-  InputLabel,
-  Box,
-  Grid
+  Dialog, DialogTitle, DialogContent, DialogActions, 
+  Button, TextField, Select, MenuItem, 
+  FormControl, InputLabel, Box, Grid 
 } from '@mui/material';
 import { toast } from 'react-hot-toast';
 
-const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
-  const [bank, setBank] = useState({
+// Dynamically import images
+const importAll = (r) => {
+  let images = {};
+  r.keys().map((item, index) => { images[item.replace('./', '')] = r(item); });
+  return images;
+};
+
+const images = importAll(require.context('../assets/bank', false, /\.(jpg|png)$/));
+
+const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmail, onClose }) => {
+  const initialBankState = {
     holderName: '',
     bankName: '',
     accountNumber: '',
@@ -27,27 +28,22 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
     city: '',
     country: '',
     logo: '',
-  });
+  };
+
+  const [bank, setBank] = useState(initialBankState);
   const [errors, setErrors] = useState({});
+  const [error, setError] = useState({});
+  const [userData, setUserData] = useState({});
 
   useEffect(() => {
-    if (editingBank) {
-      setBank(editingBank);
-    } else {
-      setBank({
-        holderName: '',
-        bankName: '',
-        accountNumber: '',
-        iban: '',
-        ifsc: '',
-        swift: '',
-        branch: '',
-        city: '',
-        country: '',
-        logo: '',
-      });
+    if (open) {
+      if (editingBank) {
+        setBank(editingBank);
+      } else {
+        setBank(initialBankState);
+      }
     }
-  }, [editingBank]);
+  }, [editingBank, open]);
 
   const bankLogoMap = {
     "Ajman Bank": "AJMAN.jpg",
@@ -110,31 +106,22 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setBank({ ...bank, [name]: value });
-    
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: '' });
-    }
+    setBank(prevBank => {
+      const updatedBank = { ...prevBank, [name]: value };
 
-    // Set logo based on bank selection
-    if (name === 'bankName') {
-      const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
-      const logoPath = `/src/assets/bank/${logoFilename}`;
-      console.log("Attempting to load logo from:", logoPath); 
-      setBank(prevBank => {
-        console.log('Previous Bank State:', prevBank); // Logs the previous state of bank
-        const updatedBank = {
-          ...prevBank,
-          logo: logoPath
-        };
-        console.log('Updated Bank State:', updatedBank); // Logs the new state before updating
-        return updatedBank;
-      });
-      
-      console.log('all set..........');
+      if (name === 'bankName') {
+        const logoFilename = bankLogoMap[value] || `${value.replace(/\s+/g, '_').toLowerCase()}.jpg`;
+        const logoPath = images[logoFilename] || '';
+        updatedBank.logo = logoPath;
+      }
+
+      return updatedBank;
+    });
+
+    if (errors[name]) {
+      setErrors(prevErrors => ({ ...prevErrors, [name]: '' }));
     }
-  };
+  }
 
   const validateForm = () => {
     const newErrors = {};
@@ -148,30 +135,88 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
     if (!bank.branch.trim()) newErrors.branch = 'Branch is required';
     if (!bank.city.trim()) newErrors.city = 'City is required';
     if (!bank.country.trim()) newErrors.country = 'Country is required';
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (validateForm()) {
-      try {
-        await handleSave(bank);
-        toast.success(editingBank ? 'Bank details updated successfully' : 'Bank details added successfully');
-        handleClose();
-      } catch (error) {
-        toast.error('Failed to save bank details. Please try again.');
-      }
-    } else {
-      toast.error('Please fill all required fields correctly.');
+  const fetchUserData = async () => {
+    const userEmail = localStorage.getItem('userEmail');
+    
+    if (!userEmail) {
+      setError('User not logged in');
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.get('/data', {
+        params: { email: userEmail },
+      });
+      
+      setUserData(response.data);
+    } catch (err) {
+      setError('Failed to fetch user data: ' + err.message);
     }
   };
 
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  const saveBankDetails = async (bankData) => {
+  const userEmail = localStorage.getItem('userEmail');
+  console.log("Bank data to be saved:", bankData);  // Log the bank data
+  console.log("User email:", userEmail);  // Log the user email
+
+  try {
+    const response = await axiosInstance.post('/save-bank-details', {
+      email: userEmail,
+
+      bankDetails: bankData
+    });    
+    
+    console.log('haaaai',bankData);
+
+    if (response.data.success) {
+      toast.success(editingBank ? 'Bank details updated successfully' : 'Bank details added successfully');
+      fetchUserData(); // Refresh user data after saving
+      handleClose();
+    } else {
+      throw new Error(response.data.message || 'Failed to save bank details');
+    }
+  } catch (error) {
+    console.error('Error saving bank details:', error);
+    toast.error('Failed to save bank details. Please try again.');
+  }
+};
+
+
+const handleSubmit = async () => {
+  if (validateForm()) {
+    await handleSave(bank);
+  } else {
+    toast.error('Please fill all required fields correctly.');
+  }
+};
+
+
+
+
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="xs" >
+    <Dialog 
+      open={open} 
+      onClose={(event, reason) => {
+        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          onClose();
+        }
+      }}
+      maxWidth="xs" 
+      fullWidth
+      disableEscapeKeyDown
+    >
       <DialogTitle>{editingBank ? 'Edit Bank Details' : 'Add Bank Details'}</DialogTitle>
       <DialogContent>
-        <Box component="form" noValidate autoComplete="off">
+        <Box component="form" noValidate autoComplete="off" sx={{ mt: 2 }}>
           <Grid container spacing={2}>
             {[
               { name: 'holderName', label: 'Holder Name', type: 'text' },
@@ -193,63 +238,10 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
                       value={bank[field.name]}
                       onChange={handleChange}
                     >
-                        <MenuItem value="select">Select a Bank</MenuItem>
-                        <MenuItem value="First Abu Dhabi Bank">First Abu Dhabi Bank</MenuItem>
-                        <MenuItem value="Abu Dhabi Commercial Bank">Abu Dhabi Commercial Bank</MenuItem>
-                        <MenuItem value="Arab Bank For Investment and Foreign Trade">Arab Bank For Investment and Foreign Trade</MenuItem>
-                        <MenuItem value="Commercial Bank of Dubai">Commercial Bank of Dubai</MenuItem>
-                        <MenuItem value="Emirates NBD">Emirates NBD</MenuItem>
-                        <MenuItem value="Mashreq">Mashreq</MenuItem>
-                        <MenuItem value="Bank of Sharjah">Bank of Sharjah</MenuItem>
-                        <MenuItem value="United Arab Bank">United Arab Bank</MenuItem>
-                        <MenuItem value="Invest Bank">Invest Bank</MenuItem>
-                        <MenuItem value="RAKBANK">RAKBANK</MenuItem>
-                        <MenuItem value="Commercial Bank International">Commercial Bank International</MenuItem>
-                        <MenuItem value="National Bank of Fujairah">National Bank of Fujairah</MenuItem>
-                        <MenuItem value="National Bank of Umm Al Qaiwain">National Bank of Umm Al Qaiwain</MenuItem>
-                        <MenuItem value="Dubai Islamic Bank">Dubai Islamic Bank</MenuItem>
-                        <MenuItem value="Emirates Islamic Bank">Emirates Islamic Bank</MenuItem>
-                        <MenuItem value="Sharjah Islamic Bank">Sharjah Islamic Bank</MenuItem>
-                        <MenuItem value="Abu Dhabi Islamic Bank">Abu Dhabi Islamic Bank</MenuItem>
-                        <MenuItem value="Al Hilal Bank">Al Hilal Bank</MenuItem>
-                        <MenuItem value="Ajman Bank">Ajman Bank</MenuItem>
-                        <MenuItem value="Emirates Investment Bank">Emirates Investment Bank</MenuItem>
-                        <MenuItem value="Network International">Network International</MenuItem>
-                        <MenuItem value="Mastercard">Mastercard</MenuItem>
-                        <MenuItem value="Foreign Exchange and Remittance Group">Foreign Exchange and Remittance Group</MenuItem>
-                        <MenuItem value="VISA">VISA</MenuItem>
-                        <MenuItem value="Al Maryah Community Bank">Al Maryah Community Bank</MenuItem>
-                        <MenuItem value="Wio Bank">Wio Bank</MenuItem>
-                        <MenuItem value="Zand Bank">Zand Bank</MenuItem>
-                        <MenuItem value="Arab Bank">Arab Bank</MenuItem>
-                        <MenuItem value="Banque Misr">Banque Misr</MenuItem>
-                        <MenuItem value="Bank of Baroda">Bank of Baroda</MenuItem>
-                        <MenuItem value="Nilein Bank">Nilein Bank</MenuItem>
-                        <MenuItem value="National Bank of Bahrain">National Bank of Bahrain</MenuItem>
-                        <MenuItem value="BNP Paribas Head Office">BNP Paribas Head Office</MenuItem>
-                        <MenuItem value="HSBC">HSBC</MenuItem>
-                        <MenuItem value="Arab African International Bank">Arab African International Bank</MenuItem>
-                        <MenuItem value="AL Khaliji - France S.A">AL Khaliji - France S.A</MenuItem>
-                        <MenuItem value="Al Ahli Bank of Kuwait">Al Ahli Bank of Kuwait</MenuItem>
-                        <MenuItem value="Barclays Bank">Barclays Bank</MenuItem>
-                        <MenuItem value="Habib Bank Limited">Habib Bank Limited</MenuItem>
-                        <MenuItem value="Habib Bank AG Zurich">Habib Bank AG Zurich</MenuItem>
-                        <MenuItem value="Standard Chartered Bank">Standard Chartered Bank</MenuItem>
-                        <MenuItem value="Citi Bank">Citi Bank</MenuItem>
-                        <MenuItem value="Bank Saderat Iran">Bank Saderat Iran</MenuItem>
-                        <MenuItem value="Bank Melli Iran">Bank Melli Iran</MenuItem>
-                        <MenuItem value="Banque Banorient France">Banque Banorient France</MenuItem>
-                        <MenuItem value="United Bank Limited">United Bank Limited</MenuItem>
-                        <MenuItem value="Doha Bank">Doha Bank</MenuItem>
-                        <MenuItem value="Samba Financial Group">Samba Financial Group</MenuItem>
-                        <MenuItem value="Deutsche Bank">Deutsche Bank</MenuItem>
-                        <MenuItem value="Industrial and Commercial Bank of China">Industrial and Commercial Bank of China</MenuItem>
-                        <MenuItem value="National Bank of Kuwait">National Bank of Kuwait</MenuItem>
-                        <MenuItem value="Gulf International Bank">Gulf International Bank</MenuItem>
-                        <MenuItem value="Bank of China">Bank of China</MenuItem>
-                        <MenuItem value="BOK International">BOK International</MenuItem>
-                        <MenuItem value="Credit Agricole Corporate and Investment Bank">Credit Agricole Corporate and Investment Bank</MenuItem>
-                        <MenuItem value="International Development Bank">International Development Bank</MenuItem>
+                      <MenuItem value="">Select a Bank</MenuItem>
+                      {Object.keys(bankLogoMap).map(bankName => (
+                        <MenuItem key={bankName} value={bankName}>{bankName}</MenuItem>
+                      ))}
                     </Select>
                     {errors[field.name] && <Box color="error.main">{errors[field.name]}</Box>}
                   </FormControl>
@@ -268,7 +260,7 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
             ))}
             {bank.logo && (
               <Grid item xs={12}>
-                <img src={bank.logo} alt="Bank Logo" style={{ maxWidth: '100px', maxHeight: '100px' }} />
+                <img src={bank.logo} alt="Bank Logo" style={{ maxWidth: '300px', maxHeight: '300px' }} />
               </Grid>
             )}
           </Grid>
@@ -285,6 +277,3 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank }) => {
 };
 
 export default BankDetailsModal;
-
-
-

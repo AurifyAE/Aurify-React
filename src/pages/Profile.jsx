@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axiosInstance from '../axiosInstance';
 
 const ProfilePage = () => {
   const [logo, setLogo] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
   const [showToast, setShowToast] = useState(false);
   const [isLogoSubmitted, setIsLogoSubmitted] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [error, setError] = useState(null);
   const [emailSettings, setEmailSettings] = useState({
     follows: true,
     answers: false,
@@ -73,6 +76,40 @@ const ProfilePage = () => {
     // Here you would typically make an API call to update the database
   };
 
+  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userEmail = localStorage.getItem('userEmail');
+      console.log(userEmail);
+      
+      if (!userEmail) {
+        setError('User not logged in');
+        return;
+      }
+  
+      try {
+        const response = await axiosInstance.get('/data', {
+          params: { email: userEmail },
+          // headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        console.log('API Response:', response.data);
+        setUserData(response.data);
+      } catch (err) {
+        setError('Failed to fetch user data: ' + err.message);
+      }
+    };
+  
+    fetchUserData();
+  }, []);
+  
+  useEffect(() => {
+    if (userData) {
+      console.log('Updated userData:', userData); // Log state after it has been set
+    }
+  }, [userData]); // Dependency array contains userData
+  
+
   return (
     <div className="relative bg-gray-100 mt-24 mr-6">
       <div className="bg-gray-100 p-6 relative">
@@ -84,10 +121,7 @@ const ProfilePage = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-14 h-14 bg-gradient-to-br from-pink-600 to-red-500 rounded-lg flex items-center justify-center text-white text-2xl font-bold mr-3">
-              {/* <span className="transform -rotate-45">T</span> */}
-              <svg viewBox="0 0 24 24" className="w-8 h-8 fill-current">
-                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
-              </svg>
+            <img src={userData?.data?.logo || ''} alt="Company Logo" className="w-full h-full object-cover" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">Tecnavis</h2>
@@ -163,11 +197,31 @@ const ProfilePage = () => {
             <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
             {/* <p className="text-sm text-gray-600 mb-4">Hi, I'm Tecnavis. Decisions: If you can't decide, the answer is no. If two equally difficult paths, choose the one more painful in the short term (pain avoidance is creating an illusion of equality).</p> */}
             <div className="space-y-4">
-            <InputField label="Company Name" name="companyName" value={profileInfo.companyName} onChange={handleInputChange} />
-            <InputField label="Full Name" name="fullName" value={profileInfo.fullName} onChange={handleInputChange} />
-            <InputField label="Mobile" name="mobile" value={profileInfo.mobile} onChange={handleInputChange} />
-            <InputField label="Email" name="email" value={profileInfo.email} onChange={handleInputChange} />
-            <InputField label="Location" name="location" value={profileInfo.location} onChange={handleInputChange} />
+            <InputField 
+              label="Full Name" 
+              name="fullName" 
+              value={userData?.data?.userName || ''} 
+              onChange={handleInputChange} 
+            />
+            <InputField 
+              label="Mobile" 
+              name="mobile" 
+              value={userData?.data?.contact || ''} 
+              onChange={handleInputChange} 
+            />
+            <InputField 
+              label="Email" 
+              name="email" 
+              value={userData?.data?.email || ''} 
+              onChange={handleInputChange} 
+            />
+            <InputField 
+              label="Location" 
+              name="location" 
+              value={userData?.data?.address || ''} 
+              onChange={handleInputChange} 
+            />
+
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-2">Social Media</label>
                 <div className="flex space-x-4">
@@ -190,13 +244,13 @@ const ProfilePage = () => {
             <h3 className="text-lg font-semibold mb-4">Company Logo</h3>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center">
               <div className="w-24 h-24 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                {logo ? (
-                  <img src={logo} alt="Company Logo" className="w-full h-full object-cover" />
-                ) : (
+                {/* {userData.data.logo ? ( */}
+                  <img src={userData?.data?.logo || ''} alt="Company Logo" className="w-full h-full object-cover" />
+                {/* ) : (
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                )}
+                )} */}
               </div>
               <button 
                 className="bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition duration-300 text-sm mb-2"

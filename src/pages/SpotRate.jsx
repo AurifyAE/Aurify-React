@@ -471,60 +471,60 @@ const SpotRate = () => {
       </div>
     </div>
 
-
+    
     <Box sx={{ p: 10 }}>
-        <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
-          <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='text-bold' color="text.secondary">
-                Gold      1GM (in USD)
-              </Typography>
-              <Typography className="font-bold ml-2">
-                {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='font-bold' color="text.secondary">
-                Silver   1GM (in USD)
-              </Typography>
-              <Typography className="font-bold ml-2">
-              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='text-bold' color="text.secondary">
-                Gold 1GM (in {currency})
-              </Typography>
-              <Typography className="font-bold ml-2">
-                {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg text-bold">
-              <Typography className='font-bold' color="text.secondary">
-                Silver 1GM (in {currency})
-              </Typography>
-              <Typography className="font-bold ml-8">
-                {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
+    <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold  1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
           </div>
-          <Button
-            variant="contained"
-            onClick={handleOpenModal}
-            sx={{
-              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-              color: 'white',
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderRadius: '0.375rem',
-              '&:hover': {
-                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-              },
-            }}
-          >
-            ADD COMMODITY
-          </Button>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver   1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
         </div>
+        <Button
+          variant="contained"
+          onClick={handleOpenModal}
+          sx={{
+            background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+            color: 'white',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: '0.375rem',
+            '&:hover': {
+              background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+            },
+          }}
+        >
+          ADD COMMODITY
+        </Button>
+      </div>
         <TableContainer component={Paper} className="shadow-lg">
           <Table sx={{ minWidth: 650 }} aria-label="commodity table">
             <TableHead>
