@@ -1,28 +1,104 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axiosInstance from '../axiosInstance';
 
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
   const [newsItems, setNewsItems] = useState([]);
+  const [email, setEmail] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+
+  useEffect(() => {
+    const fetchAdminEmailAndNews = async () => {
+      const userEmail = localStorage.getItem('userEmail');
+      console.log('User email from localStorage:', userEmail);
+
+      
+      if (!userEmail) {
+        console.error('Admin email not found in localStorage');
+        return;
+      }
+  
+      try {
+        const adminResponse = await axiosInstance.get(`/data?email=${userEmail}`);
+        if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.email) {
+          setEmail(adminResponse.data.data.email);
+          
+          // Fetch news items for this admin
+          const newsResponse = await axiosInstance.get(`/get-manual-news?email=${adminResponse.data.data.email}`);
+          if (newsResponse.data && newsResponse.data.data && newsResponse.data.data.news) {
+            setNewsItems(newsResponse.data.data.news);
+          }
+        } else {
+          console.error('Unexpected response structure:', adminResponse.data);
+        }
+      } catch (error) {
+        console.error('Error fetching admin data or news:', error.response ? error.response.data : error.message);
+      }
+    };
+  
+    fetchAdminEmailAndNews();
+  }, []);
 
   const handleChange = (event) => {
     setSelectedOption(event.target.value);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     const newItem = {
       title: event.target.title.value,
-      content: event.target.content.value,
-      date: new Date().toLocaleDateString(),
+      description: event.target.content.value,
+      email: email
     };
-    setNewsItems([newItem, ...newsItems]);
-    event.target.reset();
+
+    try {
+      const response = await axiosInstance.post('/add-manual-news', newItem);
+      if (response.data && response.data.data) {
+        setNewsItems(prevItems => [response.data.data.news[response.data.data.news.length - 1], ...prevItems]);
+      }
+      event.target.reset();
+    } catch (error) {
+      console.error('Error adding news:', error);
+    }
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setSelectedOption('Manual');  // Automatically set to Manual when editing
+  };
+
+  const handleUpdate = async (event) => {
+    event.preventDefault();
+    const updatedItem = {
+      title: event.target.title.value,
+      description: event.target.content.value,
+      email: email
+    };
+  
+    try {
+      const response = await axiosInstance.patch(`/update-manual-news/${newsItems[0]._id}/${editingItem._id}`, updatedItem);
+      if (response.data && response.data.data) {
+        setNewsItems(prevItems => prevItems.map(item => 
+          item._id === editingItem._id ? response.data.data.news.find(n => n._id === editingItem._id) : item
+        ));
+        setEditingItem(null);
+      }
+    } catch (error) {
+      console.error('Error updating news:', error);
+    }
+  };
+  
+  const handleDelete = async (itemId) => {
+    try {
+      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemId}?email=${email}`);
+      setNewsItems(prevItems => prevItems.filter(item => item._id !== itemId));
+    } catch (error) {
+      console.error('Error deleting news:', error.response ? error.response.data : error);
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 ">
-      {/* <h1 className="text-4xl font-bold mb-6 text-gray">Gold Trading Platform</h1> */}
-      
+    <div className="max-w-7xl mx-auto p-6">
       <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
         <h2 className="text-2xl font-semibold mb-4 text-gray-800">Upload News</h2>
         
@@ -34,7 +110,7 @@ const NewsUpload = () => {
             id="uploadOption"
             value={selectedOption}
             onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 "
+            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
           >
             <option value="Automated">Automated (API)</option>
             <option value="Manual">Manual</option>
@@ -42,7 +118,7 @@ const NewsUpload = () => {
         </div>
         
         {selectedOption === 'Manual' && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={editingItem ? handleUpdate : handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
                 Title:
@@ -51,9 +127,10 @@ const NewsUpload = () => {
                 type="text"
                 id="title"
                 name="title"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 "
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
                 placeholder="Enter news title"
                 required
+                defaultValue={editingItem ? editingItem.title : ''}
               />
             </div>
             
@@ -68,33 +145,31 @@ const NewsUpload = () => {
                 className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
                 placeholder="Enter news content"
                 required
+                defaultValue={editingItem ? editingItem.description : ''}
               ></textarea>
             </div>
 
             <button
               type="submit"
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md font-medium  focus:outline-none focus:ring-2"
+              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md font-medium focus:outline-none focus:ring-2"
             >
-              Submit
+              {editingItem ? 'Update' : 'Submit'}
             </button>
           </form>
         )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {newsItems.map((item, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {newsItems.map((item) => (
+          <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="p-6">
               <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
-              <p className="text-gray-600 mb-4">{item.content}</p>
+              <p className="text-gray-600 mb-4">{item.description}</p>
               <div className="flex justify-between items-center text-sm text-gray-500">
-                <span>{item.date}</span>
-                <div className="flex items-center">
-                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
-                  <span>236 views</span>
+                <span>{new Date(item.createdAt).toLocaleString()}</span>
+                <div>
+                  <button onClick={() => handleEdit(item)} className="text-blue-500 mr-2">Edit</button>
+                  <button onClick={() => handleDelete(item._id)} className="text-red-500">Delete</button>
                 </div>
               </div>
             </div>

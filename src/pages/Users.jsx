@@ -28,7 +28,7 @@ import {
 } from '@mui/material';
 import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon , Delete as DeleteIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-
+import axiosInstance from '../axiosInstance';
 
 
 const theme = createTheme({
@@ -112,20 +112,7 @@ const theme = createTheme({
     };
     
 
-    // const handleEditClick = (index) => {
-    //   setEditSpreadIndex(index);
-    //   setEditModalOpen(true);
-    // };
 
-    // const handleEditClose = () => {
-    //   setEditModalOpen(false);
-    //   setEditSpreadIndex(null);
-    // };
-
-    // const handleEditSave = (newValue) => {
-    //   onEditSpread(editSpreadIndex, newValue);
-    //   handleEditClose();
-    // };
 
     const columns = [
       { id: 'sino', label: '#', },
@@ -184,12 +171,13 @@ const theme = createTheme({
               </TableRow>
             </TableHead>
             <TableBody>
+              {/* {console.log("spread",spreads)} */}
               {spreads
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((spread, index) => (
                   <TableRow hover key={index}>
                     <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell align="center">{spread}</TableCell>
+                    <TableCell align="center">{spread.spreadValue}</TableCell>
                     <TableCell align="center">
                       {/* <IconButton onClick={() => handleEditClick(index)} color="primary" size="small">
                         <EditIcon fontSize="small" />
@@ -275,7 +263,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   };
 
   const filteredData = userData.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.userName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -314,24 +302,24 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredData
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((user, index) => (
-                <TableRow hover key={user.id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
-                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.phoneNo}</TableCell>
-                  <TableCell>{user.spread}</TableCell>
-                  <TableCell>{user.location}</TableCell>
-                  <TableCell>{user.ipAddress}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => onToggleUserBlock(user.id)} color="primary" size="small">
-                      {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
+        {filteredData
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((user, index) => (
+            <TableRow hover key={user._id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
+              <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+              <TableCell>{user.userName}</TableCell>
+              <TableCell>{user.contact}</TableCell>
+              <TableCell>{user.spread}</TableCell>
+              <TableCell>{user.location}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>
+                <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small">
+                  {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}
+      </TableBody>
         </Table>
       </TableContainer>
       <TablePagination
@@ -347,108 +335,64 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   );
 };
 
-// const SpreadEditModal = ({ open, handleClose, spread, onSave }) => {
-//   const [editedSpread, setEditedSpread] = useState(spread);
 
-//   // Reset editedSpread when the modal opens
-//   useEffect(() => {
-//     if (open) {
-//       setEditedSpread(spread);
-//     }
-//   }, [open, spread]);
-
-//   const handleSave = () => {
-//     if (editedSpread > 0) {
-//       onSave(editedSpread);
-//       handleClose();
-//     }
-//   };
-
-//   return (
-//     <Modal
-//       open={open}
-//       onClose={(event, reason) => {
-//         if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-//           handleClose();
-//         }
-//       }}
-//       closeAfterTransition
-//       BackdropComponent={Backdrop}
-//       BackdropProps={{
-//         timeout: 500,
-//       }}
-//       disableEscapeKeyDown={true}
-//       disableBackdropClick={true}
-//     >
-//       <Fade in={open}>
-//         <Box sx={{
-//           position: 'absolute',
-//           top: '50%',
-//           left: '50%',
-//           transform: 'translate(-50%, -50%)',
-//           width: 400,
-//           background: '#f3f4f6',
-//           padding: '20px',
-//           borderRadius: '10px',
-//           boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-//         }}>
-//           <Typography variant="h6" gutterBottom>
-//             Edit Spread
-//           </Typography>
-//           <TextField
-//             fullWidth
-//             variant="outlined"
-//             label="Spread Value"
-//             value={editedSpread}
-//             onChange={(e) => setEditedSpread(Math.max(0, Number(e.target.value)))}
-//             type="number"
-//             required
-//             size="small"
-//             inputProps={{ min: 0 }}
-//           />
-//           <Box sx={{ mt: 2, textAlign: 'right' }}>
-//             <Button onClick={handleClose} sx={{ mr: 1 }}>Cancel</Button>
-//             <Button onClick={handleSave} variant="contained">Save</Button>
-//           </Box>
-//         </Box>
-//       </Fade>
-//     </Modal>
-//   );
-// };
-
-const UserList = () => {
+const UserList = ( ) => {
+  const adminId = localStorage.getItem('userEmail');
+  console.log('User email from localStorage:', adminId);
   const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
   const [editingSpread, setEditingSpread] = useState(null);
+  const [spreadValues, setSpreadValues] = useState([]);
+
+  //addspread starts
 
   useEffect(() => {
-    // Demo data
-    // const demoSpreads = [5, 10, 15, 20, 25];
-    const demoUsers = [
-      { id: 1, name: 'Rhaenyra Targaryen', phoneNo: '123-456-7890', spread: 15, location: 'King\'s Landing', ipAddress: '192.168.1.1', blocked: false },
-      { id: 2, name: 'Daemon Targaryen', phoneNo: '234-567-8901', spread: 20, location: 'Dragonstone', ipAddress: '192.168.1.2', blocked: false },
-      { id: 3, name: 'Alicent Hightower', phoneNo: '345-678-9012', spread: 10, location: 'Oldtown', ipAddress: '192.168.1.3', blocked: false },
-      { id: 4, name: 'Viserys Targaryen', phoneNo: '456-789-0123', spread: 25, location: 'Red Keep', ipAddress: '192.168.1.4', blocked: false },
-      { id: 5, name: 'Otto Hightower', phoneNo: '567-890-1234', spread: 5, location: 'King\'s Landing', ipAddress: '192.168.1.5', blocked: false },
-    ];
+    if (adminId) {  // Only fetch data if adminId is available
+      fetchUserData();
+      fetchSpreadValues();
+    }
+  }, [adminId]);  // Add adminId as a dependency
 
-    // setSpreads(demoSpreads);
-    setUserData(demoUsers);
-  }, []);
 
-  const handleAddSpread = (spreadValue) => {
-    const newSpread = Math.max(0, Number(spreadValue));
-    setSpreads((prevSpreads) => [...prevSpreads, newSpread]);
-    setShowNotification(true);
-    setNotificationMessage('Spread added successfully');
+  const fetchUserData = async () => {
+    try {
+      const response = await axiosInstance.get(`/admin/${adminId}/users`);
+      if (response.data.success) {
+        setUserData(response.data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
   };
 
-  // const handleEditSpread = (index) => {
-  //   setEditingSpread({ index, value: spreads[index] });
-  // };
+  const fetchSpreadValues = async () => {
+    try {
+      const response = await axiosInstance.get(`/admin/${adminId}/spread-values`);
+      if (response.data.success) {
+        setSpreadValues(response.data.spreadValues);
+      }
+    } catch (error) {
+      console.error('Error fetching spread values:', error);
+    }
+  };
+
+  //spreadfetchEnd
+
+  const handleAddSpread = async (spreadValue) => {
+    try {
+      const response = await axiosInstance.post(`/admin/${adminId}/spread-values`, { spreadValue });
+      if (response.data.success) {
+        setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
+        setShowNotification(true);
+        setNotificationMessage('Spread added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding spread value:', error);
+    }
+  };
 
   const handleSaveSpread = (editedValue) => {
     const updatedSpreads = spreads.map((spread, idx) =>
@@ -484,9 +428,20 @@ const UserList = () => {
   const handleCloseNotification = () => {
     setShowNotification(false);
   };
-  const onDeleteSpread = (index) => {
-    console.log(spreads);
-    setSpreads(prevSpreads => prevSpreads.filter((_, i) => i !== index));
+  
+  const handleDeleteSpread = async (index) => {
+    try {
+      console.log("svalue",spreadValues);
+      const spreadToDelete = spreadValues[index]._id;
+      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/?email=${adminId}`);
+      if (response.data.success) {
+        setSpreadValues(prevValues => prevValues.filter((_, i) => i !== index));
+        setShowNotification(true);
+        setNotificationMessage('Spread deleted successfully');
+      }
+    } catch (error) {
+      console.error('Error deleting spread value:', error);
+    }
   };
 
   return (
@@ -496,9 +451,9 @@ const UserList = () => {
           <Grid container spacing={4}>
             <Grid item xs={12}>
             <CustomSpreadSection
-              spreads={spreads}
+              spreads={spreadValues}
               onAddSpread={handleAddSpread}
-              onDeleteSpread={onDeleteSpread}
+              onDeleteSpread={handleDeleteSpread}
             />
             </Grid>
           </Grid>
