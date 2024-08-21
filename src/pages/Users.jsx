@@ -286,7 +286,8 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
           />
         </Grid>
       </Grid>
-      <TableContainer sx={{ maxHeight: 440 }}>
+      {filteredData.length > 0 ? (
+        <TableContainer sx={{ maxHeight: 440 }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
@@ -302,7 +303,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-        {filteredData
+          {filteredData
           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
           .map((user, index) => (
             <TableRow hover key={user._id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
@@ -318,10 +319,24 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
                 </IconButton>
               </TableCell>
             </TableRow>
-          ))}
+          ))}        
       </TableBody>
         </Table>
       </TableContainer>
+        ) : (
+          <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 300,
+          }}
+        >
+          <Typography variant="h6" color="textSecondary">
+            No user data available
+          </Typography>
+        </Box>
+      )}
       <TablePagination
         rowsPerPageOptions={[10, 25, 100]}
         component="div"
@@ -394,32 +409,34 @@ const UserList = ( ) => {
     }
   };
 
-  const handleSaveSpread = (editedValue) => {
-    const updatedSpreads = spreads.map((spread, idx) =>
-      idx === editingSpread.index ? editedValue : spread
-    );
-    setSpreads(updatedSpreads);
-    setShowNotification(true);
-    setNotificationMessage('Spread updated successfully');
-    setEditingSpread(null);
-  };
+  // const handleSaveSpread = (editedValue) => {
+  //   const updatedSpreads = spreads.map((spread, idx) =>
+  //     idx === editingSpread.index ? editedValue : spread
+  //   );
+  //   setSpreads(updatedSpreads);
+  //   setShowNotification(true);
+  //   setNotificationMessage('Spread updated successfully');
+  //   setEditingSpread(null);
+  // };
 
   const handleToggleUserBlock = (userId) => {
-    const user = userData.find(u => u.id === userId);
-    const action = user.blocked ? 'unblock' : 'block';
-    
+    const user = userData.find(u => u._id === userId);
+    if (!user) return; // Return early if user is not found
+  
+    const action = user.blocked !== undefined ? (user.blocked ? 'unblock' : 'block') : 'block'; // Check if blocked property exists
+  
     setConfirmDialog({
       isOpen: true,
       title: `Confirm ${action}`,
-      content: `Are you sure you want to ${action} ${user.name}?`,
+      content: `Are you sure you want to ${action} ${user.userName}?`,
       onConfirm: () => {
-        setUserData(prevData => 
-          prevData.map(u => 
-            u.id === userId ? { ...u, blocked: !u.blocked } : u
+        setUserData(prevData =>
+          prevData.map(u =>
+            u._id === userId ? { ...u, blocked: u.blocked !== undefined ? !u.blocked : true } : u
           )
         );
         setShowNotification(true);
-        setNotificationMessage(`User ${user.name} has been ${action}ed`);
+        setNotificationMessage(`User ${user.userName} has been ${action}ed`);
         setConfirmDialog({ ...confirmDialog, isOpen: false });
       }
     });
@@ -484,8 +501,9 @@ const UserList = ( ) => {
 
         <Snackbar
           open={showNotification}
-          autoHideDuration={6000}
+          autoHideDuration={5000}
           onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
           <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
             {notificationMessage}
