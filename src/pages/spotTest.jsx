@@ -1,64 +1,35 @@
-import React, { useState,useContext,useCallback,useEffect } from 'react';
+import React, { useState, useContext, useCallback, useEffect, useMemo } from 'react';
 import {
-  Box,
-  Grid,
-  Typography,
-  Card,
-  CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Button,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  Box, Grid, Typography, Card, CardContent, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Paper, Button, IconButton, Dialog,
+  DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem,
+  FormControl, InputLabel,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AddCommodityModal from './AddCommodityModal';
-import { useCurrency } from '../context/CurrencyContext'; // Adjust the import path as needed
-import io from 'socket.io-client'; //spot calc
+import { useCurrency } from '../context/CurrencyContext';
+import io from 'socket.io-client';
 import axiosInstance from '../axiosInstance';
-// import { debounce } from 'lodash';
-// import { updateSpotRate } from '../api/adminAPi';
-// const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
+import { debounce } from 'lodash';
 
 
 
 
-const CurrencySelector = ({ onCurrencyChange }) => {
+const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState('AED');
+  const exchangeRates = { AED: 3.6725, USD: 1, EUR: 0.92, GBP: 0.79 };
 
-  const exchangeRates = {
-    AED: 3.6725,
-    USD: 1,
-    EUR: 0.92,
-    GBP: 0.79
-  };
-
-  const handleChange = (event) => {
+  const handleChange = useCallback((event) => {
     const newCurrency = event.target.value;
     setCurrency(newCurrency);
     onCurrencyChange(newCurrency, exchangeRates[newCurrency]);
-  };
+  }, [onCurrencyChange, exchangeRates]);
 
   return (
     <div className="flex items-center gap-4 p-4 bg-gray-100">
-      <label htmlFor="currency-select" className="font-bold text-gray-700">
-        Select a currency:
-      </label>
+      <label htmlFor="currency-select" className="font-bold text-gray-700">Select a currency:</label>
       <select
         id="currency-select"
         value={currency}
@@ -70,18 +41,16 @@ const CurrencySelector = ({ onCurrencyChange }) => {
         <option value="EUR">Euro (EUR)</option>
         <option value="GBP">British Pound Sterling (GBP)</option>
       </select>
-      <button
-        className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline shadow-lg"
-      >
+      <button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline shadow-lg">
         GET SELECTED CURRENCY
       </button>
     </div>
   );
-}; 
+});
 
 
 // PriceCard Component
-const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type, onSpreadUpdate }) => {
+const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
   const [bid, setBid] = useState(initialBid);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
@@ -90,27 +59,23 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
 
-  
-   
-
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setIsEditing(true);
     setTempSpread(spread);
-  };
+  }, [spread]);
 
-  const handleSpreadChange = (e) => {
+  const handleSpreadChange = useCallback((e) => {
     setTempSpread(e.target.value);
-  };
+  }, []);
 
-
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setIsEditing(false);
     setSpread(tempSpread);
     localStorage.setItem(`spread_${metal}_${type}`, tempSpread.toString());
     if (onSpreadUpdate) {
       onSpreadUpdate(metal, type, tempSpread);
     }
-  };
+  }, [metal, type, tempSpread, onSpreadUpdate]);
 
 
   return (
@@ -148,7 +113,7 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
     <div className="pt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{title}</h6>
-        <p className="text-gray-600 font-medium text-sm">{initialBid}</p>
+        <p className="text-gray-600 font-medium text-sm">{initialPrice}</p>
       </div>
       <div className="flex flex-col">
             <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
@@ -168,35 +133,35 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
           </div>
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
-        <p className="text-gray-600 font-medium text-sm">{parseFloat(initialBid) + parseFloat(spread)}</p>
+        <p className="text-gray-600 font-medium text-sm">{(parseFloat(initialPrice) + parseFloat(spread))}</p>
       </div>
     </div>
   </div>
 
   );
-};
+});
+
 // ValueCard Component
-const ValueCard = ({ lowValue, highValue, initialLowMargin, initialHighMargin, lowNewValue, highNewValue }) => {
+const ValueCard = React.memo(({ lowValue, highValue, initialLowMargin, initialHighMargin, lowNewValue, highNewValue }) => {
   const [lowMargin, setLowMargin] = useState(initialLowMargin);
   const [highMargin, setHighMargin] = useState(initialHighMargin);
   const [isEditing, setIsEditing] = useState(false);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     setIsEditing(true);
-  };
+  }, []);
 
-  const handleMarginChange = (setter) => (e) => {
+  const handleMarginChange = useCallback((setter) => (e) => {
     setter(e.target.value);
-  };
+  }, []);
 
-  const handleMarginBlur = (setter, value) => () => {
+  const handleMarginBlur = useCallback((setter, value) => () => {
     setter(value);
-  };
+  }, []);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     setIsEditing(false);
-    // Here you might want to save the new values to localStorage or send them to a server
-  };
+  }, []);
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
@@ -254,7 +219,7 @@ const ValueCard = ({ lowValue, highValue, initialLowMargin, initialHighMargin, l
           </div>
           <div className="flex flex-col">
             <h6 className="text-gray-600 mb-1 font-bold">Low New Value</h6>
-            <p className="text-gray-600 font-medium text-sm">{lowNewValue}</p>
+            <p className="text-gray-600 font-medium text-sm">{parseFloat(lowValue)+parseFloat(lowMargin)}</p>
           </div>
         </div>
 
@@ -281,23 +246,39 @@ const ValueCard = ({ lowValue, highValue, initialLowMargin, initialHighMargin, l
           </div>
           <div className="flex flex-col">
             <h6 className="text-gray-600 mb-1 font-bold">High New Value</h6>
-            <p className="text-gray-600 font-medium text-sm">{highNewValue}</p>
+            <p className="text-gray-600 font-medium text-sm">{parseFloat(highValue)+parseFloat(highMargin)}</p>
           </div>
         </div>
       </div>
     </div>
   );
-};
+});
 
 
 // TradingViewWidget Component
-const TradingViewWidget = ({ symbol, title }) => {
+const TradingViewWidget = React.memo(({ symbol, title }) => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const handleIframeLoad = useCallback(() => {
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500); // Optional delay for smooth transition
+  }, []);
+
   return (
     <div className="bg-white rounded-lg shadow-lg">
       <div className="px-4 py-3">
         <h6 className="text-gray-800 font-medium mb-1">{title}</h6>
       </div>
-      <div className="p-2">
+      <div className="relative" style={{ height: '300px' }}>
+        {isLoading && (
+          <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${!isLoading ? 'opacity-0 transition-opacity duration-300' : 'opacity-100'}`}>
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
+              <p className="mt-4 text-gray-600">Loading data, please wait...</p>
+            </div>
+          </div>
+        )}
         <div className="tradingview-widget-container" style={{ width: '100%', height: '300px' }}>
           <iframe
             scrolling="no"
@@ -308,13 +289,13 @@ const TradingViewWidget = ({ symbol, title }) => {
             lang="en"
             className="w-full h-full"
             style={{ userSelect: 'none', boxSizing: 'border-box', display: 'block' }}
+            onLoad={handleIframeLoad}
           />
         </div>
       </div>
     </div>
   );
-};
-
+});
 
 
 // Main SpotRate  Component
@@ -323,60 +304,47 @@ const SpotRate = () => {
   const [openModal, setOpenModal] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const [selectedCommodity, setSelectedCommodity] = useState(null);
-    const handleMarginChange = (lowMargin, highMargin) => {
-      // Update the state or perform any necessary actions with the new margin values
-      console.log('New margins:', lowMargin, highMargin);
-    };
-    const handleOpenModal = (commodity) => {
-      const goldBid = parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'));
-      const goldAsk = goldBid + 0.5; // Assuming 0.5 is the spread for asking price
-      const silverBid = parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'));
-      const silverAsk = silverBid + 0.05; // Assuming 0.05 is the spread for asking price
-    
-      setSelectedCommodity({
-        ...commodity,
-        goldBid,
-        goldAsk,
-        silverBid,
-        silverAsk
-      });
-      setOpenModal(true);
-    };
-    
-  const handleCloseModal = () => {setOpenModal(false);};
-    //spot calc
   const [marketData, setMarketData] = useState({});
   const [error, setError] = useState(null);
-  const [symbols] = useState(["GOLD", "SILVER"]);
+  const [symbols, setSymbols] = useState([]);
   const [serverURL, setServerURL] = useState('');
   const [userId, setUserId] = useState('');
-  const [spotRateData, setSpotRateData] = useState(null);
   const [commodities, setCommodities] = useState([]);
-
-  const fetchCommodities = useCallback(async (userId) => {
-    try {
-      const response = await axiosInstance.get(`/spotrates/${userId}`);
-      if (response.data && response.data.commodities) {
-        setCommodities(response.data.commodities);
-      }
-    } catch (error) {
-      console.error('Error fetching commodities:', error);
-    }
-  }, []);
+  const [uniqueMetals, setUniqueMetals] = useState([]);
+  const [loadng, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
+    const fetchCommodities = async (userId) => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        if (response.data && response.data.commodities) {
+          setCommodities(response.data.commodities);
+          console.log(commodities);
+          localStorage.setItem('commoditiesData', JSON.stringify(response.data.commodities));
+        }
+      } catch (error) {
+        console.error('Error fetching commodities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
     if (userId) {
       fetchCommodities(userId);
     }
-  }, [userId, fetchCommodities]);
+  }, [userId]);
 
-  
+
   useEffect(() => {
     const fetchUserId = async () => {
       try {
-        const email = localStorage.getItem('userEmail'); // or however you store the user's email
+        const email = localStorage.getItem('userEmail');
         const response = await axiosInstance.get(`/data/${email}`);
         setUserId(response.data.data._id);
+        const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
+        setSymbols(uniqueSymbols);
+        setUniqueMetals(uniqueSymbols);
       } catch (error) {
         console.error('Error fetching user ID:', error);
       }
@@ -385,97 +353,106 @@ const SpotRate = () => {
     fetchUserId();
   }, []);
 
-  const handleSpreadUpdate = async (metal, type, newSpread) => {
+
+  const handleSpreadUpdate = useCallback(async (metal, type, newSpread) => {
     try {
-      const response = await axiosInstance.post('/update-spread', {
+      await axiosInstance.post('/update-spread', {
         userId,
         metal,
         type,
         spread: newSpread
       });
-      
-      if (response.status === 200) {
-        console.log('Spread updated successfully');
-        // Optionally, update local state or fetch updated data
-      }
     } catch (error) {
       console.error('Error updating spread:', error);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     const fetchServerURL = async () => {
       try {
-        // console.log('hereherhe  ',userID);
         const response = await axiosInstance.get('/server-url');
         setServerURL(response.data.selectedServerURL);
       } catch (error) {
         console.error('Error fetching server URL:', error);
       }
     };
-  
+
     fetchServerURL();
   }, []);
 
-  const getSpreadFromLocalStorage = (metal, type) => {
+  const getSpreadFromLocalStorage = useCallback((metal, type) => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
-    return savedSpread !== null ? parseFloat(savedSpread) : 0; // Default to 0 if not found
-  };
+    return savedSpread !== null ? parseFloat(savedSpread) : 0;
+  }, []);
+
+  const debouncedSetMarketData = useMemo(() => 
+    debounce((newData) => {
+      requestAnimationFrame(() => {
+        setMarketData(prevData => ({...prevData, ...newData}));
+      });
+    }, 16),
+  []);
+
+  const handleMarketData = useCallback((data) => {
+    if (data && data.symbol) {
+      debouncedSetMarketData({
+        [data.symbol]: {
+          ...data,
+          bidChanged: marketData[data.symbol] && data.bid !== marketData[data.symbol].bid 
+            ? (data.bid > marketData[data.symbol].bid ? 'up' : 'down') 
+            : null,
+        }
+      });
+    }
+  }, [marketData, debouncedSetMarketData]);
+
+
+  useEffect(() => {
+    // const fetchInitialData = async () => {
+    //   try {
+    //     const response = await axiosInstance.get('/data');
+    //     setMarketData(response.data);
+    //   } catch (error) {
+    //     console.error('Error fetching initial data:', error);
+    //   }
+    // };
   
-  const fetchMarketData = useCallback((symbols) => {
-
-    console.log('serverURL',serverURL);
+    // fetchInitialData();
+  
     const socket = io(serverURL, {
-      query: { secret: "aurify@123" }, // Pass secret key as query parameter
+      query: { secret: "aurify@123" },
+      transports: ['websocket'],
     });
-
+  
     socket.on("connect", () => {
-      console.log("Connected to WebSocket server");
       socket.emit("request-data", symbols);
-      console.log('success');
     });
-
-    socket.on("disconnect", () => {
-      console.log("Disconnected from WebSocket server");
-    });
-
+  
     socket.on("market-data", (data) => {
       if (data && data.symbol) {
         setMarketData(prevData => ({
           ...prevData,
           [data.symbol]: {
-            ...prevData[data.symbol],
             ...data,
-            // Compare current and previous bid to determine color
             bidChanged: prevData[data.symbol] && data.bid !== prevData[data.symbol].bid 
               ? (data.bid > prevData[data.symbol].bid ? 'up' : 'down') 
               : null,
           }
         }));
-        // console.log('current bid ----- ',marketData[symbol].bid);
-      } else {
-        console.warn("Received malformed market data:", data);
       }
     });
-
+  
     socket.on("error", (error) => {
-      console.error("WebSocket error:", error);
+      console.error("Socket error:", error);
       setError("An error occurred while receiving data");
     });
-
+  
     return () => {
       socket.disconnect();
     };
   }, [symbols, serverURL]);
-
-  useEffect(() => {
-    console.log("Market Data:", marketData);
-    const cleanup = fetchMarketData(symbols);
-    return cleanup;
-  }, [symbols, fetchMarketData, serverURL]);
-
-
-  const handleSaveCommodity = async (commodityData, isEditMode) => {
+  
+  const handleSaveCommodity = useCallback(async (commodityData, isEditMode) => {
     if (isEditMode) {
       setCommodities(prevCommodities => 
         prevCommodities.map(commodity => 
@@ -488,148 +465,238 @@ const SpotRate = () => {
         { id: prevCommodities.length + 1, ...commodityData }
       ]);
     }
-    handleCloseModal();
-    try {
-      const response = await axiosInstance.post('/update-commodity', commodityData);
-    } catch (error) {
-      console.error('Error saving commodity:', error);
-      fetchCommodities(userId);
-    }
-  };
+    setIsEditing(isEditMode);
+    setOpenModal(false);
+    
+  }, [userId]);
 
-
-  const handleEditCommodity = (commodity) => {
+  const handleEditCommodity = useCallback((commodity) => {
     setSelectedCommodity({...commodity, id: commodity._id});
+    setIsEditing(true);
     setOpenModal(true);
-  };
+  }, []);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     try {
       await axiosInstance.delete(`/commodities/${userId}/${id}`);
       setCommodities(commodities.filter(commodity => commodity._id !== id));
-      // Show success message
       alert('Commodity deleted successfully');
     } catch (error) {
       console.error('Error deleting commodity:', error);
-      // Show error message
       alert('Failed to delete commodity. Please try again.');
     }
-  };
+  }, [userId, commodities]);
 
-  const handleCurrencyChange = (newCurrency, newExchangeRate) => {
+  const handleCurrencyChange = useCallback((newCurrency, newExchangeRate) => {
     setCurrency(newCurrency);
-    setExchangeRate(newExchangeRate);
+    setExchangeRate(parseFloat(newExchangeRate));
+  }, [setCurrency]);
+
+  const getUnitMultiplier = useCallback((unit) => {
+    const lowerCaseUnit = String(unit).toLowerCase();
+    switch (lowerCaseUnit) {
+      case 'gram': return 1;
+      case 'kg': return 1000;
+      case 'oz': return 28.3495;
+      case 'tola': return 11.6;
+      case 'ttb': return 11.6;
+      default: return 1;
+    }
+  }, []);
+
+  const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
+    // Check if value is defined and not null
+    if (value === undefined || value === null) {
+      return 0; // or return a default value based on your requirements
+    }
+  
+    const valueStr = value.toString();
+    const [integerPart] = valueStr.split('.');
+    return integerPart.length;
+  }, []);
+  
+
+  const renderCommodityRows = () => {
+    return commodities.map((row) => {
+      const isGoldRelated = row.metal && (row.metal.toLowerCase().includes('gold') || 
+                            row.metal.toLowerCase().includes('minted bar'));
+    
+    // Default to 'Unknown' or handle it as needed if 'row.metal' is undefined
+    const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
+    
+    const additionalPrice = isGoldRelated ? 0.5 : 0.05;
+    const metalBiddingPrice = marketData[metal] && marketData[metal].bid
+      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadFromLocalStorage(metal, 'bid'))
+      : 0;
+    const metalAskingPrice = marketData[metal] && marketData[metal].bid
+      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadFromLocalStorage(metal, 'ask')) + parseFloat(additionalPrice)
+      : 0;
+    const unitMultiplier = getUnitMultiplier(row.unit);
+    const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(row.purity);
+    const sellPrice = (
+      metalBiddingPrice && !isNaN(metalBiddingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
+      ? (((metalBiddingPrice / 31.1035) * exchangeRate * row.unit * unitMultiplier) *
+       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))
+        : 0
+       ).toFixed(4);
+    const buyPrice = (
+      metalAskingPrice && !isNaN(metalAskingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
+      ? (((metalAskingPrice / 31.1035) * exchangeRate * row.unit * unitMultiplier) *
+       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))
+        : 0
+       ).toFixed(4);
+  
+      return (
+        <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
+          <TableCell>{row.metal}</TableCell>
+          <TableCell>{row.purity}</TableCell>
+          <TableCell>{row.unit}</TableCell>
+          <TableCell>{sellPrice}</TableCell>
+          <TableCell>{buyPrice}</TableCell>
+          <TableCell>{row.sellPremiumAED}</TableCell>
+          <TableCell>{row.buyPremiumAED}</TableCell>
+          <TableCell>
+            <IconButton
+              onClick={() => handleEditCommodity(row)}
+              sx={{
+                background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+                color: 'white',
+                padding: '8px',
+                marginRight: '8px',
+                borderRadius: '8px',
+                minWidth: '60px',
+                height: '40px',
+                '&:hover': {
+                  background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+                },
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() => handleDelete(row._id)}
+              sx={{
+                background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+                color: 'white',
+                padding: '8px',
+                borderRadius: '8px',
+                minWidth: '60px',
+                height: '40px',
+                '&:hover': {
+                  background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+                },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      );
+    });
   };
+  const symbolMap = {
+    copper: "COMEX:HG1!",
+    gold: "TVC:GOLD",
+    silver: "TVC:SILVER",
+    platinum: "COMEX:PL1!",
+  };
+  console.log(marketData['COPPER']);
 
   return (
     <Box className="min-h-screen flex flex-col bg-gray-100">
       <Box className="p-2">
         <CurrencySelector onCurrencyChange={handleCurrencyChange} />
       </Box>
-      <div className="p-6 grid gap-4 grid-cols-1 md:grid-cols-2 mx-14">
-      <div className="col-span-1">
-        <TradingViewWidget symbol="TVC:GOLD" title="Gold" />
-      </div>
-      <div className="col-span-1">
-        <TradingViewWidget symbol="TVC:SILVER" title="Silver" />
-      </div>
-    </div>
-
-    
-
-      
-    <div className="p-3 grid gap-4 grid-cols-1 md:grid-cols-2 mx-16 py-2">
-    <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" onSpreadUpdate={handleSpreadUpdate} />
-      </div>
-      <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid" onSpreadUpdate={handleSpreadUpdate} />
-      </div>
-      <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask" onSpreadUpdate={handleSpreadUpdate} />
-      </div>
-      <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask" onSpreadUpdate={handleSpreadUpdate} />
-      </div>
-      <div className="col-span-1">
-        <ValueCard 
-          lowValue={2417.000} 
-          highValue={2428.870} 
-          initialLowMargin={0} 
-          initialHighMargin={0} 
-          lowNewValue={2417.000} 
-          highNewValue={2428.870} 
-          onMarginChange={handleMarginChange}
-
-        />
-      </div>
-      <div className="col-span-1">
-        <ValueCard 
-          lowValue={27.4125} 
-          highValue={27.762} 
-          initialLowMargin={0} 
-          initialHighMargin={0} 
-          lowNewValue={27.413} 
-          highNewValue={27.762} 
-          onMarginChange={handleMarginChange}
-        />
-      </div>
-    </div>
-
-
-    <Box sx={{ p: 10 }}>
-    <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
-          <div className="flex justify-between items-center text-lg">
-            <Typography className='font-black text-xl tracking-wide' color="text.primary">
-              Gold  1GM (in USD)
-            </Typography>
-            <Typography className="font-black text-xl ml-6">
-              {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
-            </Typography>
+     
+      <div className="p-6 grid gap-8 grid-cols-1 md:grid-cols-2 mx-4 md:mx-8 lg:mx-14">
+        {uniqueMetals.map((metal, index) => (
+          <div key={metal} className={`col-span-1 ${index === uniqueMetals.length - 1 && uniqueMetals.length % 2 !== 0 ? 'md:col-span-2' : ''}`}>
+            <div className={`${metal.toLowerCase()}-content ${index === uniqueMetals.length - 1 && uniqueMetals.length % 2 !== 0 ? 'md:grid md:grid-cols-2 md:gap-8' : ''}`}>
+              <TradingViewWidget symbol={symbolMap[metal.toLowerCase()]} title={metal} />
+              <div className="space-y-4 mt- md:mt-4">
+                <PriceCard 
+                  title="Bid" 
+                  initialPrice={marketData[metal]?.bid}
+                  initialSpread={getSpreadFromLocalStorage(metal, 'bid')}  
+                  metal={metal} 
+                  type="bid" 
+                  onSpreadUpdate={handleSpreadUpdate} 
+                />
+                <PriceCard 
+                  title="Ask" 
+                  initialPrice={parseFloat(marketData[metal]?.bid) + (metal === 'Gold' ? 0.5 : 0.05)}
+                  initialSpread={getSpreadFromLocalStorage(metal, 'ask')}  
+                  metal={metal} 
+                  type="ask" 
+                  onSpreadUpdate={handleSpreadUpdate} 
+                />
+                <ValueCard 
+                  lowValue={marketData[metal]?.low} 
+                  highValue={marketData[metal]?.high} 
+                  initialLowMargin={0} 
+                  initialHighMargin={0} 
+                  lowNewValue={metal === 'Gold' ? 2417.000 : 27.413} 
+                  highNewValue={metal === 'Gold' ? 2428.870 : 27.762} 
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex justify-between items-center text-lg">
-            <Typography className='font-black text-xl tracking-wide' color="text.primary">
-              Silver   1GM (in USD)
-            </Typography>
-            <Typography className="font-black text-xl ml-6">
-              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
-            </Typography>
+        ))}
+      </div>
+
+      <Box sx={{ p: 10 }}>
+        <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
+            <div className="flex justify-between items-center text-lg">
+              <Typography className='font-black text-xl tracking-wide' color="text.primary">
+                Gold  1GM (in USD)
+              </Typography>
+              <Typography className="font-black text-xl ml-6">
+                {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
+              </Typography>
+            </div>
+            <div className="flex justify-between items-center text-lg">
+              <Typography className='font-black text-xl tracking-wide' color="text.primary">
+                Silver   1GM (in USD)
+              </Typography>
+              <Typography className="font-black text-xl ml-6">
+                {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
+              </Typography>
+            </div>
+            <div className="flex justify-between items-center text-lg">
+              <Typography className='font-black text-xl tracking-wide' color="text.primary">
+                Gold 1GM (in {currency})
+              </Typography>
+              <Typography className="font-black text-xl ml-6">
+                {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+              </Typography>
+            </div>
+            <div className="flex justify-between items-center text-lg">
+              <Typography className='font-black text-xl tracking-wide' color="text.primary">
+                Silver 1GM (in {currency})
+              </Typography>
+              <Typography className="font-black text-xl ml-6">
+                {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+              </Typography>
+            </div>
           </div>
-          <div className="flex justify-between items-center text-lg">
-            <Typography className='font-black text-xl tracking-wide' color="text.primary">
-              Gold 1GM (in {currency})
-            </Typography>
-            <Typography className="font-black text-xl ml-6">
-              {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-            </Typography>
-          </div>
-          <div className="flex justify-between items-center text-lg">
-            <Typography className='font-black text-xl tracking-wide' color="text.primary">
-              Silver 1GM (in {currency})
-            </Typography>
-            <Typography className="font-black text-xl ml-6">
-              {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-            </Typography>
-          </div>
+          <Button
+            variant="contained"
+            onClick={() => setOpenModal(true)}
+            sx={{
+              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+              color: 'white',
+              textTransform: 'none',
+              fontWeight: 'bold',
+              borderRadius: '0.375rem',
+              '&:hover': {
+                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+              },
+            }}
+          >
+            ADD COMMODITY
+          </Button>
         </div>
-        <Button
-          variant="contained"
-          onClick={handleOpenModal}
-          sx={{
-            background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-            color: 'white',
-            textTransform: 'none',
-            fontWeight: 'bold',
-            borderRadius: '0.375rem',
-            '&:hover': {
-              background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-            },
-          }}
-        >
-          ADD COMMODITY
-        </Button>
-      </div>
         <TableContainer component={Paper} className="shadow-lg">
           <Table sx={{ minWidth: 650 }} aria-label="commodity table">
             <TableHead>
@@ -645,74 +712,24 @@ const SpotRate = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {commodities.map((row) => (
-                <TableRow key={row.id}
-                sx={{
-                  borderTop: '2px double #e0e0e0', // Apply double border on top
-                  borderBottom: '2px double #e0e0e0', // Apply double border on bottom
-                }}>
-                  <TableCell>{row.metal}</TableCell>
-                  <TableCell>{row.purity}</TableCell>
-                  <TableCell>{row.unit}</TableCell>
-                  <TableCell>{((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}</TableCell>
-                  <TableCell>{row.buyAED}</TableCell>
-                  <TableCell>{row.sellPremiumAED}</TableCell>
-                  <TableCell>{row.buyPremiumAED}</TableCell>
-                  <TableCell>
-                      <IconButton
-                        onClick={() => handleEditCommodity(row)}
-                        sx={{
-                          background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-                          color: 'white',
-                          padding: '8px',
-                          marginRight: '8px',
-                          borderRadius: '8px',
-                          minWidth: '60px',
-                          height: '40px',
-                          '&:hover': {
-                            background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-                          },
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDelete(row._id)}
-                        sx={{
-                          background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-                          color: 'white',
-                          padding: '8px',
-                          borderRadius: '8px',
-                          minWidth: '60px',
-                          height: '40px',
-                          '&:hover': {
-                            background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                </TableRow>
-              ))}
+              {renderCommodityRows()}
             </TableBody>
           </Table>
         </TableContainer>
         <AddCommodityModal
           open={openModal}
-          onClose={handleCloseModal}
+          onClose={() => setOpenModal(false)}
           onSave={handleSaveCommodity}
           initialData={selectedCommodity}
           goldBid={selectedCommodity?.goldBid}
           goldAsk={selectedCommodity?.goldAsk}
           silverBid={selectedCommodity?.silverBid}
           silverAsk={selectedCommodity?.silverAsk}
-
+          isEditing={isEditing}
         />
       </Box>
     </Box>
   );
 };
 
-export default SpotRate;
-
+export default React.memo(SpotRate);

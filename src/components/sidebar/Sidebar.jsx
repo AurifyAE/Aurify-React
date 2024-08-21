@@ -42,6 +42,7 @@ const Sidebar = () => {
     { name: "News", icon: Newspaper, path: "news" },
     { name: "Shop", icon: ShoppingCart, path: "shop" },
     { name: "Users", icon: User, path: "users" },
+    { name: "Market Closing", icon: ShoppingCart, path: "market-closing" },
   ];
 
   const accountRoutes = [

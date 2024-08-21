@@ -1,10 +1,10 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import SpotRate from '../pages/spotTest';
+import MarketClosing from '../pages/MarketClosing';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 
-const SpotRateLayout = () => {
+const ShopLayout = () => {
   return (
     <div className="flex min-h-screen">
       <div className="fixed h-full">
@@ -13,7 +13,7 @@ const SpotRateLayout = () => {
       <div className="flex-1 flex flex-col ml-64">
         <Navbar />
         <div className="flex-grow">
-          <SpotRate />
+          <MarketClosing/>
         </div>
         <Footer />
       </div>
@@ -21,4 +21,4 @@ const SpotRateLayout = () => {
   );
 };
 
-export default SpotRateLayout;
+export default ShopLayout;
