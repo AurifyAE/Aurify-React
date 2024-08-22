@@ -171,12 +171,6 @@ const LoginPage = () => {
               SIGN IN
             </button>
           </form>
-          
-          {/* <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096', textAlign: 'center' }}>
-          {/* <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096', textAlign: 'center' }}>
-            Don't have an account? <a href="#" style={{ color: '#2152ff', textDecoration: 'underline' }}>Contact us</a>
-          </p> */}
-          </p> */}
         </div>
       </div>
       
