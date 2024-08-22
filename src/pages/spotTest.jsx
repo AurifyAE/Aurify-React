@@ -612,7 +612,6 @@ const [initialData, setInitialData] = useState(null);
     silver: "TVC:SILVER",
     platinum: "COMEX:PL1!",
   };
-  console.log(marketData['COPPER']);
 
   return (
     <Box className="min-h-screen flex flex-col bg-gray-100">

@@ -50,11 +50,12 @@ const NewsUpload = () => {
   };
 
   const handleSubmit = async (event) => {
+    const email = localStorage.getItem('userEmail');
     event.preventDefault();
     const newItem = {
       title,
       description: content,
-      email
+      email: email
     };
 
     try {
@@ -79,6 +80,7 @@ const NewsUpload = () => {
   };
 
   const handleUpdate = async (event) => {
+    const email = localStorage.getItem('userEmail');
     event.preventDefault();
     const updatedItem = {
       title,

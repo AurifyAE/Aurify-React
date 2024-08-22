@@ -8,6 +8,8 @@ import loginImage from '../../assets/GoldBar.jpg';
 import axiosInstance from '../../axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { requestFCMToken } from '../../utils/firebaseUtils'
+import { useEffect } from 'react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,17 +18,38 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  const [fcmToken, setFcmToken] = useState("");
+  console.log(fcmToken);
   const navigate = useNavigate();
+
+  useEffect(() =>{
+    const fetchFcmToken = async () => {
+      try{
+        await requestFCMToken().then((token) => {
+          setFcmToken(token);
+        })
+      }
+      catch(error){
+        console.log('Error in getting FCM token :',error);
+      }
+    }
+    fetchFcmToken();
+  },[]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const values = {
+      email, 
+      password,
+      fcmToken
+    }
     setEmailError('');
     setPasswordError('');
     setEmailError('');
     setPasswordError('');
   
     try {
-      const response = await axiosInstance.post('/login', { email, password });
+      const response = await axiosInstance.post('/login',values);
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userEmail', email);
@@ -105,7 +128,6 @@ const LoginPage = () => {
                 }} 
                 placeholder="test@gmail.com" 
               />
-              {emailError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{emailError}</p>}
               {emailError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{emailError}</p>}
             </div>
             
