@@ -75,13 +75,16 @@ const theme = createTheme({
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [spreadToDelete, setSpreadToDelete] = useState(null);
+    const [spreadTitle, setSpreadTitle] = useState('Rate'); // Default value is 'Rate'
+
     // const [editModalOpen, setEditModalOpen] = useState(false);
     // const [editSpreadIndex, setEditSpreadIndex] = useState(null);
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      onAddSpread(spreadValue);
+      onAddSpread(spreadValue, spreadTitle);
       setSpreadValue('');
+      setSpreadTitle('Rate'); // Reset to default after submission
     };
 
     const handleChangePage = (event, newPage) => {
@@ -116,6 +119,7 @@ const theme = createTheme({
 
     const columns = [
       { id: 'sino', label: '#', },
+      { id: 'title', label: 'Title', },
       { id: 'value', label: 'Spread', },
       { id: 'actions', label: 'Actions', },
     ];
@@ -126,31 +130,42 @@ const theme = createTheme({
           ADD SPREAD VALUE
         </Typography>
         <form onSubmit={handleSubmit}>
-          <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-            <Grid item xs={8}>
-              <TextField
-                label="Spread Value"
-                value={spreadValue}
-                onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
-                type="number"
-                required
-                fullWidth
-                variant="outlined"
-                size="small"
-              />
-            </Grid>
-            <Grid item xs={4}>
-              <Button
-                type="submit"
-                variant="contained"
-                startIcon={<AddIcon />}
-                fullWidth
-              >
-                Add
-              </Button>
-            </Grid>
+        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Grid item xs={4}>
+            <TextField
+              label="Title"
+              value={spreadTitle}
+              onChange={(e) => setSpreadTitle(e.target.value)}
+              required
+              fullWidth
+              variant="outlined"
+              size="small"
+            />
           </Grid>
-        </form>
+          <Grid item xs={4}>
+            <TextField
+              label="Spread Value"
+              value={spreadValue}
+              onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
+              type="number"
+              required
+              fullWidth
+              variant="outlined"
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={4}>
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={<AddIcon />}
+              fullWidth
+            >
+              Add
+            </Button>
+          </Grid>
+        </Grid>
+      </form>
 
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
           SPREADS
@@ -177,6 +192,7 @@ const theme = createTheme({
                 .map((spread, index) => (
                   <TableRow hover key={index}>
                     <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell align="center">{spread.title}</TableCell>
                     <TableCell align="center">{spread.spreadValue}</TableCell>
                     <TableCell align="center">
                       {/* <IconButton onClick={() => handleEditClick(index)} color="primary" size="small">
@@ -396,9 +412,9 @@ const UserList = ( ) => {
 
   //spreadfetchEnd
 
-  const handleAddSpread = async (spreadValue) => {
+  const handleAddSpread = async (spreadValue,title) => {
     try {
-      const response = await axiosInstance.post(`/admin/${adminId}/spread-values`, { spreadValue });
+      const response = await axiosInstance.post(`/admin/${adminId}/spread-values`, { spreadValue,title });
       if (response.data.success) {
         setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
         setShowNotification(true);
