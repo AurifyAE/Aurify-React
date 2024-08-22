@@ -313,6 +313,8 @@ const SpotRate = () => {
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [open, setOpen] = useState(false);
+const [initialData, setInitialData] = useState(null);
 
   useEffect(() => {
     const fetchCommodities = async (userId) => {
@@ -456,22 +458,30 @@ const SpotRate = () => {
     if (isEditMode) {
       setCommodities(prevCommodities => 
         prevCommodities.map(commodity => 
-          commodity.id === commodityData.id ? { ...commodity, ...commodityData } : commodity
+          commodity._id === commodityData._id ? { ...commodity, ...commodityData } : commodity
         )
       );
     } else {
-      setCommodities(prevCommodities => [
-        ...prevCommodities, 
-        { id: prevCommodities.length + 1, ...commodityData }
-      ]);
+      setCommodities(prevCommodities => [...prevCommodities, commodityData]);
     }
     setIsEditing(isEditMode);
     setOpenModal(false);
-    
+    const fetchUpdatedCommodities = async () => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        if (response.data && response.data.commodities) {
+          setCommodities(response.data.commodities);
+        }
+      } catch (error) {
+        console.error('Error fetching updated commodities:', error);
+      }
+    };
+  
+    fetchUpdatedCommodities();
   }, [userId]);
 
   const handleEditCommodity = useCallback((commodity) => {
-    setSelectedCommodity({...commodity, id: commodity._id});
+    setSelectedCommodity({...commodity}); 
     setIsEditing(true);
     setOpenModal(true);
   }, []);
@@ -533,16 +543,18 @@ const SpotRate = () => {
       : 0;
     const unitMultiplier = getUnitMultiplier(row.unit);
     const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(row.purity);
+    const sellPremium = row.sellPremium || 0;
+    const buyPremium = row.buyPremium || 0;
     const sellPrice = (
       metalBiddingPrice && !isNaN(metalBiddingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? (((metalBiddingPrice / 31.1035) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))
+      ? ((((metalBiddingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
+       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(sellPremium))
         : 0
        ).toFixed(4);
     const buyPrice = (
       metalAskingPrice && !isNaN(metalAskingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? (((metalAskingPrice / 31.1035) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))
+      ? ((((metalAskingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
+       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(buyPremium))
         : 0
        ).toFixed(4);
   
@@ -550,11 +562,11 @@ const SpotRate = () => {
         <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
           <TableCell>{row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
-          <TableCell>{row.unit}</TableCell>
+          <TableCell>{`${row.unit} ${row.weight}`}</TableCell>
           <TableCell>{sellPrice}</TableCell>
           <TableCell>{buyPrice}</TableCell>
-          <TableCell>{row.sellPremiumAED}</TableCell>
-          <TableCell>{row.buyPremiumAED}</TableCell>
+          <TableCell>{row.sellPremium}</TableCell>
+          <TableCell>{row.buyPremium}</TableCell>
           <TableCell>
             <IconButton
               onClick={() => handleEditCommodity(row)}

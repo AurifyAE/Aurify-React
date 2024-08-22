@@ -327,20 +327,20 @@ useEffect(() => {
         purity: formData.purity,
         unit: formData.unit,
         weight: formData.weight,
-        sellPremiumUSD: formData.sellPremiumUSD,
-        sellPremiumAED: formData.sellPremiumAED,
-        buyPremiumUSD: formData.buyPremiumUSD,
-        buyPremiumAED: formData.buyPremiumAED,
-        buyAED: formData.buyAED,
-        buyUSD: formData.buyUSD,
-        sellAED: formData.sellAED,
-        sellUSD: formData.sellUSD,
+        // sellPremiumUSD: formData.sellPremiumUSD || 0,
+        sellPremium: formData.sellPremiumAED || 0,
+        // buyPremiumUSD: formData.buyPremiumUSD || 0,
+        buyPremium: formData.buyPremiumAED || 0,
+        // buyAED: formData.buyAED,
+        // buyUSD: formData.buyUSD,
+        // sellAED: formData.sellAED,
+        // sellUSD: formData.sellUSD,
       };
-      console.log('edit mode : ', isEditMode);
-      let response;
+        let response;
       if (isEditMode) {
         // Update existing commodity
         response = await axiosInstance.patch(`/spotrate-commodity/${userId}/${initialData._id}`, commodityData);
+        setIsEditMode(false);
         console.log('updating....');
       } else {
         // Add new commodity
@@ -348,16 +348,35 @@ useEffect(() => {
       }
   
       if (response.status === 200) {
-        console.log(isEditMode ? 'Commodity updated successfully' : 'Commodity added successfully');
-        onSave(commodityData, isEditMode);
-      } else {
-        console.error('Failed to update/add commodity');
-      }
+      console.log(isEditMode ? 'Commodity updated successfully' : 'Commodity added successfully');
+      onSave(commodityData, isEditMode);
+      resetForm(); // Reset the form after successful save
+    } else {
+      console.error('Failed to update/add commodity');
+    }
   
       onClose();
     } catch (error) {
       console.error('Error saving commodity:', error);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      metal: '',
+      purity: '',
+      unit: '',
+      weight: '',
+      sellPremiumUSD: '',
+      sellPremiumAED: '',
+      buyPremiumUSD: '',
+      buyPremiumAED: '',
+      buyAED: '',
+      buyUSD: '',
+      sellAED: '',
+      sellUSD: '',
+    });
+    setIsEditMode(false);
   };
 
   const handleToastClose = (event, reason) => {
@@ -374,12 +393,14 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    if (initialData) {
+    if (initialData && isEditing) {
       setFormData(initialData);
+      setCommodityId(initialData._id);
       setIsEditMode(true);
+    } else {
+      resetForm();
     }
-  }, [initialData]);
-
+  }, [initialData, isEditing]);
  
 
   return (
