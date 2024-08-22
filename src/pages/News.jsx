@@ -22,7 +22,7 @@ const NewsUpload = () => {
       }
 
       try {
-        const adminResponse = await axiosInstance.get(`/data?email=${userEmail}`);
+        const adminResponse = await axiosInstance.get(`/data/${userEmail}`);
         if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.email) {
           setEmail(adminResponse.data.data.email);
 
