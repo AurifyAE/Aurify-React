@@ -201,7 +201,7 @@ const ProfilePage = () => {
         {/* Main content */}
         <div className="grid grid-cols-3 gap-6 bg-gray-100 -mx-6">
           {/* Platform Settings */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          {/* <div className="bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-4">Platform Settings</h3>
             <div className="space-y-4">
               <h4 className="font-medium text-gray-700 text-sm">ACCOUNT</h4>
@@ -237,7 +237,7 @@ const ProfilePage = () => {
                 onChange={() => setAppSettings({...appSettings, newsletter: !appSettings.newsletter})}
               />
             </div>
-          </div>
+          </div> */}
           
           {/* Profile Information */}
           <div className="bg-white rounded-lg shadow-lg p-6">

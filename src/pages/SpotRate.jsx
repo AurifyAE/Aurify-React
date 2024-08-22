@@ -576,7 +576,7 @@ const SpotRate = () => {
       </div>
     </div>
 
-
+    
     <Box sx={{ p: 10 }}>
     <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
         <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">

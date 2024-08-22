@@ -22,6 +22,8 @@ const LoginPage = () => {
     e.preventDefault();
     setEmailError('');
     setPasswordError('');
+    setEmailError('');
+    setPasswordError('');
   
     try {
       const response = await axiosInstance.post('/login', { email, password });
@@ -41,6 +43,7 @@ const LoginPage = () => {
         }, 1000);
       } else {
         setPasswordError(response.data.message || 'Login failed');
+        setPasswordError(response.data.message || 'Login failed');
       }
     } catch (err) {
       if (err.response?.data?.message) {
@@ -48,8 +51,14 @@ const LoginPage = () => {
       } else {
         setPasswordError('Login failed. Please try again.');
       }
+      if (err.response?.data?.message) {
+        setPasswordError(err.response.data.message);
+      } else {
+        setPasswordError('Login failed. Please try again.');
+      }
     }
   };
+  
 
   
   
@@ -63,6 +72,7 @@ const LoginPage = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'white', overflow: 'hidden' }}>
+      <ToastContainer/>
       <ToastContainer/>
       <div style={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '8rem' }}>
         <div style={{ width: '100%', maxWidth: '20rem' }}>
@@ -96,6 +106,7 @@ const LoginPage = () => {
                 placeholder="test@gmail.com" 
               />
               {emailError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{emailError}</p>}
+              {emailError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{emailError}</p>}
             </div>
             
             <div style={{ marginBottom: '1rem' }}>
@@ -110,6 +121,7 @@ const LoginPage = () => {
                   style={{ 
                     width: '100%', 
                     padding: '0.5rem', 
+                    paddingRight: '2.5rem',
                     paddingRight: '2.5rem',
                     border: '1px solid #d2d6dc', 
                     borderRadius: '0.375rem',
@@ -131,6 +143,7 @@ const LoginPage = () => {
                   {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                 </IconButton>
               </div>
+              {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
               {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
             </div>
             
@@ -160,7 +173,9 @@ const LoginPage = () => {
           </form>
           
           {/* <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096', textAlign: 'center' }}>
+          {/* <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096', textAlign: 'center' }}>
             Don't have an account? <a href="#" style={{ color: '#2152ff', textDecoration: 'underline' }}>Contact us</a>
+          </p> */}
           </p> */}
         </div>
       </div>
