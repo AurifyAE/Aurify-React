@@ -13,6 +13,7 @@ import UsersLayout from '../layout/UsersLayout';
 import NotFound from '../pages/NotFound';
 import ServerError from '../pages/ServerError';
 import ChatLayout from '../layout/ChatLayout';
+import MarketClosingLayout from '../layout/MarketClosingLayout';
 import { ChatSharp } from '@mui/icons-material';
 
 
@@ -32,6 +33,8 @@ function Routers() {
       <Route path="*" element={<NotFound />} />
       <Route path="500" element={<ServerError />} />
       <Route path= "/feature/24x7-chat" element={<ChatLayout />}/>
+      <Route path="market-closing" element={<MarketClosingLayout />} />
+
 
     </Routes>
   );
