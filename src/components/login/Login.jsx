@@ -10,6 +10,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { requestFCMToken } from '../../utils/firebaseUtils'
 import { useEffect } from 'react';
+import { registerServiceWorker } from '../../utils/serviceWorkerRegistration';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -25,6 +26,7 @@ const LoginPage = () => {
   useEffect(() =>{
     const fetchFcmToken = async () => {
       try{
+        await registerServiceWorker(); 
         await requestFCMToken().then((token) => {
           setFcmToken(token);
         })
