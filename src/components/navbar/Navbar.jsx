@@ -84,15 +84,26 @@ const Navbar = () => {
     setMaxNotificationsToShow(notifications.length);
   };
 
+  const formattedDate = currentDateTime.toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).replace(/\//g, '/');
+
+  const formattedTime = currentDateTime.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+
+  const formattedDateTime = `${formattedDate} - ${formattedTime}`;
+
   return (
     <div className="bg-gray-100 p-4 flex justify-end items-center">
       <div className="flex items-center space-x-4 relative">
         <div className="border-2 border-purple-500 text-purple-500 px-4 py-2 rounded-lg text-sm shadow-lg">
-          {currentDateTime.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-          }).replace(/\//g, '/')}
+        {formattedDateTime}
         </div>
 
         <User className="text-gray-600 cursor-pointer w-5 h-5" />
