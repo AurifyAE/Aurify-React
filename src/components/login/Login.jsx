@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
@@ -9,7 +9,6 @@ import axiosInstance from '../../axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { requestFCMToken } from '../../utils/firebaseUtils'
-import { useEffect } from 'react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -45,8 +44,6 @@ const LoginPage = () => {
     }
     setEmailError('');
     setPasswordError('');
-    setEmailError('');
-    setPasswordError('');
   
     try {
       const response = await axiosInstance.post('/login',values);
@@ -66,7 +63,6 @@ const LoginPage = () => {
         }, 1000);
       } else {
         setPasswordError(response.data.message || 'Login failed');
-        setPasswordError(response.data.message || 'Login failed');
       }
     } catch (err) {
       if (err.response?.data?.message) {
@@ -74,11 +70,7 @@ const LoginPage = () => {
       } else {
         setPasswordError('Login failed. Please try again.');
       }
-      if (err.response?.data?.message) {
-        setPasswordError(err.response.data.message);
-      } else {
-        setPasswordError('Login failed. Please try again.');
-      }
+
     }
   };
   
@@ -95,7 +87,6 @@ const LoginPage = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'white', overflow: 'hidden' }}>
-      <ToastContainer/>
       <ToastContainer/>
       <div style={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '8rem' }}>
         <div style={{ width: '100%', maxWidth: '20rem' }}>
@@ -165,7 +156,6 @@ const LoginPage = () => {
                   {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                 </IconButton>
               </div>
-              {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
               {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
             </div>
             

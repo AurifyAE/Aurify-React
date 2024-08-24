@@ -1,24 +1,21 @@
-import React, { useState ,useEffect } from 'react';
+import React, { useState ,useEffect, useCallback } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Grid, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useCurrency } from '../context/CurrencyContext'; 
 import axiosInstance from '../axiosInstance';
 import { Snackbar, Alert } from '@mui/material';
 
 
-const AddCommodityModal = ({ open, onClose, onSave,initialData, goldBid, goldAsk, silverBid, silverAsk, isEditing }) => {
-  const { currency } = useCurrency();
+const AddCommodityModal = ({ open, onClose, onSave,initialData, marketData, isEditing, exchangeRate, currency, spreadMarginData }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [error, setError] = useState({});
-  const [userData, setUserData] = useState(null);
   const [commodityId, setCommodityId] = useState(null);
   const [toastOpen, setToastOpen] = useState(false);
 const [toastMessage, setToastMessage] = useState('');
   const [formData, setFormData] = useState({
-    metal: '',
-    purity: '',
-    unit: '',
-    weight: '',
+    metal: 'Gold',
+    purity: 999,
+    unit: 1,
+    weight: 'GM',
     sellPremiumUSD: '',
     sellPremiumAED: '',
     buyPremiumUSD: '',
@@ -34,12 +31,11 @@ const [toastMessage, setToastMessage] = useState('');
   const [errors, setErrors] = useState(null);
 
   const exchangeRates = {
-    AED: 3.6725,
+    AED: 3.674,
     USD: 1,
     EUR: 0.92,
     GBP: 0.79
   };
-
   const convertCurrency = (amount, fromCurrency, toCurrency) => {
     if (!amount) return '';
     const parsed = parseFloat(amount);
@@ -73,13 +69,19 @@ const [toastMessage, setToastMessage] = useState('');
 }, []);
 
 
-  useEffect(() => {
-    if (initialData) {
-      setFormData(initialData);
-      setCommodityId(initialData.id);
-      setIsEditMode(isEditing);
-    }
-  }, [initialData], isEditing);
+useEffect(() => {
+  if (initialData) {
+    setFormData({
+      ...initialData,
+      sellPremiumAED: initialData.sellPremium || initialData.sellPremiumAED || '',
+      buyPremiumAED: initialData.buyPremium || initialData.buyPremiumAED || '',
+      sellPremiumUSD: convertCurrency(initialData.sellPremium || initialData.sellPremiumAED || '', currency, 'USD'),
+      buyPremiumUSD: convertCurrency(initialData.buyPremium || initialData.buyPremiumAED || '', currency, 'USD'),
+    });
+    setCommodityId(initialData.id || initialData._id);
+    setIsEditMode(isEditing);
+  }
+}, [initialData, isEditing, currency]);
   
   useEffect(() => {
     const fetchSpotRates = async () => {
@@ -105,63 +107,50 @@ const [toastMessage, setToastMessage] = useState('');
 }, [userId]);
 
 
+  const calculatePrices = useCallback(() => {
+    if (formData.metal && formData.purity && formData.unit && formData.weight) {
+      const metal = formData.metal;
+      const isGoldRelated = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'].includes(metal);
+      const metalBid = isGoldRelated ? marketData['Gold']?.bid : (marketData[metal]?.bid || 0);
+      const bidSpread = spreadMarginData[`${metal.toLowerCase()}BidSpread`] || 0;
+      const askSpread = spreadMarginData[`${metal.toLowerCase()}AskSpread`] || 0;
+      const additionalPrice = isGoldRelated ? 0.5 : 0.05;
+
+      const unitMultiplier = getUnitMultiplier(formData.weight);
+      const purityValue = parseFloat(formData.purity);
+      const purityLength = formData.purity.toString().length;
+      const buyPremium = parseFloat(formData.buyPremiumAED) || 0;
+      const sellPremium = parseFloat(formData.sellPremiumAED) || 0;
+
+
+      const baseSellPrice = (((metalBid + parseFloat(bidSpread)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+      const baseBuyPrice = (((metalBid + parseFloat(askSpread) + additionalPrice) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+
+
+      const sellPrice = baseSellPrice + sellPremium;
+      const buyPrice = baseBuyPrice + buyPremium;
+
+
+
+      if (isNaN(sellPrice) || isNaN(buyPrice)) {
+        console.error('NaN detected in price calculation');
+        return;
+      }
+
+      setFormData(prevState => ({
+        ...prevState,
+        sellAED: sellPrice.toFixed(4),
+        buyAED: buyPrice.toFixed(4),
+        sellUSD: convertCurrency(sellPrice.toFixed(4), currency, 'USD'),
+        buyUSD: convertCurrency(buyPrice.toFixed(4), currency, 'USD')
+      }));
+    }
+  }, [formData, marketData, spreadMarginData, exchangeRate, currency]);
+
+
   useEffect(() => {
-    if (spotRates) {
-      updateBuyAED();
-      updateSellAED();
-    }
-  }, [spotRates, formData.metal, formData.unit, formData.weight, formData.purity]);
-
-
-
-  const getSpotPrice = (metal, type) => {
-    if (!spotRates) return 0;
-  
-    switch (metal) {
-      case 'Gold':
-      case 'Gold Kilobar':
-      case 'Gold TOLA':
-      case 'Gold Ten TOLA':
-      case 'Gold Coin':
-      case 'Minted Bar':
-        return type === 'bid' ? parseFloat(spotRates.goldBid) : parseFloat(spotRates.goldAsk);
-  
-      case 'Silver':
-        return type === 'bid' ? parseFloat(spotRates.silverBid) : parseFloat(spotRates.silverAsk);
-  
-      // Add more metals if needed
-      // case 'Platinum':
-      //   return type === 'bid' ? parseFloat(spotRates.platinumBid) : parseFloat(spotRates.platinumAsk);
-        
-      default:
-        return 0;
-    }
-  };
-  
-
-  const getBidPrice = (metal) => {
-    if (!spotRates || !metal) return 0;
-
-    const goldItems = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'];
-    if (goldItems.includes(metal)) {
-      return spotRates.goldBid ? parseFloat(spotRates.goldBid) : 0;
-    }
-
-    const metalKey = metal.toLowerCase().replace(/\s+/g, '') + 'Bid';
-    return spotRates[metalKey] ? parseFloat(spotRates[metalKey]) : 0;
-};
-
-const getAskPrice = (metal) => {
-    if (!spotRates || !metal) return 0;
-
-    const goldItems = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'];
-    if (goldItems.includes(metal)) {
-      return spotRates.goldAsk ? parseFloat(spotRates.goldAsk) : 0;
-    }
-
-    const metalKey = metal.toLowerCase().replace(/\s+/g, '') + 'Ask';
-    return spotRates[metalKey] ? parseFloat(spotRates[metalKey]) : 0;
-};
+    calculatePrices();
+  }, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyPremiumAED, formData.sellPremiumAED, calculatePrices]);
 
 const getUnitMultiplier = (weight) => {
   switch (weight) {
@@ -169,46 +158,24 @@ const getUnitMultiplier = (weight) => {
     case 'KG': return 1000;
     case 'TTB': return 116.64;
     case 'TOLA': return 11.664;
-    case 'OZ': return 31.1035;
+    case 'OZ': return 31.103;
     default: return 1;
   }
 };
 
-const updateBuyAED = () => {
-  const bidSpread = getBidPrice(formData.metal);
-  if (!bidSpread || !formData.unit) return;
-
-  const unitMultiplier = getUnitMultiplier(formData.weight);
-  const purityValue = formData.purity ? parseFloat(formData.purity) : 0;
-  const spotPrice = getSpotPrice(formData.metal, 'bid');
-
-  const purityLength = formData.purity ? formData.purity.length : 1;
-  const calculation = (((spotPrice / 31.1035) * 3.67 * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
-  setFormData(prevState => ({
-      ...prevState,
-      buyAED: calculation
-  }));
-};
-
-const updateSellAED = () => {
-  const unitMultiplier = getUnitMultiplier(formData.weight);
-  const purityValue = formData.purity ? parseFloat(formData.purity) : 0;
-  const spotPrice = getSpotPrice(formData.metal, 'ask');
-
-  const purityLength = formData.purity ? formData.purity.length : 1;
-  const calculation = (((spotPrice / 31.103) * 3.67 * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(2);
-
-  setFormData(prevState => ({
-      ...prevState,
-      sellAED: calculation
-  }));
-};
 
 const handleChange = (e) => {
   const { name, value } = e.target;
   if (!name) return;
 
-  let updatedFormData = { ...formData, [name]: value };
+  let updatedValue = value;
+  if (['purity', 'unit'].includes(name)) {
+    updatedValue = value === '' ? '' : parseFloat(value) || 0;
+  } else if (['sellPremiumUSD', 'sellPremiumAED', 'buyPremiumUSD', 'buyPremiumAED', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
+    updatedValue = value === '' ? '' : parseFloat(value) || 0;
+  }
+
+  let updatedFormData = { ...formData, [name]: updatedValue };
 
   // Update the corresponding premium fields if necessary
   if (name === 'sellPremiumUSD' || name === `sellPremium${currency}` || 
@@ -220,50 +187,10 @@ const handleChange = (e) => {
   }
 
   setFormData(updatedFormData);
-
-  // Call updatePrices to recalculate buy and sell values
-  if (spotRates) {
-      updatePrices(updatedFormData);
-  } else {
-      console.warn('Spot rates not available. Calculations may be inaccurate.');
+  if (!['buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
+    calculatePrices();
   }
 };
-
-
-useEffect(() => {
-  if (spotRates) {
-    updatePrices(formData);
-  }
-}, [spotRates]);
-
-const updatePrices = (data) => {
-  const metalBid = getBidPrice(data.metal);
-  const metalAsk = getAskPrice(data.metal);
-
-  if (metalBid && metalAsk) {
-    const unitMultiplier = getUnitMultiplier(data.weight);
-    const purityValue = data.purity ? parseFloat(data.purity) : 0;
-    const purityLength = data.purity ? data.purity.length : 1;
-
-    const calculatedBuyAED = (((metalBid / 31.103) * 3.67 * data.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
-    const calculatedSellAED = (((metalAsk / 31.103) * 3.67 * data.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
-
-    setFormData(prevState => ({
-      ...prevState,
-      buyAED: calculatedBuyAED,
-      sellAED: calculatedSellAED,
-      buyUSD: (calculatedBuyAED / 3.67).toFixed(4),
-      sellUSD: (calculatedSellAED / 3.67).toFixed(4)
-    }));
-  }
-};
-
-
-useEffect(() => {
-  if (spotRates) {
-    updatePrices(formData);
-  }
-}, [spotRates]);
 
 
 useEffect(() => {
@@ -299,16 +226,6 @@ useEffect(() => {
   fetchCommodities();
 }, []);
 
-
-  // const handleChange = (e) => {
-  //   const { name, value } = e.target;
-  //   setFormData(prevState => ({
-  //     ...prevState,
-  //     [name]: value
-  //   }));
-  // };
-
-  
   
 
   const handleSave = async () => {
@@ -324,38 +241,30 @@ useEffect(() => {
     try {
       const commodityData = {
         metal: formData.metal,
-        purity: formData.purity,
-        unit: formData.unit,
+        purity: parseFloat(formData.purity),
+        unit: parseFloat(formData.unit),
         weight: formData.weight,
-        // sellPremiumUSD: formData.sellPremiumUSD || 0,
-        sellPremium: formData.sellPremiumAED || 0,
-        // buyPremiumUSD: formData.buyPremiumUSD || 0,
-        buyPremium: formData.buyPremiumAED || 0,
-        // buyAED: formData.buyAED,
-        // buyUSD: formData.buyUSD,
-        // sellAED: formData.sellAED,
-        // sellUSD: formData.sellUSD,
+        sellPremium: parseFloat(formData.sellPremiumAED) || 0,
+        buyPremium: parseFloat(formData.buyPremiumAED)   || 0,
       };
         let response;
       if (isEditMode) {
         // Update existing commodity
         response = await axiosInstance.patch(`/spotrate-commodity/${userId}/${initialData._id}`, commodityData);
         setIsEditMode(false);
-        console.log('updating....');
+
       } else {
         // Add new commodity
         response = await axiosInstance.post('/spotrate-commodity', { userId, commodity: commodityData });
       }
   
       if (response.status === 200) {
-      console.log(isEditMode ? 'Commodity updated successfully' : 'Commodity added successfully');
       onSave(commodityData, isEditMode);
-      resetForm(); // Reset the form after successful save
+      resetForm(); 
+      onClose();
     } else {
       console.error('Failed to update/add commodity');
     }
-  
-      onClose();
     } catch (error) {
       console.error('Error saving commodity:', error);
     }
@@ -363,21 +272,28 @@ useEffect(() => {
 
   const resetForm = () => {
     setFormData({
-      metal: '',
-      purity: '',
-      unit: '',
-      weight: '',
+      metal: 'Gold',
+      purity: 999,
+      unit: 1,
+      weight: 'GM',
       sellPremiumUSD: '',
       sellPremiumAED: '',
       buyPremiumUSD: '',
       buyPremiumAED: '',
-      buyAED: '',
-      buyUSD: '',
-      sellAED: '',
-      sellUSD: '',
     });
     setIsEditMode(false);
+    setCommodityId(null);
   };
+  useEffect(() => {
+    if (open) {
+      if (initialData) {
+        setFormData(initialData);
+        setIsEditMode(true);
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, initialData]);
 
   const handleToastClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -390,6 +306,10 @@ useEffect(() => {
     '& .MuiOutlinedInput-root': {
       borderRadius: '8px',
     },
+    '& .Mui-disabled': {
+    backgroundColor: 'transparent',
+    color: 'inherit',
+  },
   };
 
   useEffect(() => {
@@ -400,7 +320,7 @@ useEffect(() => {
     } else {
       resetForm();
     }
-  }, [initialData, isEditing]);
+  }, [initialData, isEditing, open]);
  
 
   return (
@@ -408,6 +328,7 @@ useEffect(() => {
       open={open} 
       onClose={(event, reason) => {
         if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          resetForm();
           onClose();
         }
       }} 
@@ -455,14 +376,14 @@ useEffect(() => {
               sx={inputStyle}
               required
             >
-              <MenuItem value="9999">9999</MenuItem>
-              <MenuItem value="999.9">999.9</MenuItem>
-              <MenuItem value="999">999</MenuItem>
-              <MenuItem value="995">995</MenuItem>
-              <MenuItem value="916">916</MenuItem>
-              <MenuItem value="920">920</MenuItem>
-              <MenuItem value="875">875</MenuItem>
-              <MenuItem value="750">750</MenuItem>
+              <MenuItem value={9999}>9999</MenuItem>
+              <MenuItem value={999.9}>999.9</MenuItem>
+              <MenuItem value={999}>999</MenuItem>
+              <MenuItem value={995}>995</MenuItem>
+              <MenuItem value={916}>916</MenuItem>
+              <MenuItem value={920}>920</MenuItem>
+              <MenuItem value={875}>875</MenuItem>
+              <MenuItem value={750}>750</MenuItem>
             </Select>
           </Grid>
           <Grid item xs={6}>
@@ -571,6 +492,9 @@ useEffect(() => {
                       size="small"
                       sx={inputStyle}
                       disabled={true}
+                      inputProps={{
+                        style: { textAlign: 'center' }
+                      }}
                     />
                   </td>
                   <td>
@@ -581,7 +505,10 @@ useEffect(() => {
                       fullWidth
                       size="small"
                       sx={inputStyle}
-                      disabled={!isEditMode}
+                      disabled={true}
+                      inputProps={{
+                        style: { textAlign: 'center' }
+                      }}
                     />
                   </td>
                 </tr>
@@ -595,7 +522,10 @@ useEffect(() => {
                       fullWidth
                       size="small"
                       sx={inputStyle}
-                      disabled={!isEditMode}
+                      disabled={true}
+                      inputProps={{
+                        style: { textAlign: 'center' }
+                      }}
                     />
                   </td>
                   <td>
@@ -606,7 +536,10 @@ useEffect(() => {
                       fullWidth
                       size="small"
                       sx={inputStyle}
-                      disabled={!isEditMode}
+                      disabled={true}
+                      inputProps={{
+                        style: { textAlign: 'center' }
+                      }}
                     />
                   </td>
                 </tr>

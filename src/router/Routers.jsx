@@ -14,8 +14,7 @@ import MarketClosingayout from '../layout/MarketClosingLayout';
 import NotFound from '../pages/NotFound';
 import ServerError from '../pages/ServerError';
 import ChatLayout from '../layout/ChatLayout';
-import { ChatSharp } from '@mui/icons-material';
-
+import DigitalMarketingLayout from '../layout/DigitalMarketLayout';
 
 function Routers() {
   return (
@@ -26,14 +25,15 @@ function Routers() {
       <Route path="media" element={<MediaLayout />} />
       <Route path="messages" element={<MessagesLayout />} />
       <Route path="news" element={<NewsLayout />} />
-      <Route path="shop" element={<ShopLayout />} />
-      <Route path="users" element={<UsersLayout />} />
+      <Route path="/feature/shop" element={<ShopLayout />} />
+      <Route path="/feature/users" element={<UsersLayout />} />
       <Route path="profile" element={<ProfileLayout />} />
       <Route path="bank-details" element={<BankDetailsLayout />} />
-      <Route path="market-closing" element={<MarketClosingayout />} />
+      <Route path="/feature/market-closing" element={<MarketClosingayout />} />
       <Route path="*" element={<NotFound />} />
       <Route path="500" element={<ServerError />} />
       <Route path= "/feature/24x7-chat" element={<ChatLayout />}/>
+      <Route path= "/feature/digital-marketing" element={<DigitalMarketingLayout />}/>
 
     </Routes>
   );

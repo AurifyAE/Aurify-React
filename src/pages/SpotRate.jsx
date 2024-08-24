@@ -42,7 +42,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState('AED');
 
   const exchangeRates = {
-    AED: 3.6725,
+    AED: 3.674,
     USD: 1,
     EUR: 0.92,
     GBP: 0.79
@@ -319,7 +319,7 @@ const TradingViewWidget = ({ symbol, title }) => {
 
 // Main SpotRate  Component
 const SpotRate = () => {
-  const [exchangeRate, setExchangeRate] = useState(3.6725);
+  const [exchangeRate, setExchangeRate] = useState(3.674);
   const [openModal, setOpenModal] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const [selectedCommodity, setSelectedCommodity] = useState(null);

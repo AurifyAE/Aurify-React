@@ -10,6 +10,20 @@ const NewsUpload = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const openDeleteModal = (itemId) => {
+    setItemToDelete(itemId);
+    setIsModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsModalOpen(false);
+    setItemToDelete(null);
+  };
+
+  
 
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
@@ -106,18 +120,46 @@ const NewsUpload = () => {
     }
   };
 
-  const handleDelete = async (itemId) => {
+  const confirmDelete = async () => {
     try {
-      if (window.confirm('Are you sure you want to delete this news item?')) {
-        await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemId}?email=${email}`);
-        setNewsItems(prevItems => prevItems.filter(item => item._id !== itemId));
-        toast.success('News item deleted successfully!');
-      }
+      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemToDelete}?email=${email}`);
+      setNewsItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
+      toast.success('News item deleted successfully!');
+      closeDeleteModal();
     } catch (error) {
       console.error('Error deleting news:', error.response ? error.response.data : error);
       toast.error('Error deleting news item!');
     }
   };
+
+  const DeleteConfirmationModal = () => (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-4 border w-80 shadow-lg rounded-md bg-white">
+        <div className="mt-2 text-center">
+          <h3 className="text-lg font-medium text-gray-900">Confirm Delete</h3>
+          <div className="mt-2 px-4 py-2">
+            <p className="text-sm text-gray-500">
+              Are you sure you want to delete this news item?
+            </p>
+          </div>
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              onClick={confirmDelete}
+              className="px-3 py-1 text-sm bg-red-500 text-white font-medium rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+            >
+              Delete
+            </button>
+            <button
+              onClick={closeDeleteModal}
+              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -199,7 +241,7 @@ const NewsUpload = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(item._id)}
+                    onClick={() => openDeleteModal(item._id)}
                     className="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded-md"
                   >
                     Delete
@@ -211,8 +253,8 @@ const NewsUpload = () => {
           </div>
         ))}
       </div>
+      {isModalOpen && <DeleteConfirmationModal />}
 
-      {/* Toast notifications */}
       <ToastContainer
         position="bottom-right"
         autoClose={3000}
@@ -224,7 +266,7 @@ const NewsUpload = () => {
         draggable
         pauseOnHover
       />
-    </div>
+      </div>
   );
 };
 

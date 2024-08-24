@@ -1,13 +1,10 @@
-import React, { useState, useContext, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
-  Box, Grid, Typography, Card, CardContent, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, Button, IconButton, Dialog,
-  DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem,
-  FormControl, InputLabel,
+  Box, Typography, Table, TableBody, TableCell,
+  TableContainer, TableHead, TableRow, Paper, Button, IconButton
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Close as CloseIcon } from '@mui/icons-material';
 import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../context/CurrencyContext';
 import io from 'socket.io-client';
@@ -19,7 +16,7 @@ import { debounce } from 'lodash';
 
 const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState('AED');
-  const exchangeRates = { AED: 3.6725, USD: 1, EUR: 0.92, GBP: 0.79 };
+  const exchangeRates = { AED: 3.674, USD: 1, EUR: 0.92, GBP: 0.79 };
 
   const handleChange = useCallback((event) => {
     const newCurrency = event.target.value;
@@ -28,7 +25,7 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   }, [onCurrencyChange, exchangeRates]);
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-gray-100">
+    <div className="flex items-center gap-4 p-4 bg-gray-100 ml-14">
       <label htmlFor="currency-select" className="font-bold text-gray-700">Select a currency:</label>
       <select
         id="currency-select"
@@ -41,9 +38,6 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
         <option value="EUR">Euro (EUR)</option>
         <option value="GBP">British Pound Sterling (GBP)</option>
       </select>
-      <button className="bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-700 hover:to-pink-600 text-white text-sm font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline shadow-lg">
-        GET SELECTED CURRENCY
-      </button>
     </div>
   );
 });
@@ -51,7 +45,7 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
 
 // PriceCard Component
 const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
-  const [bid, setBid] = useState(initialBid);
+  console.log(initialPrice);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
     return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
@@ -68,12 +62,14 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
     setTempSpread(e.target.value);
   }, []);
 
+
   const handleSave = useCallback(() => {
+    const newSpread = parseFloat(tempSpread);
     setIsEditing(false);
-    setSpread(tempSpread);
-    localStorage.setItem(`spread_${metal}_${type}`, tempSpread.toString());
+    setSpread(newSpread);
+    localStorage.setItem(`spread_${metal}_${type}`, newSpread.toString());
     if (onSpreadUpdate) {
-      onSpreadUpdate(metal, type, tempSpread);
+      onSpreadUpdate(metal, type, newSpread);
     }
   }, [metal, type, tempSpread, onSpreadUpdate]);
 
@@ -113,7 +109,9 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
     <div className="pt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{title}</h6>
-        <p className="text-gray-600 font-medium text-sm">{initialPrice}</p>
+        <p className="text-gray-600 font-medium text-sm">
+        {initialPrice !== undefined && initialPrice !== null ? initialPrice.toFixed(4) : 'N/A'}
+        </p>
       </div>
       <div className="flex flex-col">
             <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
@@ -127,13 +125,19 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
                 className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
               />
             ) : (
-              <p className="text-gray-600 font-medium text-sm">{spread}</p>
+              <p className="text-gray-600 font-medium text-sm">
+                {spread !== undefined && spread !== null ? spread : 'N/A'}
+              </p>
             )}
             </div>
           </div>
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
-        <p className="text-gray-600 font-medium text-sm">{(parseFloat(initialPrice) + parseFloat(spread))}</p>
+        <p className="text-gray-600 font-medium text-sm">
+        {initialPrice !== undefined && initialPrice !== null && spread !== undefined && spread !== null
+            ? (parseFloat(initialPrice) + parseFloat(spread)).toFixed(4)
+            : 'N/A'}
+        </p>
       </div>
     </div>
   </div>
@@ -142,9 +146,24 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
 });
 
 // ValueCard Component
-const ValueCard = React.memo(({ lowValue, highValue, initialLowMargin, initialHighMargin, lowNewValue, highNewValue }) => {
-  const [lowMargin, setLowMargin] = useState(initialLowMargin);
-  const [highMargin, setHighMargin] = useState(initialHighMargin);
+const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, onMarginUpdate }) => {
+  const getLowMargin = useCallback(() => {
+    const key = `${metal.toLowerCase()}LowMargin`;
+    return spreadMarginData[key] || 0;
+  }, [spreadMarginData, metal]);
+
+  const getHighMargin = useCallback(() => {
+    const key = `${metal.toLowerCase()}HighMargin`;
+    return spreadMarginData[key] || 0;
+  }, [spreadMarginData, metal]);
+  const [lowMargin, setLowMargin] = useState(getLowMargin());
+  const [highMargin, setHighMargin] = useState(getHighMargin());
+
+  useEffect(() => {
+    setLowMargin(getLowMargin());
+    setHighMargin(getHighMargin());
+  }, [spreadMarginData, getLowMargin, getHighMargin]);
+
   const [isEditing, setIsEditing] = useState(false);
 
   const handleEditClick = useCallback(() => {
@@ -152,16 +171,21 @@ const ValueCard = React.memo(({ lowValue, highValue, initialLowMargin, initialHi
   }, []);
 
   const handleMarginChange = useCallback((setter) => (e) => {
-    setter(e.target.value);
-  }, []);
-
-  const handleMarginBlur = useCallback((setter, value) => () => {
+    const value = parseFloat(e.target.value) || 0;
     setter(value);
+  }, []);
+  
+  const handleMarginBlur = useCallback((setter, value) => () => {
+    setter(parseFloat(value) || 0);
   }, []);
 
   const handleSave = useCallback(() => {
     setIsEditing(false);
-  }, []);
+    if (onMarginUpdate) {
+      onMarginUpdate(metal, 'low', parseFloat(lowMargin));
+      onMarginUpdate(metal, 'high', parseFloat(highMargin));
+    }
+  }, [metal, lowMargin, highMargin, onMarginUpdate]);
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
@@ -300,7 +324,7 @@ const TradingViewWidget = React.memo(({ symbol, title }) => {
 
 // Main SpotRate  Component
 const SpotRate = () => {
-  const [exchangeRate, setExchangeRate] = useState(3.6725);
+  const [exchangeRate, setExchangeRate] = useState(3.674);
   const [openModal, setOpenModal] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const [selectedCommodity, setSelectedCommodity] = useState(null);
@@ -314,16 +338,44 @@ const SpotRate = () => {
   const [loadng, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [open, setOpen] = useState(false);
-const [initialData, setInitialData] = useState(null);
+  const [spreadMarginData, setSpreadMarginData] = useState({});
+
+  const getSpreadOrMarginFromDB = useCallback((metal, type) => {
+    const lowerMetal = metal.toLowerCase();
+    const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
+    return spreadMarginData[key] || 0;
+  }, [spreadMarginData]);
+
+  const getUnitMultiplier = useCallback((unit) => {
+    const lowerCaseUnit = String(unit).toLowerCase();
+    switch (lowerCaseUnit) {
+      case 'gram': return 1;
+      case 'kg': return 1000;
+      case 'oz': return 28.3495;
+      case 'tola': return 11.6;
+      case 'ttb': return 11.6;
+      default: return 1;
+    }
+  }, []);
 
   useEffect(() => {
     const fetchCommodities = async (userId) => {
       try {
         const response = await axiosInstance.get(`/spotrates/${userId}`);
+        if (response.data) {
+          setSpreadMarginData(response.data);
+        }
         if (response.data && response.data.commodities) {
-          setCommodities(response.data.commodities);
-          console.log(commodities);
-          localStorage.setItem('commoditiesData', JSON.stringify(response.data.commodities));
+          const parsedCommodities = response.data.commodities.map(commodity => ({
+            ...commodity,
+            purity: parseFloat(commodity.purity),
+            unit: parseFloat(commodity.unit),
+            weight: commodity.weight,
+            sellPremium: parseFloat(commodity.sellPremium),
+            buyPremium: parseFloat(commodity.buyPremium)
+          }));
+          setCommodities(parsedCommodities);
+          localStorage.setItem('commoditiesData', JSON.stringify(parsedCommodities));
         }
       } catch (error) {
         console.error('Error fetching commodities:', error);
@@ -337,6 +389,55 @@ const [initialData, setInitialData] = useState(null);
     }
   }, [userId]);
 
+  useEffect(() => {
+  setCommodities(prevCommodities => 
+    prevCommodities.map(commodity => {
+      const updatedCommodity = { ...commodity };
+      const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
+      
+      if (marketData[metal]) {
+        const metalBiddingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'));
+        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
+        
+        updatedCommodity.sellAED = calculatePrice(metalBiddingPrice, commodity, 'sell');
+        updatedCommodity.buyAED = calculatePrice(metalAskingPrice, commodity, 'buy');
+        updatedCommodity.sellUSD = (updatedCommodity.sellAED / exchangeRate).toFixed(4);
+        updatedCommodity.buyUSD = (updatedCommodity.buyAED / exchangeRate).toFixed(4);
+      }
+      
+      return updatedCommodity;
+    })
+  );
+}, [marketData, getSpreadOrMarginFromDB, exchangeRate]);
+
+const handleOpenAddModal = useCallback(() => {
+  setSelectedCommodity(null);  // Clear any previously selected commodity
+  setIsEditing(false);  // Ensure we're not in edit mode
+  setOpenModal(true);
+}, []);
+
+const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
+  // Check if value is defined and not null
+  if (value === undefined || value === null) {
+    return 0; // or return a default value based on your requirements
+  }
+
+  const valueStr = value.toString();
+  const [integerPart] = valueStr.split('.');
+  return integerPart.length;
+}, []);
+
+const calculatePrice = useCallback((metalPrice, commodity, type) => {
+  const unitMultiplier = getUnitMultiplier(commodity.unit);
+  const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
+  const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
+  
+  return (
+    ((((metalPrice / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
+    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(premium))
+  ).toFixed(4);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, exchangeRate]);
+
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -345,7 +446,8 @@ const [initialData, setInitialData] = useState(null);
         const response = await axiosInstance.get(`/data/${email}`);
         setUserId(response.data.data._id);
         const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
-        setSymbols(uniqueSymbols);
+        const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
+        setSymbols(uppercaseSymbols);
         setUniqueMetals(uniqueSymbols);
       } catch (error) {
         console.error('Error fetching user ID:', error);
@@ -355,19 +457,23 @@ const [initialData, setInitialData] = useState(null);
     fetchUserId();
   }, []);
 
-
-  const handleSpreadUpdate = useCallback(async (metal, type, newSpread) => {
+  const handleSpreadOrMarginUpdate = useCallback(async (metal, type, newValue) => {
     try {
-      await axiosInstance.post('/update-spread', {
+      const response = await axiosInstance.post('/update-spread', {
         userId,
         metal,
         type,
-        spread: newSpread
+        value: parseFloat(newValue)
       });
+  
+      if (response.status === 200 && response.data.data) {
+        setSpreadMarginData(response.data.data);
+      }
     } catch (error) {
       console.error('Error updating spread:', error);
     }
   }, [userId]);
+
 
   useEffect(() => {
     const fetchServerURL = async () => {
@@ -382,10 +488,7 @@ const [initialData, setInitialData] = useState(null);
     fetchServerURL();
   }, []);
 
-  const getSpreadFromLocalStorage = useCallback((metal, type) => {
-    const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
-    return savedSpread !== null ? parseFloat(savedSpread) : 0;
-  }, []);
+  
 
   const debouncedSetMarketData = useMemo(() => 
     debounce((newData) => {
@@ -395,32 +498,10 @@ const [initialData, setInitialData] = useState(null);
     }, 16),
   []);
 
-  const handleMarketData = useCallback((data) => {
-    if (data && data.symbol) {
-      debouncedSetMarketData({
-        [data.symbol]: {
-          ...data,
-          bidChanged: marketData[data.symbol] && data.bid !== marketData[data.symbol].bid 
-            ? (data.bid > marketData[data.symbol].bid ? 'up' : 'down') 
-            : null,
-        }
-      });
-    }
-  }, [marketData, debouncedSetMarketData]);
+
 
 
   useEffect(() => {
-    // const fetchInitialData = async () => {
-    //   try {
-    //     const response = await axiosInstance.get('/data');
-    //     setMarketData(response.data);
-    //   } catch (error) {
-    //     console.error('Error fetching initial data:', error);
-    //   }
-    // };
-  
-    // fetchInitialData();
-  
     const socket = io(serverURL, {
       query: { secret: "aurify@123" },
       transports: ['websocket'],
@@ -464,7 +545,7 @@ const [initialData, setInitialData] = useState(null);
     } else {
       setCommodities(prevCommodities => [...prevCommodities, commodityData]);
     }
-    setIsEditing(isEditMode);
+    setIsEditing(false);
     setOpenModal(false);
     const fetchUpdatedCommodities = async () => {
       try {
@@ -480,8 +561,18 @@ const [initialData, setInitialData] = useState(null);
     fetchUpdatedCommodities();
   }, [userId]);
 
+  const handleCloseModal = useCallback(() => {
+    setOpenModal(false);
+    setSelectedCommodity(null);
+    setIsEditing(false);
+  }, []);
+ 
+
   const handleEditCommodity = useCallback((commodity) => {
-    setSelectedCommodity({...commodity}); 
+    setSelectedCommodity({
+      ...commodity
+    });
+    console.log(selectedCommodity);
     setIsEditing(true);
     setOpenModal(true);
   }, []);
@@ -502,28 +593,7 @@ const [initialData, setInitialData] = useState(null);
     setExchangeRate(parseFloat(newExchangeRate));
   }, [setCurrency]);
 
-  const getUnitMultiplier = useCallback((unit) => {
-    const lowerCaseUnit = String(unit).toLowerCase();
-    switch (lowerCaseUnit) {
-      case 'gram': return 1;
-      case 'kg': return 1000;
-      case 'oz': return 28.3495;
-      case 'tola': return 11.6;
-      case 'ttb': return 11.6;
-      default: return 1;
-    }
-  }, []);
 
-  const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
-    // Check if value is defined and not null
-    if (value === undefined || value === null) {
-      return 0; // or return a default value based on your requirements
-    }
-  
-    const valueStr = value.toString();
-    const [integerPart] = valueStr.split('.');
-    return integerPart.length;
-  }, []);
   
 
   const renderCommodityRows = () => {
@@ -536,10 +606,10 @@ const [initialData, setInitialData] = useState(null);
     
     const additionalPrice = isGoldRelated ? 0.5 : 0.05;
     const metalBiddingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadFromLocalStorage(metal, 'bid'))
+      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))
       : 0;
     const metalAskingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadFromLocalStorage(metal, 'ask')) + parseFloat(additionalPrice)
+      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + parseFloat(additionalPrice)
       : 0;
     const unitMultiplier = getUnitMultiplier(row.unit);
     const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(row.purity);
@@ -562,7 +632,7 @@ const [initialData, setInitialData] = useState(null);
         <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
           <TableCell>{row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
-          <TableCell>{`${row.unit} ${row.weight}`}</TableCell>
+          <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
           <TableCell>{sellPrice}</TableCell>
           <TableCell>{buyPrice}</TableCell>
           <TableCell>{row.sellPremium}</TableCell>
@@ -628,26 +698,25 @@ const [initialData, setInitialData] = useState(null);
                 <PriceCard 
                   title="Bid" 
                   initialPrice={marketData[metal]?.bid}
-                  initialSpread={getSpreadFromLocalStorage(metal, 'bid')}  
+                  initialSpread={getSpreadOrMarginFromDB(metal, 'bid')}  
                   metal={metal} 
                   type="bid" 
-                  onSpreadUpdate={handleSpreadUpdate} 
+                  onSpreadUpdate={handleSpreadOrMarginUpdate} 
                 />
                 <PriceCard 
                   title="Ask" 
-                  initialPrice={parseFloat(marketData[metal]?.bid) + (metal === 'Gold' ? 0.5 : 0.05)}
-                  initialSpread={getSpreadFromLocalStorage(metal, 'ask')}  
+                  initialPrice={parseFloat(marketData[metal]?.bid) + getSpreadOrMarginFromDB(metal, 'bid') + (metal === 'Gold' ? 0.5 : 0.05)}
+                  initialSpread={getSpreadOrMarginFromDB(metal, 'ask')}  
                   metal={metal} 
                   type="ask" 
-                  onSpreadUpdate={handleSpreadUpdate} 
+                  onSpreadUpdate={handleSpreadOrMarginUpdate} 
                 />
                 <ValueCard 
                   lowValue={marketData[metal]?.low} 
                   highValue={marketData[metal]?.high} 
-                  initialLowMargin={0} 
-                  initialHighMargin={0} 
-                  lowNewValue={metal === 'Gold' ? 2417.000 : 27.413} 
-                  highNewValue={metal === 'Gold' ? 2428.870 : 27.762} 
+                  spreadMarginData={spreadMarginData}
+                  metal={metal}
+                  onMarginUpdate={handleSpreadOrMarginUpdate}
                 />
               </div>
             </div>
@@ -658,42 +727,30 @@ const [initialData, setInitialData] = useState(null);
       <Box sx={{ p: 10 }}>
         <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
-            <div className="flex justify-between items-center text-lg">
-              <Typography className='font-black text-xl tracking-wide' color="text.primary">
-                Gold  1GM (in USD)
-              </Typography>
-              <Typography className="font-black text-xl ml-6">
-                {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg">
-              <Typography className='font-black text-xl tracking-wide' color="text.primary">
-                Silver   1GM (in USD)
-              </Typography>
-              <Typography className="font-black text-xl ml-6">
-                {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg">
-              <Typography className='font-black text-xl tracking-wide' color="text.primary">
-                Gold 1GM (in {currency})
-              </Typography>
-              <Typography className="font-black text-xl ml-6">
-                {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
-            <div className="flex justify-between items-center text-lg">
-              <Typography className='font-black text-xl tracking-wide' color="text.primary">
-                Silver 1GM (in {currency})
-              </Typography>
-              <Typography className="font-black text-xl ml-6">
-                {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
-              </Typography>
-            </div>
+          {uniqueMetals.map(metal => (
+        <React.Fragment key={metal}>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              {`${metal} 1GM (in USD)`}
+            </Typography>
+            <Typography className="font-black text-xl ml-12">
+              {((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
           </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              {`${metal} 1GM (in ${currency})`}
+            </Typography>
+            <Typography className="font-black text-xl ml-12">
+              {((((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
           <Button
             variant="contained"
-            onClick={() => setOpenModal(true)}
+            onClick={handleOpenAddModal}
             sx={{
               background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
               color: 'white',
@@ -729,14 +786,15 @@ const [initialData, setInitialData] = useState(null);
         </TableContainer>
         <AddCommodityModal
           open={openModal}
-          onClose={() => setOpenModal(false)}
+          onClose={handleCloseModal}
           onSave={handleSaveCommodity}
           initialData={selectedCommodity}
-          goldBid={selectedCommodity?.goldBid}
-          goldAsk={selectedCommodity?.goldAsk}
-          silverBid={selectedCommodity?.silverBid}
-          silverAsk={selectedCommodity?.silverAsk}
+          marketData={marketData}
           isEditing={isEditing}
+          getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
+          exchangeRate={exchangeRate}
+          currency={currency}
+          spreadMarginData={spreadMarginData}
         />
       </Box>
     </Box>
