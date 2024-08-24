@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import SpotRate from '../pages/SpotRate';
+import SpotRate from '../pages/spotTest';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 

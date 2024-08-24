@@ -1,19 +1,21 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import Login from "../components/login/Login";
-import DashboardLayout from "../layout/DashboardLayout";
-import SpotRateLayout from "../layout/SpotRateLayout";
-import MediaLayout from "../layout/MediaLayout";
-import MessagesLayout from "../layout/MessagesLayout";
-import NewsLayout from "../layout/NewsLayout";
-import ShopLayout from "../layout/ShopLayout";
-import ProfileLayout from "../layout/ProfileLayout";
-import BankDetailsLayout from "../layout/BankDetailsLayout";
-import UsersLayout from "../layout/UsersLayout";
-import MarketClosingayout from "../layout/MarketClosingLayout";
-import NotFound from "../pages/NotFound";
-import ServerError from "../pages/ServerError";
-import Protect from "../protectorRouter/adminProtect";
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from '../components/login/Login';
+import DashboardLayout from '../layout/DashboardLayout';
+import SpotRateLayout from '../layout/SpotRateLayout';
+import MediaLayout from '../layout/MediaLayout';
+import MessagesLayout from '../layout/MessagesLayout';
+import NewsLayout from '../layout/NewsLayout';
+import ShopLayout from '../layout/ShopLayout';
+import ProfileLayout from '../layout/ProfileLayout';
+import BankDetailsLayout from '../layout/BankDetailsLayout';
+import UsersLayout from '../layout/UsersLayout';
+import MarketClosingayout from '../layout/MarketClosingLayout';
+import NotFound from '../pages/NotFound';
+import ServerError from '../pages/ServerError';
+import ChatLayout from '../layout/ChatLayout';
+import { ChatSharp } from '@mui/icons-material';
+
 
 function Routers() {
   return (
@@ -34,6 +36,8 @@ function Routers() {
 
       <Route path="*" element={<NotFound />} />
       <Route path="500" element={<ServerError />} />
+      <Route path= "/feature/24x7-chat" element={<ChatLayout />}/>
+
     </Routes>
   );
 }

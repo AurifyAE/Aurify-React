@@ -26,9 +26,9 @@ import {
   Backdrop,
   Fade,
 } from '@mui/material';
-import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon } from '@mui/icons-material';
+import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon , Delete as DeleteIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-
+import axiosInstance from '../axiosInstance';
 
 
 const theme = createTheme({
@@ -68,40 +68,81 @@ const theme = createTheme({
   },
 });
 
-const CustomSpreadSection = ({ onAddSpread, spreads, onEditSpread }) => {
-  const [spreadValue, setSpreadValue] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
+  //Edit functionalities are commanded for Future use
+  const CustomSpreadSection = ({ onAddSpread, spreads, onDeleteSpread }) => {
+    const [spreadValue, setSpreadValue] = useState('');
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(5);
+    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
+    const [spreadToDelete, setSpreadToDelete] = useState(null);
+    const [spreadTitle, setSpreadTitle] = useState('Rate'); // Default value is 'Rate'
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onAddSpread(spreadValue);
-    setSpreadValue('');
-  };
+    // const [editModalOpen, setEditModalOpen] = useState(false);
+    // const [editSpreadIndex, setEditSpreadIndex] = useState(null);
 
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      onAddSpread(spreadValue, spreadTitle);
+      setSpreadValue('');
+      setSpreadTitle('Rate'); // Reset to default after submission
+    };
 
-  const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
+    const handleChangePage = (event, newPage) => {
+      setPage(newPage);
+    };
 
-  const columns = [
-    { id: 'sino', label: '#', },
-    { id: 'value', label: 'Spread', },
-    { id: 'actions', label: 'Actions', },
-  ];
+    const handleChangeRowsPerPage = (event) => {
+      setRowsPerPage(+event.target.value);
+      setPage(0);
+    };
 
-  return (
-    <Paper elevation={3} sx={{ p: 3, width: '50%' }}>
-      <Typography variant="h6" gutterBottom>
-        ADD SPREAD VALUE
-      </Typography>
-      <form onSubmit={handleSubmit}>
+    const handleDeleteClick = (index) => {
+      setSpreadToDelete(index);
+      setOpenConfirmDialog(true);
+    };
+  
+    const handleConfirmDelete = () => {
+      if (spreadToDelete !== null && typeof onDeleteSpread === 'function') {
+        onDeleteSpread(spreadToDelete);
+        setOpenConfirmDialog(false);
+        setSpreadToDelete(null);
+      }
+    }
+
+    const handleCancelDelete = () => {
+      setOpenConfirmDialog(false);
+      setSpreadToDelete(null);
+    };
+    
+
+
+
+    const columns = [
+      { id: 'sino', label: '#', },
+      { id: 'title', label: 'Title', },
+      { id: 'value', label: 'Spread', },
+      { id: 'actions', label: 'Actions', },
+    ];
+
+    return (
+      <Paper elevation={3} sx={{ p: 3, width: '100%' }}>
+        <Typography variant="h6" gutterBottom>
+          ADD SPREAD VALUE
+        </Typography>
+        <form onSubmit={handleSubmit}>
         <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid item xs={8}>
+          <Grid item xs={4}>
+            <TextField
+              label="Title"
+              value={spreadTitle}
+              onChange={(e) => setSpreadTitle(e.target.value)}
+              required
+              fullWidth
+              variant="outlined"
+              size="small"
+            />
+          </Grid>
+          <Grid item xs={4}>
             <TextField
               label="Spread Value"
               value={spreadValue}
@@ -126,53 +167,92 @@ const CustomSpreadSection = ({ onAddSpread, spreads, onEditSpread }) => {
         </Grid>
       </form>
 
-      <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-        SPREADS
-      </Typography>
-      <TableContainer sx={{ maxHeight: 300 }}>
-        <Table stickyHeader size="small">
-          <TableHead>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell
-                  key={column.id}
-                  align="center"
-                  style={{ width: column.width, fontWeight: 'bold' }}
-                >
-                  {column.label}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {spreads
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((spread, index) => (
-                <TableRow hover key={index}>
-                  <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
-                  <TableCell align="center">{spread}</TableCell>
-                  <TableCell align="center">
-                    <IconButton onClick={() => onEditSpread(index)} color="primary" size="small">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
+        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
+          SPREADS
+        </Typography>
+        <TableContainer sx={{ maxHeight: 300 }}>
+          <Table stickyHeader size="small">
+            <TableHead>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    align="center"
+                    style={{ width: column.width, fontWeight: 'bold' }}
+                  >
+                    {column.label}
                   </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={spreads.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-      />
-    </Paper>
-  );
-};
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {/* {console.log("spread",spreads)} */}
+              {spreads
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((spread, index) => (
+                  <TableRow hover key={index}>
+                    <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
+                    <TableCell align="center">{spread.title}</TableCell>
+                    <TableCell align="center">{spread.spreadValue}</TableCell>
+                    <TableCell align="center">
+                      {/* <IconButton onClick={() => handleEditClick(index)} color="primary" size="small">
+                        <EditIcon fontSize="small" />
+                      </IconButton> */}
+                      <IconButton onClick={() => handleDeleteClick(index)} color="error" size="small">
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25]}
+          component="div"
+          count={spreads.length}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+        />
+
+        <Dialog
+          open={openConfirmDialog}
+          onClose={(event, reason) => {
+            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+              handleCancelDelete();
+            }
+          }}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+        >
+
+          <DialogTitle id="alert-dialog-title">
+            {"Confirm Deletion"}
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              Are you sure you want to delete this spread value?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCancelDelete}>Cancel</Button>
+            <Button onClick={handleConfirmDelete} color="error" autoFocus>
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* <SpreadEditModal
+          open={editModalOpen}
+          handleClose={handleEditClose}
+          spread={editSpreadIndex !== null ? spreads[editSpreadIndex] : ''}
+          onSave={handleEditSave}
+        /> */}
+      </Paper>
+    );
+  };
 
 const UserDataTable = ({ userData, onToggleUserBlock }) => {
   const [page, setPage] = useState(0);
@@ -199,7 +279,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   };
 
   const filteredData = userData.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase())
+    user.userName.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -222,7 +302,8 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
           />
         </Grid>
       </Grid>
-      <TableContainer sx={{ maxHeight: 440 }}>
+      {filteredData.length > 0 ? (
+        <TableContainer sx={{ maxHeight: 440 }}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
@@ -238,26 +319,40 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredData
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((user, index) => (
-                <TableRow hover key={user.id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
-                  <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.phoneNo}</TableCell>
-                  <TableCell>{user.spread}</TableCell>
-                  <TableCell>{user.location}</TableCell>
-                  <TableCell>{user.ipAddress}</TableCell>
-                  <TableCell>
-                    <IconButton onClick={() => onToggleUserBlock(user.id)} color="primary" size="small">
-                      {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-          </TableBody>
+          {filteredData
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map((user, index) => (
+            <TableRow hover key={user._id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
+              <TableCell>{page * rowsPerPage + index + 1}</TableCell>
+              <TableCell>{user.userName}</TableCell>
+              <TableCell>{user.contact}</TableCell>
+              <TableCell>{user.spread}</TableCell>
+              <TableCell>{user.location}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>
+                <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small">
+                  {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
+                </IconButton>
+              </TableCell>
+            </TableRow>
+          ))}        
+      </TableBody>
         </Table>
       </TableContainer>
+        ) : (
+          <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: 300,
+          }}
+        >
+          <Typography variant="h6" color="textSecondary">
+            No user data available
+          </Typography>
+        </Box>
+      )}
       <TablePagination
         rowsPerPageOptions={[10, 25, 100]}
         component="div"
@@ -271,128 +366,93 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
   );
 };
 
-const SpreadEditModal = ({ open, handleClose, spread, onSave }) => {
-  const [editedSpread, setEditedSpread] = useState(spread);
 
-  const handleSave = () => {
-    if (editedSpread > 0) {
-      onSave(editedSpread);
-      handleClose();
-    }
-  };
-
-  return (
-      <Modal
-        open={open}
-        onClose={(event, reason) => {
-          if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-            handleClose();
-          }
-        }}
-        closeAfterTransition
-        BackdropComponent={Backdrop}
-        BackdropProps={{
-          timeout: 500,
-        }}
-        disableEscapeKeyDown={true}
-        disableBackdropClick={true}
-      >
-      <Fade in={open}>
-        <Box sx={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 400,
-          background: '#f3f4f6',
-          padding: '20px',
-          borderRadius: '10px',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-        }}>
-          <Typography variant="h6" gutterBottom>
-            Edit Spread
-          </Typography>
-          <TextField
-            fullWidth
-            variant="outlined"
-            label="Spread Value"
-            value={editedSpread}
-            onChange={(e) => setEditedSpread(Math.max(0, Number(e.target.value)))}
-            type="number"
-            required
-            size="small"
-            inputProps={{ min: 0 }}
-          />
-          <Box sx={{ mt: 2, textAlign: 'right' }}>
-            <Button onClick={handleClose} sx={{ mr: 1 }}>Cancel</Button>
-            <Button onClick={handleSave} variant="contained">Save</Button>
-          </Box>
-        </Box>
-      </Fade>
-    </Modal>
-  );
-};
-
-const UserList = () => {
+const UserList = ( ) => {
+  const adminId = localStorage.getItem('userEmail');
+  console.log('User email from localStorage:', adminId);
   const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
   const [editingSpread, setEditingSpread] = useState(null);
+  const [spreadValues, setSpreadValues] = useState([]);
+
+  //addspread starts
 
   useEffect(() => {
-    // Demo data
-    const demoSpreads = [5, 10, 15, 20, 25];
-    const demoUsers = [
-      { id: 1, name: 'Rhaenyra Targaryen', phoneNo: '123-456-7890', spread: 15, location: 'King\'s Landing', ipAddress: '192.168.1.1', blocked: false },
-      { id: 2, name: 'Daemon Targaryen', phoneNo: '234-567-8901', spread: 20, location: 'Dragonstone', ipAddress: '192.168.1.2', blocked: false },
-      { id: 3, name: 'Alicent Hightower', phoneNo: '345-678-9012', spread: 10, location: 'Oldtown', ipAddress: '192.168.1.3', blocked: false },
-      { id: 4, name: 'Viserys Targaryen', phoneNo: '456-789-0123', spread: 25, location: 'Red Keep', ipAddress: '192.168.1.4', blocked: false },
-      { id: 5, name: 'Otto Hightower', phoneNo: '567-890-1234', spread: 5, location: 'King\'s Landing', ipAddress: '192.168.1.5', blocked: false },
-    ];
+    if (adminId) {  // Only fetch data if adminId is available
+      fetchUserData();
+      fetchSpreadValues();
+    }
+  }, [adminId]);  // Add adminId as a dependency
 
-    setSpreads(demoSpreads);
-    setUserData(demoUsers);
-  }, []);
 
-  const handleAddSpread = (spreadValue) => {
-    const newSpread = Math.max(0, Number(spreadValue));
-    setSpreads((prevSpreads) => [...prevSpreads, newSpread]);
-    setShowNotification(true);
-    setNotificationMessage('Spread added successfully');
+  const fetchUserData = async () => {
+    try {
+      const response = await axiosInstance.get(`/admin/${adminId}/users`);
+      if (response.data.success) {
+        setUserData(response.data.users);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
   };
 
-  const handleEditSpread = (index) => {
-    setEditingSpread({ index, value: spreads[index] });
+  const fetchSpreadValues = async () => {
+    try {
+      const response = await axiosInstance.get(`/admin/${adminId}/spread-values`);
+      if (response.data.success) {
+        setSpreadValues(response.data.spreadValues);
+      }
+    } catch (error) {
+      console.error('Error fetching spread values:', error);
+    }
   };
 
-  const handleSaveSpread = (editedValue) => {
-    const updatedSpreads = spreads.map((spread, idx) =>
-      idx === editingSpread.index ? editedValue : spread
-    );
-    setSpreads(updatedSpreads);
-    setShowNotification(true);
-    setNotificationMessage('Spread updated successfully');
-    setEditingSpread(null);
+  //spreadfetchEnd
+
+  const handleAddSpread = async (spreadValue,title) => {
+    try {
+      const response = await axiosInstance.post(`/admin/${adminId}/spread-values`, { spreadValue,title });
+      if (response.data.success) {
+        setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
+        setShowNotification(true);
+        setNotificationMessage('Spread added successfully');
+      }
+    } catch (error) {
+      console.error('Error adding spread value:', error);
+    }
   };
+
+  // const handleSaveSpread = (editedValue) => {
+  //   const updatedSpreads = spreads.map((spread, idx) =>
+  //     idx === editingSpread.index ? editedValue : spread
+  //   );
+  //   setSpreads(updatedSpreads);
+  //   setShowNotification(true);
+  //   setNotificationMessage('Spread updated successfully');
+  //   setEditingSpread(null);
+  // };
 
   const handleToggleUserBlock = (userId) => {
-    const user = userData.find(u => u.id === userId);
-    const action = user.blocked ? 'unblock' : 'block';
-    
+    const user = userData.find(u => u._id === userId);
+    if (!user) return; // Return early if user is not found
+  
+    const action = user.blocked !== undefined ? (user.blocked ? 'unblock' : 'block') : 'block'; // Check if blocked property exists
+  
     setConfirmDialog({
       isOpen: true,
       title: `Confirm ${action}`,
-      content: `Are you sure you want to ${action} ${user.name}?`,
+      content: `Are you sure you want to ${action} ${user.userName}?`,
       onConfirm: () => {
-        setUserData(prevData => 
-          prevData.map(u => 
-            u.id === userId ? { ...u, blocked: !u.blocked } : u
+        setUserData(prevData =>
+          prevData.map(u =>
+            u._id === userId ? { ...u, blocked: u.blocked !== undefined ? !u.blocked : true } : u
           )
         );
         setShowNotification(true);
-        setNotificationMessage(`User ${user.name} has been ${action}ed`);
+        setNotificationMessage(`User ${user.userName} has been ${action}ed`);
         setConfirmDialog({ ...confirmDialog, isOpen: false });
       }
     });
@@ -401,6 +461,21 @@ const UserList = () => {
   const handleCloseNotification = () => {
     setShowNotification(false);
   };
+  
+  const handleDeleteSpread = async (index) => {
+    try {
+      console.log("svalue",spreadValues);
+      const spreadToDelete = spreadValues[index]._id;
+      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/?email=${adminId}`);
+      if (response.data.success) {
+        setSpreadValues(prevValues => prevValues.filter((_, i) => i !== index));
+        setShowNotification(true);
+        setNotificationMessage('Spread deleted successfully');
+      }
+    } catch (error) {
+      console.error('Error deleting spread value:', error);
+    }
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -408,11 +483,11 @@ const UserList = () => {
         <Container>
           <Grid container spacing={4}>
             <Grid item xs={12}>
-              <CustomSpreadSection 
-                onAddSpread={handleAddSpread} 
-                spreads={spreads}
-                onEditSpread={handleEditSpread}
-              />
+            <CustomSpreadSection
+              spreads={spreadValues}
+              onAddSpread={handleAddSpread}
+              onDeleteSpread={handleDeleteSpread}
+            />
             </Grid>
           </Grid>
 
@@ -424,7 +499,7 @@ const UserList = () => {
           </Box>
         </Container>
 
-        <SpreadEditModal
+        {/* <SpreadEditModal
           open={!!editingSpread}
           handleClose={() => setEditingSpread(null)}
           spread={editingSpread?.value || ''}
@@ -438,12 +513,13 @@ const UserList = () => {
           fullWidth
           disableBackdropClick={true}
           disableEscapeKeyDown={true}
-        />
+        /> */}
 
         <Snackbar
           open={showNotification}
-          autoHideDuration={6000}
+          autoHideDuration={5000}
           onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
           <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
             {notificationMessage}

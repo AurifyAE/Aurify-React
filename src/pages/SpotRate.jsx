@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useContext,useCallback,useEffect } from 'react';
 import {
   Box,
   Grid,
@@ -28,32 +28,30 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Close as CloseIcon } from '@mui/icons-material';
 import AddCommodityModal from './AddCommodityModal';
-// import { createTheme } from '@mui/material/styles';
+import { useCurrency } from '../context/CurrencyContext'; // Adjust the import path as needed
+import io from 'socket.io-client'; //spot calc
+import axiosInstance from '../axiosInstance';
+// import { debounce } from 'lodash';
+// import { updateSpotRate } from '../api/adminAPi';
+// const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
 
-//Select Currancy
-// const theme = createTheme({
-//   palette: {
-//     primary: {
-//       main: '#7928CA',
-//     },
-//   },
-//   components: {
-//     MuiButton: {
-//       styleOverrides: {
-//         root: {
-//           background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-//           color: 'white',
-//         },
-//       },
-//     },
-//   },
-// });
 
-const CurrencySelector = () => {
+
+
+const CurrencySelector = ({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState('AED');
 
+  const exchangeRates = {
+    AED: 3.6725,
+    USD: 1,
+    EUR: 0.92,
+    GBP: 0.79
+  };
+
   const handleChange = (event) => {
-    setCurrency(event.target.value);
+    const newCurrency = event.target.value;
+    setCurrency(newCurrency);
+    onCurrencyChange(newCurrency, exchangeRates[newCurrency]);
   };
 
   return (
@@ -83,158 +81,207 @@ const CurrencySelector = () => {
 
 
 // PriceCard Component
-const PriceCard = ({ title, initialBid, initialSpread, initialPrice }) => {
-  const [spread, setSpread] = useState(initialSpread);
-  const [openDialog, setOpenDialog] = useState(false);
+const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type, onSpreadUpdate }) => {
+  const [bid, setBid] = useState(initialBid);
+  const [spread, setSpread] = useState(() => {
+    const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
+    return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
+  });
+  const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
 
-  const handleOpenDialog = () => setOpenDialog(true);
-  const handleCloseDialog = () => setOpenDialog(false);
+  
+   
 
-  const handleSaveSpread = () => {
-    setSpread(tempSpread);
-    handleCloseDialog();
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setTempSpread(spread);
   };
+
+  const handleSpreadChange = (e) => {
+    setTempSpread(e.target.value);
+  };
+
+
+  const handleSave = () => {
+    setIsEditing(false);
+    setSpread(tempSpread);
+    localStorage.setItem(`spread_${metal}_${type}`, tempSpread.toString());
+    if (onSpreadUpdate) {
+      onSpreadUpdate(metal, type, tempSpread);
+    }
+  };
+
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
-      <button
-      onClick={handleOpenDialog}
-      className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
-      style={{ width: '80px', height: '30px' }} // Adjust width and height as needed
-    >
-      <svg
-        className="w-4 h-4 text-pink-500"
-        aria-hidden="true"
-        focusable="false"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 512 512"
-      >
-        <path
-          fill="currentColor"
-          d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
-        ></path>
-      </svg>
-    </button>
+      {!isEditing && (
+        <button
+          onClick={handleEditClick}
+          className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
+          style={{ width: '80px', height: '30px' }}
+        >
+          <svg
+            className="w-4 h-4 text-pink-500"
+            aria-hidden="true"
+            focusable="false"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <path
+              fill="currentColor"
+              d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
+            ></path>
+          </svg>
+        </button>
+      )}
+      {isEditing && (
+        <button
+          onClick={handleSave}
+          className="absolute top-2 right-2 p-2 bg-pink-400 text-white rounded-md flex items-center justify-center"
+          style={{ width: '80px', height: '30px' }}
+        >
+          Save
+        </button>
+      )}
 
-  <div className="pt-8"> {/* Add padding-top to ensure space for the icon */}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="pt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{title}</h6>
         <p className="text-gray-600 font-medium text-sm">{initialBid}</p>
       </div>
       <div className="flex flex-col">
-        <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
-        <p className="text-gray-600 font-medium text-sm">{spread}</p>
-      </div>
+            <h6 className="text-gray-600 mb-1 font-bold">Spread</h6>
+            <div className='h-6 w-24'>
+            {isEditing ? (
+              <input
+                type="number"
+                value={tempSpread}
+                onChange={handleSpreadChange}
+                // onBlur={handleSpreadBlur}
+                className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
+              />
+            ) : (
+              <p className="text-gray-600 font-medium text-sm">{spread}</p>
+            )}
+            </div>
+          </div>
       <div className="flex flex-col">
         <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
-        <p className="text-gray-600 font-medium text-sm">{initialPrice}</p>
+        <p className="text-gray-600 font-medium text-sm">{parseFloat(initialBid) + parseFloat(spread)}</p>
       </div>
     </div>
   </div>
-  <Dialog open={openDialog} onClose={handleCloseDialog}>
-    <DialogTitle>Edit Spread</DialogTitle>
-    <DialogContent>
-      <input
-        autoFocus
-        type="number"
-        className="w-full p-2 border border-gray-300 rounded-md"
-        placeholder="Spread"
-        value={tempSpread}
-        onChange={(e) => setTempSpread(e.target.value)}
-      />
-    </DialogContent>
-    <DialogActions>
-      <Button onClick={handleCloseDialog}>Cancel</Button>
-      <Button onClick={handleSaveSpread} className="bg-[#cb0c9f] text-white">Save</Button>
-    </DialogActions>
-  </Dialog>
-</div>
 
   );
 };
 // ValueCard Component
-const ValueCard = ({ lowValue, highValue, lowMargin, highMargin, lowNewValue, highNewValue }) => {
-  const [editingLow, setEditingLow] = useState(false);
-  const [editingHigh, setEditingHigh] = useState(false);
-  const [tempLowMargin, setTempLowMargin] = useState(lowMargin);
-  const [tempHighMargin, setTempHighMargin] = useState(highMargin);
+const ValueCard = ({ lowValue, highValue, initialLowMargin, initialHighMargin, lowNewValue, highNewValue }) => {
+  const [lowMargin, setLowMargin] = useState(initialLowMargin);
+  const [highMargin, setHighMargin] = useState(initialHighMargin);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleMarginChange = (setter) => (e) => {
+    setter(e.target.value);
+  };
+
+  const handleMarginBlur = (setter, value) => () => {
+    setter(value);
+  };
+
+  const handleSave = () => {
+    setIsEditing(false);
+    // Here you might want to save the new values to localStorage or send them to a server
+  };
 
   return (
-    <div className="relative bg-white rounded-lg shadow-lg p-6">
-      {/* Edit Button */}
-      <button
-      // onClick={setEditingLow(!editingLow)}
-      className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
-      style={{ width: '80px', height: '30px' }} // Adjust width and height as needed
-    >
-      <svg
-        className="w-4 h-4 text-pink-500"
-        aria-hidden="true"
-        focusable="false"
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 512 512"
-      >
-        <path
-          fill="currentColor"
-          d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
-        ></path>
-      </svg>
-    </button>
+    <div className="relative bg-white rounded-lg shadow-lg p-4">
+      {!isEditing && (
+        <button
+          onClick={handleEditClick}
+          className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
+          style={{ width: '80px', height: '30px' }}
+        >
+          <svg
+            className="w-4 h-4 text-pink-500"
+            aria-hidden="true"
+            focusable="false"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 512 512"
+          >
+            <path
+              fill="currentColor"
+              d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
+            ></path>
+          </svg>
+        </button>
+      )}
+      {isEditing && (
+        <button
+          onClick={handleSave}
+          className="absolute top-2 right-2 p-2 bg-pink-400 text-white rounded-md flex items-center justify-center"
+          style={{ width: '80px', height: '30px' }}
+        >
+          Save
+        </button>
+      )}
 
-      <div className="space-y-6 pt-8"> {/* Add padding-top to ensure content isn't hidden behind the button */}
-        {/* Low Value Section */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Low Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{lowValue}</p>
+      <div className="space-y-6 pt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Low Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{lowValue}</p>
           </div>
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Margin</h6>
-            <p className="text-gray-500 text-sm font-medium">
-              {editingLow ? (
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Margin</h6>
+            <div className="h-6 w-24">
+              {isEditing ? (
                 <input
                   type="number"
-                  value={tempLowMargin}
-                  onChange={(e) => setTempLowMargin(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  value={lowMargin}
+                  onChange={handleMarginChange(setLowMargin)}
+                  onBlur={handleMarginBlur(setLowMargin, lowMargin)}
+                  className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
                 />
               ) : (
-                tempLowMargin
+                <p className="text-gray-600 font-medium text-sm">{lowMargin}</p>
               )}
-            </p>
+            </div>
           </div>
-          <div className="col-span-5">
-            <h6 className="text-gray-600 font-bold">Low New Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{lowNewValue}</p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Low New Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{lowNewValue}</p>
           </div>
         </div>
 
-        {/* High Value Section */}
-        <div className="grid grid-cols-12 gap-4 items-center">
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">High Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{highValue}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">High Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{highValue}</p>
           </div>
-          <div className="col-span-3">
-            <h6 className="text-gray-600 font-bold">Margin</h6>
-            <p className="text-gray-500 text-sm font-medium">
-              {editingHigh ? (
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">Margin</h6>
+            <div className="h-6 w-24">
+              {isEditing ? (
                 <input
                   type="number"
-                  value={tempHighMargin}
-                  onChange={(e) => setTempHighMargin(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  value={highMargin}
+                  onChange={handleMarginChange(setHighMargin)}
+                  onBlur={handleMarginBlur(setHighMargin, highMargin)}
+                  className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
                 />
               ) : (
-                tempHighMargin
+                <p className="text-gray-600 font-medium text-sm">{highMargin}</p>
               )}
-            </p>
+            </div>
           </div>
-          <div className="col-span-5">
-            <h6 className="text-gray-600 font-bold">High New Value</h6>
-            <p className="text-gray-500 text-sm font-medium">{highNewValue}</p>
+          <div className="flex flex-col">
+            <h6 className="text-gray-600 mb-1 font-bold">High New Value</h6>
+            <p className="text-gray-600 font-medium text-sm">{highNewValue}</p>
           </div>
         </div>
       </div>
@@ -268,243 +315,216 @@ const TradingViewWidget = ({ symbol, title }) => {
   );
 };
 
-// CommodityForm Component
-// const AddCommodityModal = ({ open, onClose, onSave }) => {
-//   const [formData, setFormData] = useState({
-//     metal: 'Gold',
-//     purity: '999',
-//     unit: '1',
-//     weight: 'GM',
-//     sellPremiumUSD: '',
-//     sellPremiumAED: '',
-//     buyPremiumUSD: '',
-//     buyPremiumAED: '',
-//     buyAED: '286.4435',
-//     buyUSD: '78.05',
-//     sellAED: '286.5168999999996',
-//     sellUSD: '78.07',
-//   });
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData(prevState => ({
-//       ...prevState,
-//       [name]: value
-//     }));
-//   };
 
-//   const handleSave = () => {
-//     onSave(formData);
-//     onClose();
-//   };
-//   return (
-//     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-//       <DialogTitle className="flex justify-between items-center bg-gray-100">
-//         <span className="text-lg font-semibold">Add New Commodity</span>
-//         <IconButton onClick={onClose} size="small">
-//           <CloseIcon />
-//         </IconButton>
-//       </DialogTitle>
-//       <DialogContent className="mt-4">
-//         <Grid container spacing={2}>
-//           <Grid item xs={6}>
-//             <Select
-//               fullWidth
-//               name="metal"
-//               value={formData.metal}
-//               onChange={handleChange}
-//               className="bg-gray-100"
-//             >
-//               <MenuItem value="Gold">Gold</MenuItem>
-//               <MenuItem value="Silver">Silver</MenuItem>
-//             </Select>
-//           </Grid>
-//           <Grid item xs={6}>
-//             <TextField
-//               fullWidth
-//               name="purity"
-//               value={formData.purity}
-//               onChange={handleChange}
-//               className="bg-gray-100"
-//             />
-//           </Grid>
-//           <Grid item xs={12}>
-//             <div className="text-sm font-semibold mb-1">Sell Premium</div>
-//             <Grid container spacing={2}>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="sellPremiumUSD"
-//                   placeholder="USD"
-//                   value={formData.sellPremiumUSD}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="sellPremiumAED"
-//                   placeholder="AED"
-//                   value={formData.sellPremiumAED}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//             </Grid>
-//           </Grid>
-//           <Grid item xs={6}>
-//             <TextField
-//               fullWidth
-//               name="unit"
-//               value={formData.unit}
-//               onChange={handleChange}
-//               className="bg-gray-100"
-//             />
-//           </Grid>
-//           <Grid item xs={6}>
-//             <Select
-//               fullWidth
-//               name="weight"
-//               value={formData.weight}
-//               onChange={handleChange}
-//               className="bg-gray-100"
-//             >
-//               <MenuItem value="GM">GM</MenuItem>
-//               <MenuItem value="KG">KG</MenuItem>
-//             </Select>
-//           </Grid>
-//           <Grid item xs={12}>
-//             <div className="text-sm font-semibold mb-1">Buy Premium</div>
-//             <Grid container spacing={2}>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="buyPremiumUSD"
-//                   placeholder="USD"
-//                   value={formData.buyPremiumUSD}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="buyPremiumAED"
-//                   placeholder="AED"
-//                   value={formData.buyPremiumAED}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//             </Grid>
-//           </Grid>
-//           <Grid item xs={12}>
-//             <div className="text-sm font-semibold mb-1">Buy</div>
-//             <Grid container spacing={2}>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="buyAED"
-//                   placeholder="AED"
-//                   value={formData.buyAED}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="buyUSD"
-//                   placeholder="USD"
-//                   value={formData.buyUSD}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//             </Grid>
-//           </Grid>
-//           <Grid item xs={12}>
-//             <div className="text-sm font-semibold mb-1">Sell</div>
-//             <Grid container spacing={2}>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="sellAED"
-//                   placeholder="AED"
-//                   value={formData.sellAED}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//               <Grid item xs={6}>
-//                 <TextField
-//                   fullWidth
-//                   name="sellUSD"
-//                   placeholder="USD"
-//                   value={formData.sellUSD}
-//                   onChange={handleChange}
-//                   className="bg-gray-100"
-//                 />
-//               </Grid>
-//             </Grid>
-//           </Grid>
-//         </Grid>
-//       </DialogContent>
-//       <DialogActions className="bg-gray-100 p-4">
-//         <Button onClick={onClose} variant="contained" className="bg-gray-400 hover:bg-gray-500 text-white">
-//           CLOSE
-//         </Button>
-//         <Button onClick={handleSave} variant="contained" className="bg-pink-500 hover:bg-pink-600 text-white">
-//           SAVE CHANGES
-//         </Button>
-//         <Button onClick={handleSave} variant="contained" className="bg-pink-600 hover:bg-pink-700 text-white">
-//           SAVE
-//         </Button>
-//       </DialogActions>
-//     </Dialog>
-//   );
-// };
 
-// Main SpotRate Component
+// Main SpotRate  Component
 const SpotRate = () => {
-  const [commodities, setCommodities] = useState([
-    { id: 1, metal: 'Gold', purity: 9999, unit: '1 KG', sellAED: 308521.0448, buyAED: 308021.0948, sellPremiumAED: '', buyPremiumAED: '' },
-    { id: 2, metal: 'Gold', purity: 995, unit: '1 KG', sellAED: 307009.1405, buyAED: 306511.6405, sellPremiumAED: '', buyPremiumAED: '' },
-  ]);
-
+  const [exchangeRate, setExchangeRate] = useState(3.6725);
   const [openModal, setOpenModal] = useState(false);
-  const [editingCommodity, setEditingCommodity] = useState(null);
+  const { currency, setCurrency } = useCurrency();
+  const [selectedCommodity, setSelectedCommodity] = useState(null);
+    const handleMarginChange = (lowMargin, highMargin) => {
+      // Update the state or perform any necessary actions with the new margin values
+      console.log('New margins:', lowMargin, highMargin);
+    };
+    const handleOpenModal = (commodity) => {
+      const goldBid = parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'));
+      const goldAsk = goldBid + 0.5; // Assuming 0.5 is the spread for asking price
+      const silverBid = parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'));
+      const silverAsk = silverBid + 0.05; // Assuming 0.05 is the spread for asking price
+    
+      setSelectedCommodity({
+        ...commodity,
+        goldBid,
+        goldAsk,
+        silverBid,
+        silverAsk
+      });
+      setOpenModal(true);
+    };
+    
+  const handleCloseModal = () => {setOpenModal(false);};
+    //spot calc
+  const [marketData, setMarketData] = useState({});
+  const [error, setError] = useState(null);
+  const [symbols] = useState(["GOLD", "SILVER"]);
+  const [serverURL, setServerURL] = useState('');
+  const [userId, setUserId] = useState('');
+  const [spotRateData, setSpotRateData] = useState(null);
+  const [commodities, setCommodities] = useState([]);
 
-  const handleOpenModal = () => setOpenModal(true);
-  const handleCloseModal = () => setOpenModal(false);
+  const fetchCommodities = useCallback(async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/spotrates/${userId}`);
+      if (response.data && response.data.commodities) {
+        setCommodities(response.data.commodities);
+      }
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+    }
+  }, []);
 
-  // const handleInputChange = (e) => {
-  //   const { name, value } = e.target;
-  //   if (editingCommodity) {
-  //     setEditingCommodity({ ...editingCommodity, [name]: value });
-  //   } else {
-  //     setNewCommodity({ ...newCommodity, [name]: value });
-  //   }
-  // };
+  useEffect(() => {
+    if (userId) {
+      fetchCommodities(userId);
+    }
+  }, [userId, fetchCommodities]);
 
-  const handleSaveCommodity = (newCommodity) => {
-    setCommodities([...commodities, { id: commodities.length + 1, ...newCommodity }]);
-    handleCloseModal();
+  
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const email = localStorage.getItem('userEmail'); // or however you store the user's email
+        const response = await axiosInstance.get(`/data/${email}`);
+        setUserId(response.data.data._id);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+
+    fetchUserId();
+  }, []);
+
+  const handleSpreadUpdate = async (metal, type, newSpread) => {
+    try {
+      const response = await axiosInstance.post('/update-spread', {
+        userId,
+        metal,
+        type,
+        spread: newSpread
+      });
+      
+      if (response.status === 200) {
+        console.log('Spread updated successfully');
+        // Optionally, update local state or fetch updated data
+      }
+    } catch (error) {
+      console.error('Error updating spread:', error);
+    }
   };
 
-  const handleEdit = (commodity) => {
-    setEditingCommodity(commodity);
+  useEffect(() => {
+    const fetchServerURL = async () => {
+      try {
+        // console.log('hereherhe  ',userID);
+        const response = await axiosInstance.get('/server-url');
+        setServerURL(response.data.selectedServerURL);
+      } catch (error) {
+        console.error('Error fetching server URL:', error);
+      }
+    };
+  
+    fetchServerURL();
+  }, []);
+
+  const getSpreadFromLocalStorage = (metal, type) => {
+    const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
+    return savedSpread !== null ? parseFloat(savedSpread) : 0; // Default to 0 if not found
+  };
+  
+  const fetchMarketData = useCallback((symbols) => {
+
+    console.log('serverURL',serverURL);
+    const socket = io(serverURL, {
+      query: { secret: "aurify@123" }, // Pass secret key as query parameter
+    });
+
+    socket.on("connect", () => {
+      console.log("Connected to WebSocket server");
+      socket.emit("request-data", symbols);
+      console.log('success');
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Disconnected from WebSocket server");
+    });
+
+    socket.on("market-data", (data) => {
+      if (data && data.symbol) {
+        setMarketData(prevData => ({
+          ...prevData,
+          [data.symbol]: {
+            ...prevData[data.symbol],
+            ...data,
+            // Compare current and previous bid to determine color
+            bidChanged: prevData[data.symbol] && data.bid !== prevData[data.symbol].bid 
+              ? (data.bid > prevData[data.symbol].bid ? 'up' : 'down') 
+              : null,
+          }
+        }));
+        // console.log('current bid ----- ',marketData[symbol].bid);
+      } else {
+        console.warn("Received malformed market data:", data);
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("WebSocket error:", error);
+      setError("An error occurred while receiving data");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [symbols, serverURL]);
+
+  useEffect(() => {
+    console.log("Market Data:", marketData);
+    const cleanup = fetchMarketData(symbols);
+    return cleanup;
+  }, [symbols, fetchMarketData, serverURL]);
+
+
+  const handleSaveCommodity = async (commodityData, isEditMode) => {
+    if (isEditMode) {
+      setCommodities(prevCommodities => 
+        prevCommodities.map(commodity => 
+          commodity.id === commodityData.id ? { ...commodity, ...commodityData } : commodity
+        )
+      );
+    } else {
+      setCommodities(prevCommodities => [
+        ...prevCommodities, 
+        { id: prevCommodities.length + 1, ...commodityData }
+      ]);
+    }
+    handleCloseModal();
+    try {
+      const response = await axiosInstance.post('/update-commodity', commodityData);
+    } catch (error) {
+      console.error('Error saving commodity:', error);
+      fetchCommodities(userId);
+    }
+  };
+
+
+  const handleEditCommodity = (commodity) => {
+    setSelectedCommodity({...commodity, id: commodity._id});
     setOpenModal(true);
   };
 
-  const handleDelete = (id) => {
-    setCommodities(commodities.filter(commodity => commodity.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await axiosInstance.delete(`/commodities/${userId}/${id}`);
+      setCommodities(commodities.filter(commodity => commodity._id !== id));
+      // Show success message
+      alert('Commodity deleted successfully');
+    } catch (error) {
+      console.error('Error deleting commodity:', error);
+      // Show error message
+      alert('Failed to delete commodity. Please try again.');
+    }
+  };
+
+  const handleCurrencyChange = (newCurrency, newExchangeRate) => {
+    setCurrency(newCurrency);
+    setExchangeRate(newExchangeRate);
   };
 
   return (
     <Box className="min-h-screen flex flex-col bg-gray-100">
       <Box className="p-2">
-        <CurrencySelector />
+        <CurrencySelector onCurrencyChange={handleCurrencyChange} />
       </Box>
       <div className="p-6 grid gap-4 grid-cols-1 md:grid-cols-2 mx-14">
       <div className="col-span-1">
@@ -515,96 +535,101 @@ const SpotRate = () => {
       </div>
     </div>
 
+    
+
       
     <div className="p-3 grid gap-4 grid-cols-1 md:grid-cols-2 mx-16 py-2">
-      <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={2420.45} initialSpread={22} initialPrice={2442.45} />
+    <div className="col-span-1">
+        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={27.5075} initialSpread={0} initialPrice={27.51} />
+        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={2442.95} initialSpread={0} initialPrice={2442.95} />
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={27.5575} initialSpread={0} initialPrice={27.56} />
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
         <ValueCard 
           lowValue={2417.000} 
           highValue={2428.870} 
-          lowMargin={0} 
-          highMargin={0} 
+          initialLowMargin={0} 
+          initialHighMargin={0} 
           lowNewValue={2417.000} 
           highNewValue={2428.870} 
+          onMarginChange={handleMarginChange}
+
         />
       </div>
       <div className="col-span-1">
         <ValueCard 
           lowValue={27.4125} 
           highValue={27.762} 
-          lowMargin={0} 
-          highMargin={0} 
+          initialLowMargin={0} 
+          initialHighMargin={0} 
           lowNewValue={27.413} 
           highNewValue={27.762} 
+          onMarginChange={handleMarginChange}
         />
       </div>
     </div>
 
-
-      <Box sx={{ p: 10 }}>
-      <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
-      <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
-        <div className="flex justify-between items-center text-lg text-bold">
-          <Typography className='text-bold' color="text.secondary">
-            Gold      1GM (in USD)
-          </Typography>
-          <Typography className="font-bold ml-2">
-            78.1607
-          </Typography>
+    
+    <Box sx={{ p: 10 }}>
+    <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold  1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver   1GM (in USD)
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Gold 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              Silver 1GM (in {currency})
+            </Typography>
+            <Typography className="font-black text-xl ml-6">
+              {((((parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+            </Typography>
+          </div>
         </div>
-        <div className="flex justify-between items-center text-lg text-bold">
-          <Typography className='font-bold' color="text.secondary">
-            Silver     1GM (in USD)
-          </Typography>
-          <Typography className="font-bold ml-2">
-            0.8830
-          </Typography>
-        </div>
-        <div className="flex justify-between items-center">
-          <Typography className='font-bold' color="text.secondary">
-            Gold 1GM (in AED)
-          </Typography>
-          <Typography className="font-bold ml-2">
-            286.849
-          </Typography>
-        </div>
-        <div className="flex justify-between items-center">
-          <Typography className='font-bold' color="text.secondary">
-            Silver 1GM (in AED)
-          </Typography>
-          <Typography className="font-bold ml-8">
-            3.2406
-          </Typography>
-        </div>
+        <Button
+          variant="contained"
+          onClick={handleOpenModal}
+          sx={{
+            background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+            color: 'white',
+            textTransform: 'none',
+            fontWeight: 'bold',
+            borderRadius: '0.375rem',
+            '&:hover': {
+              background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+            },
+          }}
+        >
+          ADD COMMODITY
+        </Button>
       </div>
-      <Button
-        variant="contained"
-        onClick={handleOpenModal}
-        sx={{
-          background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
-          color: 'white',
-          textTransform: 'none',
-          fontWeight: 'bold',
-          borderRadius: '0.375rem',
-          '&:hover': {
-            background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-          },
-        }}
-      >
-        ADD COMMODITY
-      </Button>
-    </div>
         <TableContainer component={Paper} className="shadow-lg">
           <Table sx={{ minWidth: 650 }} aria-label="commodity table">
             <TableHead>
@@ -612,10 +637,10 @@ const SpotRate = () => {
                 <TableCell>Metal</TableCell>
                 <TableCell>Purity</TableCell>
                 <TableCell>Unit</TableCell>
-                <TableCell>Sell (AED)</TableCell>
-                <TableCell>Buy (AED)</TableCell>
-                <TableCell>Sell Premium (AED)</TableCell>
-                <TableCell>Buy Premium (AED)</TableCell>
+                <TableCell>Sell ({currency})</TableCell>
+                <TableCell>Buy ({currency})</TableCell>
+                <TableCell>Sell Premium ({currency})</TableCell>
+                <TableCell>Buy Premium ({currency})</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>
@@ -629,13 +654,13 @@ const SpotRate = () => {
                   <TableCell>{row.metal}</TableCell>
                   <TableCell>{row.purity}</TableCell>
                   <TableCell>{row.unit}</TableCell>
-                  <TableCell>{row.sellAED}</TableCell>
+                  <TableCell>{((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}</TableCell>
                   <TableCell>{row.buyAED}</TableCell>
                   <TableCell>{row.sellPremiumAED}</TableCell>
                   <TableCell>{row.buyPremiumAED}</TableCell>
                   <TableCell>
                       <IconButton
-                        onClick={() => handleEdit(row)}
+                        onClick={() => handleEditCommodity(row)}
                         sx={{
                           background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
                           color: 'white',
@@ -652,7 +677,7 @@ const SpotRate = () => {
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
-                        onClick={() => handleDelete(row.id)}
+                        onClick={() => handleDelete(row._id)}
                         sx={{
                           background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
                           color: 'white',
@@ -677,6 +702,12 @@ const SpotRate = () => {
           open={openModal}
           onClose={handleCloseModal}
           onSave={handleSaveCommodity}
+          initialData={selectedCommodity}
+          goldBid={selectedCommodity?.goldBid}
+          goldAsk={selectedCommodity?.goldAsk}
+          silverBid={selectedCommodity?.silverBid}
+          silverAsk={selectedCommodity?.silverAsk}
+
         />
       </Box>
     </Box>
@@ -684,3 +715,4 @@ const SpotRate = () => {
 };
 
 export default SpotRate;
+

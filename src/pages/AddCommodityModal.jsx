@@ -1,13 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Grid, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { useCurrency } from '../context/CurrencyContext'; 
+import axiosInstance from '../axiosInstance';
+import { Snackbar, Alert } from '@mui/material';
 
-const AddCommodityModal = ({ open, onClose, onSave }) => {
+
+const AddCommodityModal = ({ open, onClose, onSave,initialData, goldBid, goldAsk, silverBid, silverAsk, isEditing }) => {
+  const { currency } = useCurrency();
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [error, setError] = useState({});
+  const [userData, setUserData] = useState(null);
+  const [commodityId, setCommodityId] = useState(null);
+  const [toastOpen, setToastOpen] = useState(false);
+const [toastMessage, setToastMessage] = useState('');
   const [formData, setFormData] = useState({
-    metal: 'Gold',
-    purity: '999',
-    unit: '1',
-    weight: 'GM',
+    metal: '',
+    purity: '',
+    unit: '',
+    weight: '',
     sellPremiumUSD: '',
     sellPremiumAED: '',
     buyPremiumUSD: '',
@@ -17,18 +28,362 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
     sellAED: '',
     sellUSD: '',
   });
+  const [commodities, setCommodities] = useState([]);
+  const [spotRates, setSpotRates] = useState(null);
+  const [userId, setUserId] = useState('');
+  const [errors, setErrors] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
+  const exchangeRates = {
+    AED: 3.6725,
+    USD: 1,
+    EUR: 0.92,
+    GBP: 0.79
   };
 
-  const handleSave = () => {
-    onSave(formData);
-    onClose();
+  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+    if (!amount) return '';
+    const parsed = parseFloat(amount);
+    if (isNaN(parsed)) return '';
+    
+    const inUSD = parsed / exchangeRates[fromCurrency];
+    return (inUSD * exchangeRates[toCurrency]).toFixed(2);
+  };
+
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+        try {
+            const email = localStorage.getItem('userEmail');
+            if (!email) {
+                console.error('User email not found in localStorage.');
+                return;
+            }
+            const response = await axiosInstance.get(`/data/${email}`);
+            if (response && response.data && response.data.data) {
+                setUserId(response.data.data._id);
+            } else {
+                console.error('Invalid response or missing data:', response);
+            }
+        } catch (error) {
+            console.error('Error fetching user ID:', error);
+        }
+    };
+
+    fetchUserId();
+}, []);
+
+
+  useEffect(() => {
+    if (initialData) {
+      setFormData(initialData);
+      setCommodityId(initialData.id);
+      setIsEditMode(isEditing);
+    }
+  }, [initialData], isEditing);
+  
+  useEffect(() => {
+    const fetchSpotRates = async () => {
+        if (!userId) return;
+        try {
+            const response = await axiosInstance.get(`/spotrates/${userId}`);
+            if (response && response.data && typeof response.data === 'object') {
+                setSpotRates(response.data);
+            } else {
+                console.error('Invalid spot rates data:', response.data);
+                setSpotRates({}); // Initialize with an empty object if data is invalid
+            }
+        } catch (error) {
+            console.error('Error fetching spot rates:', error);
+            setErrors('Failed to fetch spot rates');
+            setSpotRates({}); // Initialize with an empty object on error
+        }
+    };
+
+    if (userId) {
+        fetchSpotRates();
+    }
+}, [userId]);
+
+
+  useEffect(() => {
+    if (spotRates) {
+      updateBuyAED();
+      updateSellAED();
+    }
+  }, [spotRates, formData.metal, formData.unit, formData.weight, formData.purity]);
+
+
+
+  const getSpotPrice = (metal, type) => {
+    if (!spotRates) return 0;
+  
+    switch (metal) {
+      case 'Gold':
+      case 'Gold Kilobar':
+      case 'Gold TOLA':
+      case 'Gold Ten TOLA':
+      case 'Gold Coin':
+      case 'Minted Bar':
+        return type === 'bid' ? parseFloat(spotRates.goldBid) : parseFloat(spotRates.goldAsk);
+  
+      case 'Silver':
+        return type === 'bid' ? parseFloat(spotRates.silverBid) : parseFloat(spotRates.silverAsk);
+  
+      // Add more metals if needed
+      // case 'Platinum':
+      //   return type === 'bid' ? parseFloat(spotRates.platinumBid) : parseFloat(spotRates.platinumAsk);
+        
+      default:
+        return 0;
+    }
+  };
+  
+
+  const getBidPrice = (metal) => {
+    if (!spotRates || !metal) return 0;
+
+    const goldItems = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'];
+    if (goldItems.includes(metal)) {
+      return spotRates.goldBid ? parseFloat(spotRates.goldBid) : 0;
+    }
+
+    const metalKey = metal.toLowerCase().replace(/\s+/g, '') + 'Bid';
+    return spotRates[metalKey] ? parseFloat(spotRates[metalKey]) : 0;
+};
+
+const getAskPrice = (metal) => {
+    if (!spotRates || !metal) return 0;
+
+    const goldItems = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'];
+    if (goldItems.includes(metal)) {
+      return spotRates.goldAsk ? parseFloat(spotRates.goldAsk) : 0;
+    }
+
+    const metalKey = metal.toLowerCase().replace(/\s+/g, '') + 'Ask';
+    return spotRates[metalKey] ? parseFloat(spotRates[metalKey]) : 0;
+};
+
+const getUnitMultiplier = (weight) => {
+  switch (weight) {
+    case 'GM': return 1;
+    case 'KG': return 1000;
+    case 'TTB': return 116.64;
+    case 'TOLA': return 11.664;
+    case 'OZ': return 31.1035;
+    default: return 1;
+  }
+};
+
+const updateBuyAED = () => {
+  const bidSpread = getBidPrice(formData.metal);
+  if (!bidSpread || !formData.unit) return;
+
+  const unitMultiplier = getUnitMultiplier(formData.weight);
+  const purityValue = formData.purity ? parseFloat(formData.purity) : 0;
+  const spotPrice = getSpotPrice(formData.metal, 'bid');
+
+  const purityLength = formData.purity ? formData.purity.length : 1;
+  const calculation = (((spotPrice / 31.1035) * 3.67 * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
+  setFormData(prevState => ({
+      ...prevState,
+      buyAED: calculation
+  }));
+};
+
+const updateSellAED = () => {
+  const unitMultiplier = getUnitMultiplier(formData.weight);
+  const purityValue = formData.purity ? parseFloat(formData.purity) : 0;
+  const spotPrice = getSpotPrice(formData.metal, 'ask');
+
+  const purityLength = formData.purity ? formData.purity.length : 1;
+  const calculation = (((spotPrice / 31.103) * 3.67 * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(2);
+
+  setFormData(prevState => ({
+      ...prevState,
+      sellAED: calculation
+  }));
+};
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  if (!name) return;
+
+  let updatedFormData = { ...formData, [name]: value };
+
+  // Update the corresponding premium fields if necessary
+  if (name === 'sellPremiumUSD' || name === `sellPremium${currency}` || 
+      name === 'buyPremiumUSD' || name === `buyPremium${currency}`) {
+      const [field, currentCurrency] = name.split('Premium');
+      const otherCurrency = currentCurrency === 'USD' ? currency : 'USD';
+      const otherFieldName = `${field}Premium${otherCurrency}`;
+      updatedFormData[otherFieldName] = convertCurrency(value, currentCurrency, otherCurrency);
+  }
+
+  setFormData(updatedFormData);
+
+  // Call updatePrices to recalculate buy and sell values
+  if (spotRates) {
+      updatePrices(updatedFormData);
+  } else {
+      console.warn('Spot rates not available. Calculations may be inaccurate.');
+  }
+};
+
+
+useEffect(() => {
+  if (spotRates) {
+    updatePrices(formData);
+  }
+}, [spotRates]);
+
+const updatePrices = (data) => {
+  const metalBid = getBidPrice(data.metal);
+  const metalAsk = getAskPrice(data.metal);
+
+  if (metalBid && metalAsk) {
+    const unitMultiplier = getUnitMultiplier(data.weight);
+    const purityValue = data.purity ? parseFloat(data.purity) : 0;
+    const purityLength = data.purity ? data.purity.length : 1;
+
+    const calculatedBuyAED = (((metalBid / 31.103) * 3.67 * data.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
+    const calculatedSellAED = (((metalAsk / 31.103) * 3.67 * data.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength))).toFixed(4);
+
+    setFormData(prevState => ({
+      ...prevState,
+      buyAED: calculatedBuyAED,
+      sellAED: calculatedSellAED,
+      buyUSD: (calculatedBuyAED / 3.67).toFixed(4),
+      sellUSD: (calculatedSellAED / 3.67).toFixed(4)
+    }));
+  }
+};
+
+
+useEffect(() => {
+  if (spotRates) {
+    updatePrices(formData);
+  }
+}, [spotRates]);
+
+
+useEffect(() => {
+  const fetchCommodities = async () => {
+      const userEmail = localStorage.getItem('userEmail');
+      if (!userEmail) {
+          setError('User not logged in');
+          return;
+      }
+      try {
+          const response = await axiosInstance.get(`/data/${userEmail}`);
+          if (response && response.data && response.data.data && Array.isArray(response.data.data.commodities)) {
+              const fetchedCommodities = response.data.data.commodities;
+              const goldItems = [
+                  { _id: 'gold', symbol: 'Gold' },
+                  { _id: 'gold-kilobar', symbol: 'Gold Kilobar' },
+                  { _id: 'gold-tola', symbol: 'Gold TOLA' },
+                  { _id: 'gold-ten-tola', symbol: 'Gold Ten TOLA' },
+                  { _id: 'gold-coin', symbol: 'Gold Coin' },
+                  { _id: 'minted-bar', symbol: 'Minted Bar' }
+              ];
+              const nonGoldItems = fetchedCommodities.filter(item => !goldItems.find(goldItem => goldItem.symbol === item.symbol));
+              const combinedCommodities = [...goldItems, ...nonGoldItems];
+              setCommodities(combinedCommodities);
+          } else {
+              console.error('Invalid commodities data:', response.data);
+          }
+      } catch (error) {
+          console.error('Error fetching commodities:', error);
+      }
+  };
+
+  fetchCommodities();
+}, []);
+
+
+  // const handleChange = (e) => {
+  //   const { name, value } = e.target;
+  //   setFormData(prevState => ({
+  //     ...prevState,
+  //     [name]: value
+  //   }));
+  // };
+
+  
+  
+
+  const handleSave = async () => {
+    const requiredFields = ['metal', 'purity', 'unit', 'weight'];
+    const emptyFields = requiredFields.filter(field => !formData[field]);
+  
+    if (emptyFields.length > 0) {
+      setToastMessage(`${emptyFields.join(', ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
+      setToastOpen(true);
+      return;
+    }
+  
+    try {
+      const commodityData = {
+        metal: formData.metal,
+        purity: formData.purity,
+        unit: formData.unit,
+        weight: formData.weight,
+        // sellPremiumUSD: formData.sellPremiumUSD || 0,
+        sellPremium: formData.sellPremiumAED || 0,
+        // buyPremiumUSD: formData.buyPremiumUSD || 0,
+        buyPremium: formData.buyPremiumAED || 0,
+        // buyAED: formData.buyAED,
+        // buyUSD: formData.buyUSD,
+        // sellAED: formData.sellAED,
+        // sellUSD: formData.sellUSD,
+      };
+        let response;
+      if (isEditMode) {
+        // Update existing commodity
+        response = await axiosInstance.patch(`/spotrate-commodity/${userId}/${initialData._id}`, commodityData);
+        setIsEditMode(false);
+        console.log('updating....');
+      } else {
+        // Add new commodity
+        response = await axiosInstance.post('/spotrate-commodity', { userId, commodity: commodityData });
+      }
+  
+      if (response.status === 200) {
+      console.log(isEditMode ? 'Commodity updated successfully' : 'Commodity added successfully');
+      onSave(commodityData, isEditMode);
+      resetForm(); // Reset the form after successful save
+    } else {
+      console.error('Failed to update/add commodity');
+    }
+  
+      onClose();
+    } catch (error) {
+      console.error('Error saving commodity:', error);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      metal: '',
+      purity: '',
+      unit: '',
+      weight: '',
+      sellPremiumUSD: '',
+      sellPremiumAED: '',
+      buyPremiumUSD: '',
+      buyPremiumAED: '',
+      buyAED: '',
+      buyUSD: '',
+      sellAED: '',
+      sellUSD: '',
+    });
+    setIsEditMode(false);
+  };
+
+  const handleToastClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setToastOpen(false);
   };
 
   const inputStyle = {
@@ -37,10 +392,32 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
     },
   };
 
+  useEffect(() => {
+    if (initialData && isEditing) {
+      setFormData(initialData);
+      setCommodityId(initialData._id);
+      setIsEditMode(true);
+    } else {
+      resetForm();
+    }
+  }, [initialData, isEditing]);
+ 
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog 
+      open={open} 
+      onClose={(event, reason) => {
+        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+          onClose();
+        }
+      }} 
+      maxWidth="sm" 
+      fullWidth
+      disableBackdropClick={true}
+      disableEscapeKeyDown={true}
+    >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8f9fa', borderBottom: '1px solid #dee2e6', p: 2 }}>
-        <Typography variant="h6">Add New Commodity</Typography>
+        <Typography variant="h6">{isEditMode ? 'Edit Commodity' : 'Add New Commodity'}</Typography>
         <Button onClick={onClose}><CloseIcon /></Button>
       </DialogTitle>
       <DialogContent sx={{ p: 3 }}>
@@ -54,15 +431,17 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               fullWidth
               size="small"
               sx={inputStyle}
+              required
             >
-              <MenuItem value="Gold">Gold</MenuItem>
-              <MenuItem value="Gold kilobar">Gold kilobar</MenuItem>
-              <MenuItem value="Gold TOLA">Gold TOLA</MenuItem>
-              <MenuItem value="Gold TEN TOLA">Gold TEN TOLA</MenuItem>
-              <MenuItem value="Gold Coin">Gold Coin</MenuItem>
-              <MenuItem value="Minted Bar">Minted Bar</MenuItem>
-              <MenuItem value="Silver">Silver</MenuItem>
-              <MenuItem value="Platinum" disabled>Platinum</MenuItem>
+              {commodities.length > 0 ? (
+                commodities.map((commodity) => (
+                  <MenuItem key={commodity._id} value={commodity.symbol}>
+                    {commodity.symbol}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem value="">Loading...</MenuItem>
+              )}
             </Select>
           </Grid>
           <Grid item xs={3}>
@@ -74,6 +453,7 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               fullWidth
               size="small"
               sx={inputStyle}
+              required
             >
               <MenuItem value="9999">9999</MenuItem>
               <MenuItem value="999.9">999.9</MenuItem>
@@ -101,9 +481,9 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  name="sellPremiumAED"
-                  placeholder="AED"
-                  value={formData.sellPremiumAED}
+                  name={`sellPremium${currency}`}
+                  placeholder={currency}
+                  value={formData[`sellPremium${currency}`]}
                   onChange={handleChange}
                   fullWidth
                   size="small"
@@ -122,6 +502,7 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               fullWidth
               size="small"
               inputProps={{ min: 0, max: 1000, step: 0.1 }}
+              required
             />
           </Grid>
           <Grid item xs={3}>
@@ -133,6 +514,7 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               fullWidth
               size="small"
               sx={inputStyle}
+              required
             >
               <MenuItem value="GM">GM</MenuItem>
               <MenuItem value="KG">KG</MenuItem>
@@ -157,9 +539,9 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               </Grid>
               <Grid item xs={6}>
                 <TextField
-                  name="buyPremiumAED"
-                  placeholder="AED"
-                  value={formData.buyPremiumAED}
+                  name={`buyPremium${currency}`}
+                  placeholder={currency}
+                  value={formData[`buyPremium${currency}`]}
                   onChange={handleChange}
                   fullWidth
                   size="small"
@@ -173,21 +555,22 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
               <thead>
                 <tr>
                   <th style={{ width: '20%' }}></th>
-                  <th style={{ width: '40%' }}>AED</th>
+                  <th style={{ width: '40%' }}>{currency}</th>
                   <th style={{ width: '40%' }}>USD</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <th align="left">Buy</th>
+                  <th align="middle">Buy</th>
                   <td>
                     <TextField
-                      name="buyAED"
-                      value={formData.buyAED}
+                      name={`buy${currency}`}
+                      value={formData[`buyAED`]}
                       onChange={handleChange}
                       fullWidth
                       size="small"
                       sx={inputStyle}
+                      disabled={true}
                     />
                   </td>
                   <td>
@@ -198,19 +581,21 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
                       fullWidth
                       size="small"
                       sx={inputStyle}
+                      disabled={!isEditMode}
                     />
                   </td>
                 </tr>
                 <tr>
-                  <th align="left">Sell</th>
+                  <th align="middle">Sell</th>
                   <td>
                     <TextField
-                      name="sellAED"
-                      value={formData.sellAED}
+                      name={`sell${currency}`}
+                      value={formData[`sellAED`]}
                       onChange={handleChange}
                       fullWidth
                       size="small"
                       sx={inputStyle}
+                      disabled={!isEditMode}
                     />
                   </td>
                   <td>
@@ -221,6 +606,7 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
                       fullWidth
                       size="small"
                       sx={inputStyle}
+                      disabled={!isEditMode}
                     />
                   </td>
                 </tr>
@@ -233,13 +619,15 @@ const AddCommodityModal = ({ open, onClose, onSave }) => {
         <Button onClick={onClose} variant="contained" color="inherit" sx={{ mr: 1 }}>
           Close
         </Button>
-        <Button onClick={handleSave} variant="contained" color="secondary" sx={{ mr: 1 }}>
-          Save Changes
-        </Button>
         <Button onClick={handleSave} variant="contained" color="primary">
-          Save
+          {isEditMode ? 'Save Changes' : 'Save'}
         </Button>
       </DialogActions>
+      <Snackbar open={toastOpen} autoHideDuration={6000} onClose={handleToastClose}>
+        <Alert onClose={handleToastClose} severity="error" sx={{ width: '100%' }}>
+          {toastMessage}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 };
