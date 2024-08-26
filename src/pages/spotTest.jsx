@@ -343,6 +343,7 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
+    console.log(`Retrieving ${key}: ${spreadMarginData[key]}`); // Add this log
     return spreadMarginData[key] || 0;
   }, [spreadMarginData]);
 
@@ -363,6 +364,7 @@ const SpotRate = () => {
       try {
         const response = await axiosInstance.get(`/spotrates/${userId}`);
         if (response.data) {
+          console.log('Spread/Margin data:', response.data);
           setSpreadMarginData(response.data);
         }
         if (response.data && response.data.commodities) {
@@ -397,7 +399,7 @@ const SpotRate = () => {
       
       if (marketData[metal]) {
         const metalBiddingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'));
-        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
+        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))+ parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
         
         updatedCommodity.sellAED = calculatePrice(metalBiddingPrice, commodity, 'sell');
         updatedCommodity.buyAED = calculatePrice(metalAskingPrice, commodity, 'buy');
@@ -431,12 +433,14 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
   const unitMultiplier = getUnitMultiplier(commodity.unit);
   const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
   const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
+  const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
+  const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'bid' : 'ask'));
   
   return (
-    ((((metalPrice / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
-    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(premium))
+    ((((metalPrice + spread) / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
+    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(premium)
   ).toFixed(4);
-}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, exchangeRate]);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, exchangeRate, getSpreadOrMarginFromDB]);
 
 
   useEffect(() => {
@@ -600,33 +604,16 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     return commodities.map((row) => {
       const isGoldRelated = row.metal && (row.metal.toLowerCase().includes('gold') || 
                             row.metal.toLowerCase().includes('minted bar'));
-    
-    // Default to 'Unknown' or handle it as needed if 'row.metal' is undefined
-    const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
-    
-    const additionalPrice = isGoldRelated ? 0.5 : 0.05;
-    const metalBiddingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))
-      : 0;
-    const metalAskingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + parseFloat(additionalPrice)
-      : 0;
-    const unitMultiplier = getUnitMultiplier(row.unit);
-    const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(row.purity);
-    const sellPremium = row.sellPremium || 0;
-    const buyPremium = row.buyPremium || 0;
-    const sellPrice = (
-      metalBiddingPrice && !isNaN(metalBiddingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? ((((metalBiddingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(sellPremium))
-        : 0
-       ).toFixed(4);
-    const buyPrice = (
-      metalAskingPrice && !isNaN(metalAskingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? ((((metalAskingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(buyPremium))
-        : 0
-       ).toFixed(4);
+      const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
+      const metalBiddingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid)
+        : 0;
+      const metalAskingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid) + (isGoldRelated ? 0.5 : 0.05)
+        : 0;
+  
+      const sellPrice = calculatePrice(metalBiddingPrice, row, 'sell');
+      const buyPrice = calculatePrice(metalAskingPrice, row, 'buy');
   
       return (
         <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
@@ -724,7 +711,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         ))}
       </div>
 
-      <Box sx={{ p: 10 }}>
+      <Box sx={{ p: 10 }} className="-mt-10">
         <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
           {uniqueMetals.map(metal => (

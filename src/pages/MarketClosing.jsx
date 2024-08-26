@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import axiosInstance from '../axiosInstance';
-import { Card, CardBody, CardFooter, Image, Button, Modal, Text } from "@nextui-org/react";
+import { Button } from "@nextui-org/react";
 import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import io from 'socket.io-client';

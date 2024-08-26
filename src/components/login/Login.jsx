@@ -135,7 +135,6 @@ const LoginPage = () => {
                     width: '100%', 
                     padding: '0.5rem', 
                     paddingRight: '2.5rem',
-                    paddingRight: '2.5rem',
                     border: '1px solid #d2d6dc', 
                     borderRadius: '0.375rem',
                     fontSize: '1rem',

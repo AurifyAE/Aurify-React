@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, User, Settings, Bell } from 'lucide-react';
+import { User, Bell } from 'lucide-react';
 import axiosInstance from '../../axiosInstance';
 import moment from 'moment';
 
@@ -42,6 +42,12 @@ const Navbar = () => {
     fetchUserIdAndNotifications();
   }, []);
 
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      fetchUserIdAndNotifications();
+    }, 10000);
+    return () => clearInterval(pollInterval); 
+  }, [userId]);
   
 
   useEffect(() => {
@@ -80,9 +86,7 @@ const Navbar = () => {
     }
   };
 
-  const handleViewMore = () => {
-    setMaxNotificationsToShow(notifications.length);
-  };
+
 
   const formattedDate = currentDateTime.toLocaleDateString('en-GB', {
     day: '2-digit',

@@ -69,8 +69,22 @@ const [toastMessage, setToastMessage] = useState('');
 }, []);
 
 
+// useEffect(() => {
+//   if (initialData) {
+//     setFormData({
+//       ...initialData,
+//       sellPremiumAED: initialData.sellPremium || initialData.sellPremiumAED || '',
+//       buyPremiumAED: initialData.buyPremium || initialData.buyPremiumAED || '',
+//       sellPremiumUSD: convertCurrency(initialData.sellPremium || initialData.sellPremiumAED || '', currency, 'USD'),
+//       buyPremiumUSD: convertCurrency(initialData.buyPremium || initialData.buyPremiumAED || '', currency, 'USD'),
+//     });
+//     setCommodityId(initialData.id || initialData._id);
+//     setIsEditMode(isEditing);
+//   }
+// }, [initialData, isEditing, currency]);
+
 useEffect(() => {
-  if (initialData) {
+  if (initialData && (isEditing || open)) {
     setFormData({
       ...initialData,
       sellPremiumAED: initialData.sellPremium || initialData.sellPremiumAED || '',
@@ -79,9 +93,11 @@ useEffect(() => {
       buyPremiumUSD: convertCurrency(initialData.buyPremium || initialData.buyPremiumAED || '', currency, 'USD'),
     });
     setCommodityId(initialData.id || initialData._id);
-    setIsEditMode(isEditing);
+    setIsEditMode(true);
+  } else if (open) {
+    resetForm();
   }
-}, [initialData, isEditing, currency]);
+}, [initialData, isEditing, open, currency]);
   
   useEffect(() => {
     const fetchSpotRates = async () => {
@@ -284,16 +300,16 @@ useEffect(() => {
     setIsEditMode(false);
     setCommodityId(null);
   };
-  useEffect(() => {
-    if (open) {
-      if (initialData) {
-        setFormData(initialData);
-        setIsEditMode(true);
-      } else {
-        resetForm();
-      }
-    }
-  }, [open, initialData]);
+  // useEffect(() => {
+  //   if (open) {
+  //     if (initialData) {
+  //       setFormData(initialData);
+  //       setIsEditMode(true);
+  //     } else {
+  //       resetForm();
+  //     }
+  //   }
+  // }, [open, initialData]);
 
   const handleToastClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -312,15 +328,15 @@ useEffect(() => {
   },
   };
 
-  useEffect(() => {
-    if (initialData && isEditing) {
-      setFormData(initialData);
-      setCommodityId(initialData._id);
-      setIsEditMode(true);
-    } else {
-      resetForm();
-    }
-  }, [initialData, isEditing, open]);
+  // useEffect(() => {
+  //   if (initialData && isEditing) {
+  //     setFormData(initialData);
+  //     setCommodityId(initialData._id);
+  //     setIsEditMode(true);
+  //   } else {
+  //     resetForm();
+  //   }
+  // }, [initialData, isEditing, open]);
  
 
   return (
