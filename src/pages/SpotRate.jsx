@@ -30,7 +30,11 @@ import { Close as CloseIcon } from '@mui/icons-material';
 import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../context/CurrencyContext'; // Adjust the import path as needed
 import io from 'socket.io-client'; //spot calc
-const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
+import axiosInstance from '../axiosInstance';
+// import { debounce } from 'lodash';
+// import { updateSpotRate } from '../api/adminAPi';
+// const SOCKET_SERVER_URL = "https://demo-capital-server.onrender.com";
+
 
 
 
@@ -38,7 +42,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState('AED');
 
   const exchangeRates = {
-    AED: 3.6725,
+    AED: 3.674,
     USD: 1,
     EUR: 0.92,
     GBP: 0.79
@@ -77,7 +81,7 @@ const CurrencySelector = ({ onCurrencyChange }) => {
 
 
 // PriceCard Component
-const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type }) => {
+const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, metal, type, onSpreadUpdate }) => {
   const [bid, setBid] = useState(initialBid);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
@@ -85,6 +89,8 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
   });
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
+
+  
    
 
   const handleEditClick = () => {
@@ -101,6 +107,9 @@ const PriceCard = ({ title, initialBid, initialSpread, initialPrice, onClose, me
     setIsEditing(false);
     setSpread(tempSpread);
     localStorage.setItem(`spread_${metal}_${type}`, tempSpread.toString());
+    if (onSpreadUpdate) {
+      onSpreadUpdate(metal, type, tempSpread);
+    }
   };
 
 
@@ -310,7 +319,7 @@ const TradingViewWidget = ({ symbol, title }) => {
 
 // Main SpotRate  Component
 const SpotRate = () => {
-  const [exchangeRate, setExchangeRate] = useState(3.6725);
+  const [exchangeRate, setExchangeRate] = useState(3.674);
   const [openModal, setOpenModal] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const [selectedCommodity, setSelectedCommodity] = useState(null);
@@ -318,17 +327,95 @@ const SpotRate = () => {
       // Update the state or perform any necessary actions with the new margin values
       console.log('New margins:', lowMargin, highMargin);
     };
-  const handleOpenModal = () => {setOpenModal(true);};
+    const handleOpenModal = (commodity) => {
+      const goldBid = parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'));
+      const goldAsk = goldBid + 0.5; // Assuming 0.5 is the spread for asking price
+      const silverBid = parseFloat(marketData['Silver']?.bid) + parseFloat(getSpreadFromLocalStorage('Silver', 'bid'));
+      const silverAsk = silverBid + 0.05; // Assuming 0.05 is the spread for asking price
+    
+      setSelectedCommodity({
+        ...commodity,
+        goldBid,
+        goldAsk,
+        silverBid,
+        silverAsk
+      });
+      setOpenModal(true);
+    };
+    
   const handleCloseModal = () => {setOpenModal(false);};
     //spot calc
   const [marketData, setMarketData] = useState({});
   const [error, setError] = useState(null);
   const [symbols] = useState(["GOLD", "SILVER"]);
-  const [commodities, setCommodities] = useState([
-    { id: 1, metal: 'Gold', purity: 9999, unit: '1 KG', sellAED: 308521.0448, buyAED: 308021.0948, sellPremiumAED: '', buyPremiumAED: '' },
-    { id: 2, metal: 'Gold', purity: 995, unit: '1 KG', sellAED: 307009.1405, buyAED: 306511.6405, sellPremiumAED: '', buyPremiumAED: '' },
-  ]);
+  const [serverURL, setServerURL] = useState('');
+  const [userId, setUserId] = useState('');
+  const [spotRateData, setSpotRateData] = useState(null);
+  const [commodities, setCommodities] = useState([]);
 
+  const fetchCommodities = useCallback(async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/spotrates/${userId}`);
+      if (response.data && response.data.commodities) {
+        setCommodities(response.data.commodities);
+      }
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userId) {
+      fetchCommodities(userId);
+    }
+  }, [userId, fetchCommodities]);
+
+  
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const email = localStorage.getItem('userEmail'); // or however you store the user's email
+        const response = await axiosInstance.get(`/data/${email}`);
+        setUserId(response.data.data._id);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+
+    fetchUserId();
+  }, []);
+
+  const handleSpreadUpdate = async (metal, type, newSpread) => {
+    try {
+      const response = await axiosInstance.post('/update-spread', {
+        userId,
+        metal,
+        type,
+        spread: newSpread
+      });
+      
+      if (response.status === 200) {
+        console.log('Spread updated successfully');
+        // Optionally, update local state or fetch updated data
+      }
+    } catch (error) {
+      console.error('Error updating spread:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchServerURL = async () => {
+      try {
+        // console.log('hereherhe  ',userID);
+        const response = await axiosInstance.get('/server-url');
+        setServerURL(response.data.selectedServerURL);
+      } catch (error) {
+        console.error('Error fetching server URL:', error);
+      }
+    };
+  
+    fetchServerURL();
+  }, []);
 
   const getSpreadFromLocalStorage = (metal, type) => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
@@ -336,7 +423,9 @@ const SpotRate = () => {
   };
   
   const fetchMarketData = useCallback((symbols) => {
-    const socket = io(SOCKET_SERVER_URL, {
+
+    console.log('serverURL',serverURL);
+    const socket = io(serverURL, {
       query: { secret: "aurify@123" }, // Pass secret key as query parameter
     });
 
@@ -377,17 +466,16 @@ const SpotRate = () => {
     return () => {
       socket.disconnect();
     };
-  }, [symbols]);
+  }, [symbols, serverURL]);
 
   useEffect(() => {
     console.log("Market Data:", marketData);
     const cleanup = fetchMarketData(symbols);
     return cleanup;
-  }, [symbols, fetchMarketData]);
+  }, [symbols, fetchMarketData, serverURL]);
 
 
-  //save for edit and add
-  const handleSaveCommodity = (commodityData, isEditMode) => {
+  const handleSaveCommodity = async (commodityData, isEditMode) => {
     if (isEditMode) {
       setCommodities(prevCommodities => 
         prevCommodities.map(commodity => 
@@ -401,16 +489,31 @@ const SpotRate = () => {
       ]);
     }
     handleCloseModal();
+    try {
+      const response = await axiosInstance.post('/update-commodity', commodityData);
+    } catch (error) {
+      console.error('Error saving commodity:', error);
+      fetchCommodities(userId);
+    }
   };
 
 
   const handleEditCommodity = (commodity) => {
-    setSelectedCommodity(commodity);
+    setSelectedCommodity({...commodity, id: commodity._id});
     setOpenModal(true);
   };
 
-  const handleDelete = (id) => {
-    setCommodities(commodities.filter(commodity => commodity.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await axiosInstance.delete(`/commodities/${userId}/${id}`);
+      setCommodities(commodities.filter(commodity => commodity._id !== id));
+      // Show success message
+      alert('Commodity deleted successfully');
+    } catch (error) {
+      console.error('Error deleting commodity:', error);
+      // Show error message
+      alert('Failed to delete commodity. Please try again.');
+    }
   };
 
   const handleCurrencyChange = (newCurrency, newExchangeRate) => {
@@ -432,19 +535,21 @@ const SpotRate = () => {
       </div>
     </div>
 
+    
+
       
     <div className="p-3 grid gap-4 grid-cols-1 md:grid-cols-2 mx-16 py-2">
     <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" />
+        <PriceCard title="Bid" initialBid={marketData['Gold']?.bid} initialSpread={getSpreadFromLocalStorage('Gold', 'bid')}  initialPrice={2442.45} metal="Gold" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid"/>
+        <PriceCard title="Bid" initialBid={marketData['Silver']?.bid} initialSpread={getSpreadFromLocalStorage('Silver', 'bid')}  initialPrice={27.51} metal="Silver" type="bid" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask"/>
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Gold']?.bid)+0.5} initialSpread={getSpreadFromLocalStorage('Gold', 'ask')}  initialPrice={2442.95} metal="Gold" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
-        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask"/>
+        <PriceCard title="Ask" initialBid={parseFloat(marketData['Silver']?.bid)+0.05} initialSpread={getSpreadFromLocalStorage('Silver', 'ask')}  initialPrice={27.56} metal="Silver" type="ask" onSpreadUpdate={handleSpreadUpdate} />
       </div>
       <div className="col-span-1">
         <ValueCard 
@@ -549,7 +654,7 @@ const SpotRate = () => {
                   <TableCell>{row.metal}</TableCell>
                   <TableCell>{row.purity}</TableCell>
                   <TableCell>{row.unit}</TableCell>
-                  <TableCell>{((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate)}</TableCell>
+                  <TableCell>{((((parseFloat(marketData['Gold']?.bid) + parseFloat(getSpreadFromLocalStorage('Gold', 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}</TableCell>
                   <TableCell>{row.buyAED}</TableCell>
                   <TableCell>{row.sellPremiumAED}</TableCell>
                   <TableCell>{row.buyPremiumAED}</TableCell>
@@ -572,7 +677,7 @@ const SpotRate = () => {
                         <EditIcon fontSize="small" />
                       </IconButton>
                       <IconButton
-                        onClick={() => handleDelete(row.id)}
+                        onClick={() => handleDelete(row._id)}
                         sx={{
                           background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
                           color: 'white',
@@ -598,6 +703,11 @@ const SpotRate = () => {
           onClose={handleCloseModal}
           onSave={handleSaveCommodity}
           initialData={selectedCommodity}
+          goldBid={selectedCommodity?.goldBid}
+          goldAsk={selectedCommodity?.goldAsk}
+          silverBid={selectedCommodity?.silverBid}
+          silverAsk={selectedCommodity?.silverAsk}
+
         />
       </Box>
     </Box>
@@ -605,3 +715,4 @@ const SpotRate = () => {
 };
 
 export default SpotRate;
+

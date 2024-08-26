@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
@@ -8,9 +8,7 @@ import loginImage from '../../assets/GoldBar.jpg';
 import axiosInstance from '../../axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-// import { requestFCMToken } from '../../utils/firebaseUtils'
-import { useEffect } from 'react';
-// import { registerServiceWorker } from '../../utils/serviceWorkerRegistration';
+import { requestFCMToken } from '../../utils/firebaseUtils'
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +19,8 @@ const LoginPage = () => {
   const [passwordError, setPasswordError] = useState('');
   // const [fcmToken, setFcmToken] = useState("");
   // console.log(fcmToken);
+  const [fcmToken, setFcmToken] = useState("");
+  console.log(fcmToken);
   const navigate = useNavigate();
 
   // useEffect(() =>{
@@ -38,6 +38,20 @@ const LoginPage = () => {
   //   fetchFcmToken();
   // },[]);
 
+  useEffect(() =>{
+    const fetchFcmToken = async () => {
+      try{
+        await requestFCMToken().then((token) => {
+          setFcmToken(token);
+        })
+      }
+      catch(error){
+        console.log('Error in getting FCM token :',error);
+      }
+    }
+    fetchFcmToken();
+  },[]);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     const values = {
@@ -47,6 +61,11 @@ const LoginPage = () => {
     }
     setEmailError('');
     setPasswordError('');
+    const values = {
+      email, 
+      password,
+      fcmToken
+    }
     setEmailError('');
     setPasswordError('');
   
@@ -81,8 +100,12 @@ const LoginPage = () => {
       } else {
         setPasswordError('Login failed. Please try again.');
       }
+
     }
   };
+  
+
+  
   
 
   

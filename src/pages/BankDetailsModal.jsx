@@ -149,9 +149,7 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
     }
 
     try {
-      const response = await axiosInstance.get('/data', {
-        params: { email: userEmail },
-      });
+      const response = await axiosInstance.get(`/data/${userEmail}`);
       
       setUserData(response.data);
     } catch (err) {
@@ -171,7 +169,6 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
   try {
     const response = await axiosInstance.post('/save-bank-details', {
       email: userEmail,
-
       bankDetails: bankData
     });    
     

@@ -10,6 +10,7 @@ import ShopLayout from '../layout/ShopLayout';
 import ProfileLayout from '../layout/ProfileLayout';
 import BankDetailsLayout from '../layout/BankDetailsLayout';
 import UsersLayout from '../layout/UsersLayout';
+import MarketClosingayout from '../layout/MarketClosingLayout';
 import NotFound from '../pages/NotFound';
 import ServerError from '../pages/ServerError';
 import ChatLayout from '../layout/ChatLayout';

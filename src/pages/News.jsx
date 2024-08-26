@@ -12,6 +12,20 @@ const NewsUpload = () => {
   const [content, setContent] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const openDeleteModal = (itemId) => {
+    setItemToDelete(itemId);
+    setIsModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsModalOpen(false);
+    setItemToDelete(null);
+  };
+
+  
 
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
@@ -24,7 +38,7 @@ const NewsUpload = () => {
       }
 
       try {
-        const adminResponse = await axiosInstance.get(`/data?email=${userEmail}`);
+        const adminResponse = await axiosInstance.get(`/data/${userEmail}`);
         if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.email) {
           setEmail(adminResponse.data.data.email);
 
@@ -51,8 +65,14 @@ const NewsUpload = () => {
   };
 
   const handleSubmit = async (event) => {
+    const email = localStorage.getItem('userEmail');
     event.preventDefault();
     const newItem = { title, description: content, email };
+    const newItem = {
+      title,
+      description: content,
+      email: email
+    };
 
     try {
       const response = await axiosInstance.post('/add-manual-news', newItem);
@@ -76,6 +96,7 @@ const NewsUpload = () => {
   };
 
   const handleUpdate = async (event) => {
+    const email = localStorage.getItem('userEmail');
     event.preventDefault();
     const updatedItem = { title, description: content, email };
 
@@ -113,11 +134,46 @@ const NewsUpload = () => {
       setNewsItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
       toast.success('News item deleted successfully!');
       closeDeleteModal();
+  const confirmDelete = async () => {
+    try {
+      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemToDelete}?email=${email}`);
+      setNewsItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
+      toast.success('News item deleted successfully!');
+      closeDeleteModal();
     } catch (error) {
       console.error('Error deleting news:', error.response ? error.response.data : error);
       toast.error('Error deleting news item!');
     }
   };
+
+  const DeleteConfirmationModal = () => (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-20 mx-auto p-4 border w-80 shadow-lg rounded-md bg-white">
+        <div className="mt-2 text-center">
+          <h3 className="text-lg font-medium text-gray-900">Confirm Delete</h3>
+          <div className="mt-2 px-4 py-2">
+            <p className="text-sm text-gray-500">
+              Are you sure you want to delete this news item?
+            </p>
+          </div>
+          <div className="flex justify-center gap-4 mt-3">
+            <button
+              onClick={confirmDelete}
+              className="px-3 py-1 text-sm bg-red-500 text-white font-medium rounded-md shadow-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+            >
+              Delete
+            </button>
+            <button
+              onClick={closeDeleteModal}
+              className="px-3 py-1 text-sm bg-gray-200 text-gray-700 font-medium rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -210,6 +266,7 @@ const NewsUpload = () => {
           </div>
         ))}
       </div>
+      {isModalOpen && <DeleteConfirmationModal />}
 
       <Modal
         isOpen={isDeleteModalOpen}

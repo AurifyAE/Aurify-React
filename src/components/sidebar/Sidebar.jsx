@@ -74,9 +74,9 @@ const Sidebar = () => {
     { name: "Media", icon: Image, path: "media" },
     { name: "Messages", icon: MessageSquare, path: "messages" },
     { name: "News", icon: Newspaper, path: "news" },
-    { name: "Shop", icon: ShoppingCart, path: "shop" },
-    { name: "Users", icon: User, path: "users" },
-    { name: "Market Closing", icon: ShoppingCart, path: "market-closing" },
+    // { name: "Shop", icon: ShoppingCart, path: "shop" },
+    // { name: "Users", icon: User, path: "users" },
+    // { name: "Market Closing", icon: ShoppingCart, path: "market-closing" },
  
   ];
 
