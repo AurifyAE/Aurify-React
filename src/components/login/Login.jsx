@@ -8,6 +8,9 @@ import loginImage from '../../assets/GoldBar.jpg';
 import axiosInstance from '../../axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+// import { requestFCMToken } from '../../utils/firebaseUtils'
+import { useEffect } from 'react';
+// import { registerServiceWorker } from '../../utils/serviceWorkerRegistration';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,16 +19,41 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+  // const [fcmToken, setFcmToken] = useState("");
+  // console.log(fcmToken);
   const navigate = useNavigate();
+
+  // useEffect(() =>{
+  //   const fetchFcmToken = async () => {
+  //     try{
+  //       await registerServiceWorker(); 
+  //       await requestFCMToken().then((token) => {
+  //         setFcmToken(token);
+  //       })
+  //     }
+  //     catch(error){
+  //       console.log('Error in getting FCM token :',error);
+  //     }
+  //   }
+  //   fetchFcmToken();
+  // },[]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const values = {
+      email, 
+      password,
+      // fcmToken
+    }
+    setEmailError('');
+    setPasswordError('');
     setEmailError('');
     setPasswordError('');
   
     try {
-      const response = await axiosInstance.post('/login', { email, password });
+      const response = await axiosInstance.post('/login',values);
       if (response.data.success) {
+        localStorage.setItem('token', response.data.token);
         localStorage.setItem('userEmail', email);
         toast.success('Login Successful', {
           position: "top-right",
@@ -40,6 +68,7 @@ const LoginPage = () => {
         }, 1000);
       } else {
         setPasswordError(response.data.message || 'Login failed');
+        setPasswordError(response.data.message || 'Login failed');
       }
     } catch (err) {
       if (err.response?.data?.message) {
@@ -47,8 +76,16 @@ const LoginPage = () => {
       } else {
         setPasswordError('Login failed. Please try again.');
       }
+      if (err.response?.data?.message) {
+        setPasswordError(err.response.data.message);
+      } else {
+        setPasswordError('Login failed. Please try again.');
+      }
     }
   };
+  
+
+  
   
   const handleRememberMeChange = (event) => {
     setRememberMe(event.target.checked);
@@ -60,6 +97,7 @@ const LoginPage = () => {
 
   return (
     <div style={{ display: 'flex', height: '100vh', backgroundColor: 'white', overflow: 'hidden' }}>
+      <ToastContainer/>
       <ToastContainer/>
       <div style={{ width: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingLeft: '8rem' }}>
         <div style={{ width: '100%', maxWidth: '20rem' }}>
@@ -108,6 +146,7 @@ const LoginPage = () => {
                     width: '100%', 
                     padding: '0.5rem', 
                     paddingRight: '2.5rem',
+                    paddingRight: '2.5rem',
                     border: '1px solid #d2d6dc', 
                     borderRadius: '0.375rem',
                     fontSize: '1rem',
@@ -128,6 +167,7 @@ const LoginPage = () => {
                   {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                 </IconButton>
               </div>
+              {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
               {passwordError && <p style={{ color: 'red', fontSize: '0.875rem', marginTop: '0.25rem' }}>{passwordError}</p>}
             </div>
             
@@ -155,10 +195,6 @@ const LoginPage = () => {
               SIGN IN
             </button>
           </form>
-          
-          {/* <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#718096', textAlign: 'center' }}>
-            Don't have an account? <a href="#" style={{ color: '#2152ff', textDecoration: 'underline' }}>Contact us</a>
-          </p> */}
         </div>
       </div>
       

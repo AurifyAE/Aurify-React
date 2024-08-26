@@ -15,27 +15,28 @@ import ServerError from '../pages/ServerError';
 import ChatLayout from '../layout/ChatLayout';
 import MarketClosingLayout from '../layout/MarketClosingLayout';
 import { ChatSharp } from '@mui/icons-material';
+import Protect from '../protectorRouter/adminProtect'
 
 
 function Routers() {
   return (
     <Routes>
       <Route path="/" element={<Login />} />
-      <Route path="dashboard" element={<DashboardLayout />} />
-      <Route path="spot-rate" element={<SpotRateLayout />} />
-      <Route path="media" element={<MediaLayout />} />
-      <Route path="messages" element={<MessagesLayout />} />
-      <Route path="news" element={<NewsLayout />} />
-      <Route path="shop" element={<ShopLayout />} />
-      <Route path="users" element={<UsersLayout />} />
-      <Route path="profile" element={<ProfileLayout />} />
-      <Route path="bank-details" element={<BankDetailsLayout />} />
-      <Route path="*" element={<NotFound />} />
-      <Route path="500" element={<ServerError />} />
-      <Route path= "/feature/24x7-chat" element={<ChatLayout />}/>
-      <Route path="market-closing" element={<MarketClosingLayout />} />
-
-
+      <Route element={<Protect/>}>
+        <Route path="dashboard" element={<DashboardLayout />} />
+        <Route path="spot-rate" element={<SpotRateLayout />} />
+        <Route path="media" element={<MediaLayout />} />
+        <Route path="messages" element={<MessagesLayout />} />
+        <Route path="news" element={<NewsLayout />} />
+        <Route path="shop" element={<ShopLayout />} />
+        <Route path="users" element={<UsersLayout />} />
+        <Route path="profile" element={<ProfileLayout />} />
+        <Route path="bank-details" element={<BankDetailsLayout />} />
+        <Route path="*" element={<NotFound />} />
+        <Route path="500" element={<ServerError />} />
+        <Route path= "/feature/24x7-chat" element={<ChatLayout />}/>
+        <Route path="market-closing" element={<MarketClosingLayout />} />
+      </Route>
     </Routes>
   );
 }

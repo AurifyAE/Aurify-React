@@ -1,17 +1,18 @@
-  import React, { useState, useEffect } from 'react';
-  import axiosInstance from '../axiosInstance';
-  import { Card, CardBody, CardFooter, Image, Button } from '@nextui-org/react';
-  import { MdAddShoppingCart } from 'react-icons/md';
-  import { MdDeleteForever } from 'react-icons/md';
-    
+import React, { useState, useEffect } from 'react';
+import axiosInstance from '../axiosInstance';
+import { Card, CardBody, CardFooter, Image, Button, Modal } from '@nextui-org/react';
+import { MdAddShoppingCart, MdDeleteForever } from 'react-icons/md';
+import { toast, Toaster } from 'react-hot-toast';
 
-  const Shop = () => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [items, setItems] = useState([]);
-    const [filter, setFilter] = useState('all');
-    const [email, setEmail] = useState('');
-    const [editingItem, setEditingItem] = useState(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0);
+const Shop = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [email, setEmail] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
     useEffect(() => {
       const fetchAdminEmailAndShopItems = async () => {
@@ -43,30 +44,6 @@
 
       fetchAdminEmailAndShopItems();
     }, [refreshTrigger]);
-
-    // const handleAddItem = async (newItem) => {
-    //   // Check if newItem.image is a file object and append it
-    //   if (!(newItem.get("image") instanceof File))
-    //     {
-    //       console.error('Invalid file object for image.');
-    //       return; // Exit if the file is invalid
-    //   }
-
-    //   try {
-    //     const response = await axiosInstance.post(`/shop-items?email=${email}`, newItem, {
-    //       headers: {
-    //         'Content-Type': 'multipart/form-data',
-    //       },
-    //     });
-    
-    //     if (response.data && response.data.shops) {
-    //       setItems(prevItems => [response.data.shops[response.data.shops.length - 1], ...prevItems]);
-    //     }
-    //     setIsModalOpen(false);
-    //   } catch (error) {
-    //     console.error('Error adding shop item:', error);
-    //   }
-    // };
     
     const handleAddItem = async (newItem) => {
       // Create a new FormData object
@@ -89,29 +66,41 @@
             'Content-Type': 'multipart/form-data',
           },
         });
-    
         if (response.data && response.data.shops) {
           setItems(prevItems => [response.data.shops[response.data.shops.length - 1], ...prevItems]);
+          toast.success("New item added successfully!");
         }
         setIsModalOpen(false);
       } catch (error) {
         console.error('Error adding shop item:', error);
+        toast.error('Failed to add new item. Please try again.');
       }
     };
 
-    
+    const openDeleteModal = (id) => {
+      console.log("Opening delete modal for item:", id);
+      setItemToDelete(id);
+      setIsDeleteModalOpen(true);
+    };
+
+    const closeDeleteModal = () => {
+      console.log("Closing delete modal");
+      setIsDeleteModalOpen(false);
+      setItemToDelete(null);
+    };
 
     const handleDeleteItem = async (id) => {
+      console.log("Attempting to delete item:", id);
       try {
-        // Add confirmation message before deleting
-        if (window.confirm('Are you sure you want to delete this item?')) {
-          await axiosInstance.delete(`/shop-items/${id}?email=${email}`);
-          setItems(prevItems => prevItems.filter(item => item._id !== id));
-        }
+        await axiosInstance.delete(`/shop-items/${id}?email=${email}`);
+        setItems(prevItems => prevItems.filter(item => item._id !== id));
+        toast.success('Item deleted successfully!');
       } catch (error) {
         console.error('Error deleting shop item:', error.response ? error.response.data : error);
+        toast.error('Failed to delete item. Please try again.');
       }
     };
+
 
     const handleEdit = (item) => {
       setEditingItem(item);
@@ -141,11 +130,13 @@
           setEditingItem(null);
           setIsModalOpen(false);
           setRefreshTrigger(prev => prev + 1); // Trigger a refresh
+          toast.success('Item updated successfully!');
 
         }
       } catch (error) {
         console.error('Error updating shop item:', error);
         console.error('Error updating shop item:', error.response ? error.response.data : error);
+        toast.error('Failed to update item. Please try again.');
 
       }
     };
@@ -154,7 +145,8 @@
 
     return (
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center mb-6">
+        <Toaster position="top-center" />
+        < div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">Gold & Jewelry Shop</h1>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -178,7 +170,8 @@
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredItems.map((item) => (
+        {filteredItems.length > 0 ? (
+          filteredItems.map((item) => (
             <Card
               key={item._id}
               shadow="sm"
@@ -187,12 +180,14 @@
               onClick={() => window.open("http://localhost:8000/"+item.image, '_blank')}
             >
               <MdDeleteForever
-                className="absolute bottom-6 right-2 text-red-600 cursor-pointer text-2xl"
-                onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteItem(item._id);
-              }}
-            />
+                  className="absolute bottom-6 right-2 text-red-600 cursor-pointer text-2xl z-10"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("Delete icon clicked for item:", item._id);
+                    openDeleteModal(item._id);
+                  }}
+                />
               <CardBody className="overflow-visible p-0">
                 <Image
                   shadow="sm"
@@ -222,7 +217,12 @@
                 </Button>
               </CardFooter>
             </Card>
-          ))}
+          ))
+        ) : (  
+        <div className="col-span-full text-center  py-8">
+          <p className="text-md">No items found for the selected filter. Try a different category or add new items.</p>
+        </div>
+        )}       
         </div>
 
         {isModalOpen && (
@@ -236,6 +236,34 @@
             editingItem={editingItem}
           />
         )}
+     <Modal
+        closeButton
+        aria-labelledby="modal-title"
+        open={isDeleteModalOpen}
+        onClose={closeDeleteModal}
+      >
+        <Modal.Header>
+          <h3 id="modal-title" className="text-lg font-semibold">
+            Confirm Deletion
+          </h3>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Are you sure you want to delete this item? This action cannot be undone.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button auto flat color="error" onClick={closeDeleteModal}>
+            Cancel
+          </Button>
+          <Button auto onClick={() => {
+            handleDeleteItem(itemToDelete);
+            closeDeleteModal();
+          }}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
       </div>
     );
   }

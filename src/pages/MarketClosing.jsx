@@ -2,175 +2,246 @@ import React, { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import axiosInstance from '../axiosInstance';
+import { Card, CardBody, CardFooter, Image, Button, Modal, Text } from "@nextui-org/react";
+import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
+import toast, { Toaster } from 'react-hot-toast';
 
-const MarketRateEditor = () => {
+const BannerCreator = () => {
   const [background, setBackground] = useState(null);
   const [logo, setLogo] = useState(null);
-  const [date, setDate] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [address, setAddress] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [currentDate, setCurrentDate] = useState('');
   const [bidRate, setBidRate] = useState('');
   const [askRate, setAskRate] = useState('');
-  const [currentDate, setCurrentDate] = useState('');
-  const posterRef = useRef(null);
+  const [createdBanners, setCreatedBanners] = useState([]);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bannerToDelete, setBannerToDelete] = useState(null);
+  const bannerRef = useRef(null);
+  const backgroundInputRef = useRef(null);
+  const logoInputRef = useRef(null);
 
   useEffect(() => {
     const updateDate = () => {
       setCurrentDate(format(new Date(), 'MMMM d, yyyy'));
     };
-
     updateDate();
-
     const intervalId = setInterval(updateDate, 1000 * 60);
-
     return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
-    const getLastFriday = () => {
-      const today = new Date();
-      const day = today.getDay();
-      const daysUntilFriday = (day >= 5) ? (day - 5) : (day + 2);
-      const lastFriday = new Date(today);
-      lastFriday.setDate(today.getDate() - daysUntilFriday);
-      return format(lastFriday, 'yyyy-MM-dd');
-    };
-
     const fetchClosingRate = async () => {
-      const lastFriday = getLastFriday();
       try {
-        const response = await axiosInstance.get(`/closing-rate/${lastFriday}`);
-        const closingRate = response.data.closingRate;
-        setBidRate(closingRate); // Adjust according to your API response
+        const response = await axiosInstance.get('/closing-rate');
+        const { bid, ask } = response.data;
+        setBidRate(bid);
+        setAskRate(ask);
       } catch (error) {
         console.error('Error fetching closing rate:', error);
       }
     };
-
     fetchClosingRate();
   }, []);
 
-  const handleBackgroundUpload = (e) => {
-    const file = e.target.files[0];
-    setBackground(URL.createObjectURL(file));
+  const handleDragOver = (e) => {
+    e.preventDefault();
   };
 
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
-    setLogo(URL.createObjectURL(file));
+  const handleDrop = (setter) => (e) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    handleFile(file, setter);
+  };
+
+  const handleFile = (file, setter) => {
+    if (file) {
+      setter(URL.createObjectURL(file));
+      // toast.success(`File uploaded successfully!`);
+    }
   };
 
   const handleExport = () => {
-    if (posterRef.current) {
-      html2canvas(posterRef.current).then((canvas) => {
+    if (bannerRef.current) {
+      const originalBorderRadius = bannerRef.current.style.borderRadius;
+      bannerRef.current.style.borderRadius = '0';
+      html2canvas(bannerRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+      }).then((canvas) => {
         const image = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = image;
-        link.download = 'market_rate_poster.png';
+        link.download = 'custom_banner.png';
         link.click();
+        
+        setCreatedBanners(prev => [...prev, { img: image, title: companyName || 'Untitled' }]);
+        resetFields();
+        toast.success('Banner created and downloaded successfully!');
+        bannerRef.current.style.borderRadius = originalBorderRadius;
       });
     }
   };
 
+  const resetFields = () => {
+    setBackground(null);
+    setLogo(null);
+    setCompanyName('');
+    setAddress('');
+    setMobileNumber('');
+    toast.success('Fields reset successfully!');
+  };
+
+  // const downloadBanner = (banner) => {
+  //   const link = document.createElement('a');
+  //   link.href = banner.img;
+  //   link.download = `${banner.title}.png`;
+  //   link.click();
+  //   toast.success('Banner downloaded successfully!');
+  // };
+
+  // const confirmDelete = (index) => {
+  //   setBannerToDelete(index);
+  //   setDeleteModalOpen(true);
+  // };
+
+  const deleteBanner = () => {
+    if (bannerToDelete !== null) {
+      setCreatedBanners(prev => prev.filter((_, i) => i !== bannerToDelete));
+      setDeleteModalOpen(false);
+      setBannerToDelete(null);
+      toast('Banner deleted!', { icon: '🗑️' });
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center">
-          <label
-            htmlFor="background"
-            className="cursor-pointer flex flex-col items-center justify-center w-full h-full bg-white rounded-lg border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-colors duration-300 p-8"
-          >
-            {background ? (
-              <img src={background} alt="Background" className="max-w-full max-h-full object-contain" />
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span>Drag and drop or click to upload background</span>
-              </>
-            )}
-            <input
-              id="background"
-              type="file"
-              onChange={handleBackgroundUpload}
-              className="hidden"
-            />
-          </label>
-        </div>
-        <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center">
-          <label
-            htmlFor="logo"
-            className="cursor-pointer flex flex-col items-center justify-center w-full h-full bg-white rounded-lg border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-500 hover:text-blue-500 transition-colors duration-300 p-8"
-          >
-            {logo ? (
-              <img src={logo} alt="Logo" className="max-w-full max-h-full object-contain" />
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <span>Drag and drop or click to upload logo</span>
-              </>
-            )}
-            <input id="logo" type="file" onChange={handleLogoUpload} className="hidden" />
-          </label>
-        </div>
-      </div>
-
-      <button
-        onClick={handleExport}
-        disabled={!background || !logo}
-        className="bg-blue-500 text-white px-4 py-2 rounded disabled:bg-gray-300 hover:bg-blue-600 transition-colors duration-300"
-      >
-        Export
-      </button>
-
-      {background && logo && (
-        <div
-          ref={posterRef}
-          className="mt-4 p-8 border-4 border-blue-500 rounded-lg relative bg-cover bg-center"
-          style={{
-            backgroundImage: `url(${background})`,
-            width: '800px',
-            height: '500px',
-          }}
-        >
-          <img src={logo} alt="Logo" className="w-32 h-32 absolute top-4 left-4" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center w-full px-8">
-            <input
-              type="text"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              placeholder={currentDate}
-              className="block w-full mb-4 p-4 border-4 border-blue-500 rounded-lg text-center bg-gray-800 bg-opacity-50 text-white text-3xl font-bold"
-            />
-            <div className="text-white text-2xl mb-4">CLOSING RATE</div>
-            <div className="flex justify-between mb-4">
-              <div className="mr-4">
-                <div className="text-white mb-2">BID</div>
+    <div className="flex flex-col space-y-8 p-6">
+      <Toaster position="top-right" />
+      <div className="flex space-x-8">
+        <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">Create</h2>
+          
+          <div className="space-y-4">
+            <div className="flex space-x-4">
+              <div
+                onClick={() => backgroundInputRef.current.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop(setBackground)}
+                className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
+              >
+                {background ? 'Background Added' : (
+                  <>
+                    <FaUpload className="text-2xl mb-2" />
+                    <span>Drag & Drop or Click to Upload Background</span>
+                  </>
+                )}
                 <input
-                  type="text"
-                  value={bidRate}
-                  onChange={(e) => setBidRate(e.target.value)}
-                  placeholder="2386.50"
-                  className="w-full p-4 border-4 border-blue-500 rounded-lg text-center bg-gray-800 bg-opacity-50 text-white text-2xl"
+                  ref={backgroundInputRef}
+                  type="file"
+                  onChange={(e) => handleFile(e.target.files[0], setBackground)}
+                  className="hidden"
                 />
               </div>
-              <div className="ml-4">
-                <div className="text-white mb-2">ASK</div>
+              <div
+                onClick={() => logoInputRef.current.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop(setLogo)}
+                className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
+              >
+                {logo ? 'Logo Added' : (
+                  <>
+                    <FaUpload className="text-2xl mb-2" />
+                    <span>Drag & Drop or Click to Upload Logo</span>
+                  </>
+                )}
                 <input
-                  type="text"
-                  value={askRate}
-                  onChange={(e) => setAskRate(e.target.value)}
-                  placeholder="2387.50"
-                  className="w-full p-4 border-4 border-blue-500 rounded-lg text-center bg-gray-800 bg-opacity-50 text-white text-2xl"
+                  ref={logoInputRef}
+                  type="file"
+                  onChange={(e) => handleFile(e.target.files[0], setLogo)}
+                  className="hidden"
                 />
               </div>
             </div>
+
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Company Name"
+              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+            />
+
+            <textarea
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Address"
+              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+              rows="3"
+            />
+
+            <input
+              type="text"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+              placeholder="Mobile Number"
+              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+            />
+
+            <div className="flex justify-between">
+              <Button color="secondary" auto onClick={resetFields}>
+                <FaRedo className="mr-2" /> Reset
+              </Button>
+              <Button color="success" auto onClick={handleExport}>
+                <FaDownload className="mr-2" /> Download
+              </Button>
+            </div>
           </div>
         </div>
-      )}
+
+        <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-gray-800"> Preview</h3>
+          {background && logo && (
+            <div
+              ref={bannerRef}
+              className="w-full h-[400px] rounded-lg relative bg-cover bg-center overflow-hidden"
+              style={{ backgroundImage: `url(${background})` }}
+            >
+              <img src={logo} alt="Logo" className="w-24 h-24 absolute top-4 left-4" />
+              <div className="absolute inset-0 flex flex-col justify-between p-6 text-white">
+                <div className="text-center">
+                  <div className="text-3xl font-bold mb-2">{companyName}</div>
+                  <div className="text-xl mb-1">{currentDate}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl mb-4">CLOSING RATE</div>
+                  <div className="flex justify-center space-x-8 mb-4">
+                    <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                      <div className="mb-2">BID</div>
+                      <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
+                        {bidRate}
+                      </div>
+                    </div>
+                    <div className="bg-black bg-opacity-30 p-3 rounded-lg">
+                      <div className="mb-2">ASK</div>
+                      <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
+                        {askRate}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg">{address}</div>
+                  <div className="text-lg">{mobileNumber}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
 
-export default MarketRateEditor;
+export default BannerCreator;

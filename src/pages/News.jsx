@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
-import { toast ,ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster, toast } from 'react-hot-toast';
+import Modal from 'react-modal';
 
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
@@ -10,6 +10,8 @@ const NewsUpload = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
@@ -26,7 +28,6 @@ const NewsUpload = () => {
         if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.email) {
           setEmail(adminResponse.data.data.email);
 
-          // Fetch news items for this admin
           const newsResponse = await axiosInstance.get(`/get-manual-news?email=${adminResponse.data.data.email}`);
           if (newsResponse.data && newsResponse.data.data && newsResponse.data.data.news) {
             setNewsItems(newsResponse.data.data.news);
@@ -51,11 +52,7 @@ const NewsUpload = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const newItem = {
-      title,
-      description: content,
-      email
-    };
+    const newItem = { title, description: content, email };
 
     try {
       const response = await axiosInstance.post('/add-manual-news', newItem);
@@ -80,11 +77,7 @@ const NewsUpload = () => {
 
   const handleUpdate = async (event) => {
     event.preventDefault();
-    const updatedItem = {
-      title,
-      description: content,
-      email
-    };
+    const updatedItem = { title, description: content, email };
 
     try {
       const response = await axiosInstance.patch(`/update-manual-news/${newsItems[0]._id}/${editingItem._id}`, updatedItem);
@@ -104,13 +97,22 @@ const NewsUpload = () => {
     }
   };
 
-  const handleDelete = async (itemId) => {
+  const openDeleteModal = (itemId) => {
+    setItemToDelete(itemId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setItemToDelete(null);
+  };
+
+  const handleDelete = async () => {
     try {
-      if (window.confirm('Are you sure you want to delete this news item?')) {
-        await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemId}?email=${email}`);
-        setNewsItems(prevItems => prevItems.filter(item => item._id !== itemId));
-        toast.success('News item deleted successfully!');
-      }
+      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemToDelete}?email=${email}`);
+      setNewsItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
+      toast.success('News item deleted successfully!');
+      closeDeleteModal();
     } catch (error) {
       console.error('Error deleting news:', error.response ? error.response.data : error);
       toast.error('Error deleting news item!');
@@ -189,7 +191,7 @@ const NewsUpload = () => {
               <p className="text-gray-600 mb-4">{item.description}</p>
               <div className="flex justify-between items-center text-sm text-gray-500">
                 <span>{new Date(item.createdAt).toLocaleString()}</span>
-                <div className="flex space-x-2"> {/* Added flex and space-x-2 for the gap */}
+                <div className="flex space-x-2">
                   <button
                     onClick={() => handleEdit(item)}
                     className="bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md"
@@ -197,31 +199,44 @@ const NewsUpload = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(item._id)}
+                    onClick={() => openDeleteModal(item._id)}
                     className="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded-md"
                   >
                     Delete
                   </button>
                 </div>
               </div>
-
             </div>
           </div>
         ))}
       </div>
 
-      {/* Toast notifications */}
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onRequestClose={closeDeleteModal}
+        contentLabel="Delete Confirmation"
+        className="max-w-md mx-auto mt-20 bg-white p-6 rounded-lg shadow-lg"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      >
+        <h2 className="text-xl font-semibold mb-4">Confirm Deletion</h2>
+        <p className="mb-6">Are you sure you want to delete this news item?</p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={closeDeleteModal}
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDelete}
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+          >
+            Delete
+          </button>
+        </div>
+      </Modal>
+
+      <Toaster position="bottom-right" />
     </div>
   );
 };
