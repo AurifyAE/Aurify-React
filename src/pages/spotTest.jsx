@@ -44,7 +44,8 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
 
 
 // PriceCard Component
-const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
+const PriceCard = React.memo(({ title, initialPrice, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
+  console.log('the initial spread is : ',initialSpread);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
     return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
@@ -118,7 +119,7 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
             {isEditing ? (
               <input
                 type="number"
-                value={tempSpread}
+                value={initialSpread}
                 onChange={handleSpreadChange}
                 // onBlur={handleSpreadBlur}
                 className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
@@ -342,7 +343,9 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
-    return spreadMarginData[key] || 0;
+    const value = spreadMarginData[key] || 0;
+    console.log(`Getting ${type} for ${metal}. Key: ${key}, Value: ${value}`);
+    return value;
   }, [spreadMarginData]);
 
   const getUnitMultiplier = useCallback((unit) => {
@@ -363,6 +366,8 @@ const SpotRate = () => {
         const response = await axiosInstance.get(`/spotrates/${userId}`);
         if (response.data) {
           setSpreadMarginData(response.data);
+          console.log('response : ',response.data);
+          console.log('data : ',spreadMarginData);
         }
         if (response.data && response.data.commodities) {
           const parsedCommodities = response.data.commodities.map(commodity => ({
@@ -393,7 +398,6 @@ const SpotRate = () => {
     prevCommodities.map(commodity => {
       const updatedCommodity = { ...commodity };
       const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
-      
       if (marketData[metal]) {
         const metalBiddingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'));
         const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))+ parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
@@ -468,7 +472,11 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
       });
   
       if (response.status === 200 && response.data.data) {
-        setSpreadMarginData(response.data.data);
+        setSpreadMarginData(prevData => ({
+          ...prevData,
+          ...response.data.data
+        }));
+        console.log('Updated spreadMarginData:', response.data.data);
       }
     } catch (error) {
       console.error('Error updating spread:', error);

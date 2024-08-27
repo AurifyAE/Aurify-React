@@ -18,7 +18,6 @@ const LoginPage = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [fcmToken, setFcmToken] = useState("");
-  console.log(fcmToken);
   const navigate = useNavigate();
 
   useEffect(() =>{

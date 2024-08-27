@@ -163,7 +163,7 @@ const BannerCreator = () => {
         link.click();
         
         setCreatedBanners(prev => [...prev, { img: image, title: companyName || 'Untitled' }]);
-        resetFields();
+        silentResetFields();
         toast.success('Banner created and downloaded successfully!');
         bannerRef.current.style.borderRadius = originalBorderRadius;
       });
@@ -178,7 +178,14 @@ const BannerCreator = () => {
     setMobileNumber('');
     toast.success('Fields reset successfully!');
   };
-  console.log('spreads : ',spreadMarginData.goldAskSpread);
+  
+  const silentResetFields = () => {
+    setBackground(null);
+    setLogo(null);
+    setCompanyName('');
+    setAddress('');
+    setMobileNumber('');
+  };
 
   const bidRate = marketData['Gold']?.bid ? (parseFloat(marketData['Gold'].bid) + parseFloat(getSpreadOrMarginFromDB('Gold','bid'))).toFixed(4)
   : 'Loading...';
@@ -204,7 +211,7 @@ const BannerCreator = () => {
                 {background ? 'Background Added' : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span>Drag & Drop or Click to Upload Background</span>
+                    <span className='mx-4'>Drag & Drop or Click to Upload Background</span>
                   </>
                 )}
                 <input
@@ -223,7 +230,7 @@ const BannerCreator = () => {
                 {logo ? 'Logo Added' : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span>Drag & Drop or Click to Upload Logo</span>
+                    <span className='mx-4'>Drag & Drop or Click to Upload Logo</span>
                   </>
                 )}
                 <input
