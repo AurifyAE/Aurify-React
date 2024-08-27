@@ -1,11 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
-import axiosInstance from '../axiosInstance';
 import { Button } from "@nextui-org/react";
 import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
+// import { useMarketData } from '../context/MarketDataContext';
 import io from 'socket.io-client';
+import axiosInstance from '../axiosInstance';
+
 
 const BannerCreator = () => {
   const [background, setBackground] = useState(null);
@@ -14,26 +16,39 @@ const BannerCreator = () => {
   const [address, setAddress] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [currentDate, setCurrentDate] = useState('');
-  const [bidRate, setBidRate] = useState('');
-  const [askRate, setAskRate] = useState('');
   const [createdBanners, setCreatedBanners] = useState([]);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bannerToDelete, setBannerToDelete] = useState(null);
-  const [serverURL, setServerURL] = useState('');
-  const [marketData, setMarketData] = useState({});
-  const [error, setError] = useState(null);
   const bannerRef = useRef(null);
   const backgroundInputRef = useRef(null);
   const logoInputRef = useRef(null);
-  const [symbols] = useState(["Gold"])
+  const [marketData, setMarketData] = useState({});
+  const [spreadMarginData, setSpreadMarginData] = useState({});
+  const [symbols, setSymbols] = useState([]);
+  const [serverURL, setServerURL] = useState('');
+  const [userId, setUserId] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const email = localStorage.getItem('userEmail');
+        const response = await axiosInstance.get(`/data/${email}`);
+        setUserId(response.data.data._id);
+        const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
+        const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
+        setSymbols(uppercaseSymbols);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+
+    fetchUserId();
+  }, []);
 
   useEffect(() => {
     const fetchServerURL = async () => {
       try {
         const response = await axiosInstance.get('/server-url');
-        console.log(response.data.selectedServerURL);
         setServerURL(response.data.selectedServerURL);
-        console.log('here is the server ',serverURL)
       } catch (error) {
         console.error('Error fetching server URL:', error);
       }
@@ -43,22 +58,39 @@ const BannerCreator = () => {
   }, []);
 
   useEffect(() => {
-    console.log('here is the url server, ',serverURL);
+    const fetchSpreadMarginData = async () => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        if (response.data) {
+          setSpreadMarginData(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching spread margin data:', error);
+      }
+    };
+
+    if (userId) {
+      fetchSpreadMarginData();
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (!serverURL || symbols.length === 0) return;
+
     const socket = io(serverURL, {
       query: { secret: "aurify@123" },
       transports: ['websocket'],
     });
-  
+
     socket.on("connect", () => {
-      socket.emit("request-data",symbols);
+      socket.emit("request-data", symbols);
     });
-  
+
     socket.on("market-data", (data) => {
       if (data && data.symbol) {
         setMarketData(prevData => ({
           ...prevData,
           [data.symbol]: {
-            ...prevData[data.symbol],
             ...data,
             bidChanged: prevData[data.symbol] && data.bid !== prevData[data.symbol].bid 
               ? (data.bid > prevData[data.symbol].bid ? 'up' : 'down') 
@@ -67,17 +99,28 @@ const BannerCreator = () => {
         }));
       }
     });
-    console.log('markettttt',marketData)
-  
+
     socket.on("error", (error) => {
       console.error("Socket error:", error);
-      setError("An error occurred while receiving data");
     });
-  
+
     return () => {
       socket.disconnect();
     };
-  }, [symbols, serverURL]);
+  }, [serverURL, symbols]);
+
+  useEffect(() => {
+    if (Object.keys(marketData).length > 0 && Object.keys(spreadMarginData).length > 0) {
+      setLoading(false);
+    }
+  }, [marketData, spreadMarginData]);
+
+  const getSpreadOrMarginFromDB = useCallback((metal, type) => {
+    const lowerMetal = metal.toLowerCase();
+    const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
+    return spreadMarginData[key] || 0;
+  }, [spreadMarginData]);
+  
 
   useEffect(() => {
     const updateDate = () => {
@@ -87,8 +130,6 @@ const BannerCreator = () => {
     const intervalId = setInterval(updateDate, 1000 * 60);
     return () => clearInterval(intervalId);
   }, []);
-
- 
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -103,7 +144,6 @@ const BannerCreator = () => {
   const handleFile = (file, setter) => {
     if (file) {
       setter(URL.createObjectURL(file));
-      // toast.success(`File uploaded successfully!`);
     }
   };
 
@@ -138,7 +178,13 @@ const BannerCreator = () => {
     setMobileNumber('');
     toast.success('Fields reset successfully!');
   };
+  console.log('spreads : ',spreadMarginData.goldAskSpread);
 
+  const bidRate = marketData['Gold']?.bid ? (parseFloat(marketData['Gold'].bid) + parseFloat(getSpreadOrMarginFromDB('Gold','bid'))).toFixed(4)
+  : 'Loading...';
+  const askRate = bidRate 
+    ? (parseFloat(bidRate) + parseFloat(getSpreadOrMarginFromDB('Gold','ask'))+parseFloat(0.5)).toFixed(4)
+    : 'Loading...';
 
   return (
     <div className="flex flex-col space-y-8 p-6">
@@ -244,13 +290,13 @@ const BannerCreator = () => {
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">BID</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                      {marketData['Gold'.bid]}
+                      {bidRate}
                       </div>
                     </div>
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">ASK</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                      {askRate || 'Loading...'}
+                      {askRate}
                       </div>
                     </div>
                   </div>

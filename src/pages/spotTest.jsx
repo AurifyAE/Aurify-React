@@ -45,7 +45,6 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
 
 // PriceCard Component
 const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
-  console.log(initialPrice);
   const [spread, setSpread] = useState(() => {
     const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
     return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
@@ -343,7 +342,6 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
-    console.log(`Retrieving ${key}: ${spreadMarginData[key]}`); // Add this log
     return spreadMarginData[key] || 0;
   }, [spreadMarginData]);
 
@@ -352,9 +350,9 @@ const SpotRate = () => {
     switch (lowerCaseUnit) {
       case 'gram': return 1;
       case 'kg': return 1000;
-      case 'oz': return 28.3495;
-      case 'tola': return 11.6;
-      case 'ttb': return 11.6;
+      case 'oz': return 31.1034768;
+      case 'tola': return 11.664;
+      case 'ttb': return 116.6400;
       default: return 1;
     }
   }, []);
@@ -364,7 +362,6 @@ const SpotRate = () => {
       try {
         const response = await axiosInstance.get(`/spotrates/${userId}`);
         if (response.data) {
-          console.log('Spread/Margin data:', response.data);
           setSpreadMarginData(response.data);
         }
         if (response.data && response.data.commodities) {
@@ -430,7 +427,7 @@ const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
 }, []);
 
 const calculatePrice = useCallback((metalPrice, commodity, type) => {
-  const unitMultiplier = getUnitMultiplier(commodity.unit);
+  const unitMultiplier = getUnitMultiplier(commodity.weight);
   const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
   const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
   const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
@@ -576,7 +573,6 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     setSelectedCommodity({
       ...commodity
     });
-    console.log(selectedCommodity);
     setIsEditing(true);
     setOpenModal(true);
   }, []);

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axiosInstance from '../axiosInstance';
-import { Image } from '@nextui-org/react';
-
+import {Card, CardHeader, CardBody, Image} from "@nextui-org/react";
 const Banner = () => {
   const [banners, setBanners] = useState([]);
 
@@ -17,11 +16,10 @@ const Banner = () => {
     try {
       const response = await axiosInstance.get(`/data/${userEmail}`);
       const responseBanner = await axiosInstance.get(`/banners/${response.data.data._id}`);
-      console.log(responseBanner.data.data);
-      // Ensure the response contains a banner array
       setBanners(responseBanner.data.data);
+      console.log(responseBanner.data.data);
     } catch (error) {
-      console.error('Error fetching banners:', error); 
+      console.error('Error fetching banners:', error);
     }
   };
 
@@ -30,22 +28,23 @@ const Banner = () => {
   }
 
   return (
-    <div className="w-full">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {banners.map((banner, index) => (
-        <div key={index} className="relative w-full mb-4">
-          <Image
-            src={banner.imageUrl}
-            alt={banner.title}
-            width="100%"
-            height={300}
-            objectFit="cover"
-          />
-          {banner.title && (
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
-              <h2 className="text-2xl font-bold">{banner.title}</h2>
-            </div>
-          )}
-        </div>
+        <Card key={banner._id || index} className="py-4">
+          <CardHeader className="pb-0 pt-2 px-4 flex-col items-start">
+            <h3 className="text-tiny uppercase font-bold">{banner.title || 'Banner Title'}</h3>
+            {/* <small className="text-default-500">{banner.subtitle || 'Banner Subtitle'}</small> */}
+            {/* <h4 className="font-bold text-large">{banner.description || 'Banner Description'}</h4> */}
+          </CardHeader>
+          <CardBody className="overflow-visible py-2">
+            <Image
+              alt={banner.title || 'Banner image'}
+              className="object-cover rounded-xl"
+              src={banner.imageUrl}
+              width={270}
+            />
+          </CardBody>
+        </Card>
       ))}
     </div>
   );
