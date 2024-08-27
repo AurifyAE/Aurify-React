@@ -172,9 +172,9 @@ const getUnitMultiplier = (weight) => {
   switch (weight) {
     case 'GM': return 1;
     case 'KG': return 1000;
-    case 'TTB': return 116.64;
+    case 'TTB': return 116.6400;
     case 'TOLA': return 11.664;
-    case 'OZ': return 31.103;
+    case 'OZ': return 31.1034768;
     default: return 1;
   }
 };
