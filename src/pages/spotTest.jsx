@@ -44,14 +44,15 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
 
 
 // PriceCard Component
-const PriceCard = React.memo(({ title, initialPrice, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
-  console.log('the initial spread is : ',initialSpread);
-  const [spread, setSpread] = useState(() => {
-    const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
-    return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
-  });
+const PriceCard = React.memo(({ title, initialPrice, initialSpread, metal, type, onSpreadUpdate, getSpreadOrMarginFromDB }) => {
+  const [spread, setSpread] = useState(initialSpread);
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
+
+  useEffect(() => {
+    setSpread(initialSpread);
+    setTempSpread(initialSpread);
+  }, [initialSpread]);
 
   const handleEditClick = useCallback(() => {
     setIsEditing(true);
@@ -67,7 +68,6 @@ const PriceCard = React.memo(({ title, initialPrice, initialSpread, onClose, met
     const newSpread = parseFloat(tempSpread);
     setIsEditing(false);
     setSpread(newSpread);
-    localStorage.setItem(`spread_${metal}_${type}`, newSpread.toString());
     if (onSpreadUpdate) {
       onSpreadUpdate(metal, type, newSpread);
     }
@@ -119,7 +119,7 @@ const PriceCard = React.memo(({ title, initialPrice, initialSpread, onClose, met
             {isEditing ? (
               <input
                 type="number"
-                value={initialSpread}
+                value={tempSpread}
                 onChange={handleSpreadChange}
                 // onBlur={handleSpreadBlur}
                 className="text-gray-600 font-medium text-sm p-1 border border-gray-300 rounded w-full h-full"
@@ -146,7 +146,7 @@ const PriceCard = React.memo(({ title, initialPrice, initialSpread, onClose, met
 });
 
 // ValueCard Component
-const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, onMarginUpdate }) => {
+const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, onMarginUpdate, getSpreadOrMarginFromDB }) => {
   const getLowMargin = useCallback(() => {
     const key = `${metal.toLowerCase()}LowMargin`;
     return spreadMarginData[key] || 0;
@@ -156,8 +156,8 @@ const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, o
     const key = `${metal.toLowerCase()}HighMargin`;
     return spreadMarginData[key] || 0;
   }, [spreadMarginData, metal]);
-  const [lowMargin, setLowMargin] = useState(getLowMargin());
-  const [highMargin, setHighMargin] = useState(getHighMargin());
+  const [lowMargin, setLowMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'low'));
+  const [highMargin, setHighMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'high'));
 
   useEffect(() => {
     setLowMargin(getLowMargin());
@@ -343,9 +343,7 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
-    const value = spreadMarginData[key] || 0;
-    console.log(`Getting ${type} for ${metal}. Key: ${key}, Value: ${value}`);
-    return value;
+    return spreadMarginData[key] || 0;
   }, [spreadMarginData]);
 
   const getUnitMultiplier = useCallback((unit) => {
@@ -366,8 +364,6 @@ const SpotRate = () => {
         const response = await axiosInstance.get(`/spotrates/${userId}`);
         if (response.data) {
           setSpreadMarginData(response.data);
-          console.log('response : ',response.data);
-          console.log('data : ',spreadMarginData);
         }
         if (response.data && response.data.commodities) {
           const parsedCommodities = response.data.commodities.map(commodity => ({
@@ -378,9 +374,7 @@ const SpotRate = () => {
             sellPremium: parseFloat(commodity.sellPremium),
             buyPremium: parseFloat(commodity.buyPremium)
           }));
-          setCommodities(parsedCommodities);
-          localStorage.setItem('commoditiesData', JSON.stringify(parsedCommodities));
-        }
+          setCommodities(parsedCommodities);        }
       } catch (error) {
         console.error('Error fetching commodities:', error);
       } finally {
@@ -431,11 +425,12 @@ const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
 }, []);
 
 const calculatePrice = useCallback((metalPrice, commodity, type) => {
+  console.log('calculation : ',metalPrice, commodity,type);
   const unitMultiplier = getUnitMultiplier(commodity.weight);
   const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
   const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
   const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
-  const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'bid' : 'ask'));
+  const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'ask' : 'bid'));
   
   return (
     ((((metalPrice + spread) / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
@@ -613,11 +608,11 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         ? parseFloat(marketData[metal].bid)
         : 0;
       const metalAskingPrice = marketData[metal] && marketData[metal].bid
-        ? parseFloat(marketData[metal].bid) + (isGoldRelated ? 0.5 : 0.05)
+        ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + (isGoldRelated ? 0.5 : 0.05)
         : 0;
   
-      const sellPrice = calculatePrice(metalBiddingPrice, row, 'sell');
-      const buyPrice = calculatePrice(metalAskingPrice, row, 'buy');
+      const sellPrice = calculatePrice(metalAskingPrice, row, 'sell');
+      const buyPrice = calculatePrice(metalBiddingPrice, row, 'buy');
   
       return (
         <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
@@ -693,6 +688,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   metal={metal} 
                   type="bid" 
                   onSpreadUpdate={handleSpreadOrMarginUpdate} 
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
                 <PriceCard 
                   title="Ask" 
@@ -701,6 +697,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   metal={metal} 
                   type="ask" 
                   onSpreadUpdate={handleSpreadOrMarginUpdate} 
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
                 <ValueCard 
                   lowValue={marketData[metal]?.low} 
@@ -708,6 +705,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   spreadMarginData={spreadMarginData}
                   metal={metal}
                   onMarginUpdate={handleSpreadOrMarginUpdate}
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
               </div>
             </div>
