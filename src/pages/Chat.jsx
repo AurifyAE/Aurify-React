@@ -1,21 +1,50 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from "react";
+import { io } from "socket.io-client";
 import { Home, BarChart2, Image, MessageCircle, Newspaper, ShoppingBag, Users, User, Search, Bell, Settings, ChevronDown, Paperclip, Smile, Send } from 'lucide-react';
 import Avatar from '../assets/Avatar.jpg'
 
-const EnhancedChatInterface = () => {
-  const menuItems = [
-    { icon: Home, label: 'Dashboard' },
-    { icon: BarChart2, label: 'Spot Rate' },
-    { icon: Image, label: 'Media' },
-    { icon: MessageCircle, label: 'Messages', active: true },
-    { icon: Newspaper, label: 'News' },
-    { icon: ShoppingBag, label: 'Shop' },
-    { icon: Users, label: 'Users' },
-  ];
+const socket = io("http://localhost:8000");
 
-  const superAdminChats = [
-    { name: 'Super Admin', status: 'online', message: 'New update available', time: '11:30 AM', isAdmin: true },
-  ];
+const EnhancedChatInterface = () => {
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
+  const messageEndRef = useRef(null);
+
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  
+
+  useEffect(() => {
+    socket.on("message", (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+    });
+
+    // Clean up on component unmount
+    return () => {
+      socket.off("message");
+    };
+  }, []);
+
+
+  const handleSendMessage = () => {
+    if (newMessage.trim() !== "") {
+      const message = {
+        sender: "You", // Replace with actual sender information
+        content: newMessage,
+        time: new Date().toLocaleTimeString(),
+        isOwn: true,
+      };
+
+      // Emit the message to the server
+      socket.emit("message", message);
+
+      // Add the message to the local state
+      setMessages((prevMessages) => [...prevMessages, message]);
+      setNewMessage("");
+    }
+  };
 
   const regularChats = [
     { name: 'Theron Trump', status: 'offline', message: "Let's discuss the project", time: '10:30 AM' },
@@ -51,11 +80,10 @@ const EnhancedChatInterface = () => {
           </div>
         </div>
         <div className="flex-1 bg-gray-50 p-4 overflow-y-auto hide-scrollbar">
-          <ChatMessage sender="Theron Trump" content="What do you think about our plans for this product launch?" time="09:25" />
-          <ChatMessage sender="Theron Trump" content="It looks to me like you have a lot planned before your deadline. I would suggest you push your deadline back so you have time to run a successful advertising campaign." time="09:28" />
-          <ChatMessage sender="You" content="I would suggest you discuss this further with the advertising team." time="09:41" isOwn />
-          <ChatMessage sender="Theron Trump" content="It looks to me like you have a lot planned before your deadline. I would suggest you push your deadline back so you have time to run a successful advertising campaign." time="09:28" />
-          <ChatMessage sender="Theron Trump" content="It looks to me like you have a lot planned before your deadline. I would suggest you push your deadline back so you have time to run a successful advertising campaign." time="09:28" />
+        {messages.map((msg, index) => (
+            <ChatMessage key={index} {...msg} />
+          ))}
+          <div ref={messageEndRef} />
         </div>
         <div className="bg-white p-4 border-t">
           <div className="flex items-center space-x-2">
@@ -65,7 +93,10 @@ const EnhancedChatInterface = () => {
             <input
               type="text"
               placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
               className="flex-1 px-4 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-purple-600"
+              onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             />
             {/* <button className="text-gray-500 hover:text-gray-700">
               <Smile className="h-5 w-5" />

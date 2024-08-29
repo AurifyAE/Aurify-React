@@ -44,14 +44,15 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
 
 
 // PriceCard Component
-const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, onClose, metal, type, onSpreadUpdate }) => {
-  console.log(initialPrice);
-  const [spread, setSpread] = useState(() => {
-    const savedSpread = localStorage.getItem(`spread_${metal}_${type}`);
-    return savedSpread !== null ? parseFloat(savedSpread) : initialSpread;
-  });
+const PriceCard = React.memo(({ title, initialPrice, initialSpread, metal, type, onSpreadUpdate, getSpreadOrMarginFromDB }) => {
+  const [spread, setSpread] = useState(initialSpread);
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
+
+  useEffect(() => {
+    setSpread(initialSpread);
+    setTempSpread(initialSpread);
+  }, [initialSpread]);
 
   const handleEditClick = useCallback(() => {
     setIsEditing(true);
@@ -67,7 +68,6 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
     const newSpread = parseFloat(tempSpread);
     setIsEditing(false);
     setSpread(newSpread);
-    localStorage.setItem(`spread_${metal}_${type}`, newSpread.toString());
     if (onSpreadUpdate) {
       onSpreadUpdate(metal, type, newSpread);
     }
@@ -146,7 +146,7 @@ const PriceCard = React.memo(({ title, initialPrice, initialBid, initialSpread, 
 });
 
 // ValueCard Component
-const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, onMarginUpdate }) => {
+const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, onMarginUpdate, getSpreadOrMarginFromDB }) => {
   const getLowMargin = useCallback(() => {
     const key = `${metal.toLowerCase()}LowMargin`;
     return spreadMarginData[key] || 0;
@@ -156,8 +156,8 @@ const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, o
     const key = `${metal.toLowerCase()}HighMargin`;
     return spreadMarginData[key] || 0;
   }, [spreadMarginData, metal]);
-  const [lowMargin, setLowMargin] = useState(getLowMargin());
-  const [highMargin, setHighMargin] = useState(getHighMargin());
+  const [lowMargin, setLowMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'low'));
+  const [highMargin, setHighMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'high'));
 
   useEffect(() => {
     setLowMargin(getLowMargin());
@@ -332,7 +332,7 @@ const SpotRate = () => {
   const [error, setError] = useState(null);
   const [symbols, setSymbols] = useState([]);
   const [serverURL, setServerURL] = useState('');
-  const [userId, setUserId] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [commodities, setCommodities] = useState([]);
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
@@ -351,17 +351,17 @@ const SpotRate = () => {
     switch (lowerCaseUnit) {
       case 'gram': return 1;
       case 'kg': return 1000;
-      case 'oz': return 28.3495;
-      case 'tola': return 11.6;
-      case 'ttb': return 11.6;
+      case 'oz': return 31.1034768;
+      case 'tola': return 11.664;
+      case 'ttb': return 116.6400;
       default: return 1;
     }
   }, []);
 
   useEffect(() => {
-    const fetchCommodities = async (userId) => {
+    const fetchCommodities = async (adminId) => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
         if (response.data) {
           setSpreadMarginData(response.data);
         }
@@ -371,12 +371,10 @@ const SpotRate = () => {
             purity: parseFloat(commodity.purity),
             unit: parseFloat(commodity.unit),
             weight: commodity.weight,
-            sellPremium: parseFloat(commodity.sellPremium),
-            buyPremium: parseFloat(commodity.buyPremium)
+            sellCharge: parseFloat(commodity.sellCharge),
+            buyCharge: parseFloat(commodity.buyCharge)
           }));
-          setCommodities(parsedCommodities);
-          localStorage.setItem('commoditiesData', JSON.stringify(parsedCommodities));
-        }
+          setCommodities(parsedCommodities);        }
       } catch (error) {
         console.error('Error fetching commodities:', error);
       } finally {
@@ -384,20 +382,19 @@ const SpotRate = () => {
       }
     };
   
-    if (userId) {
-      fetchCommodities(userId);
+    if (adminId) {
+      fetchCommodities(adminId);
     }
-  }, [userId]);
+  }, [adminId]);
 
   useEffect(() => {
   setCommodities(prevCommodities => 
     prevCommodities.map(commodity => {
       const updatedCommodity = { ...commodity };
       const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
-      
       if (marketData[metal]) {
         const metalBiddingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'));
-        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
+        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))+ parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
         
         updatedCommodity.sellAED = calculatePrice(metalBiddingPrice, commodity, 'sell');
         updatedCommodity.buyAED = calculatePrice(metalAskingPrice, commodity, 'buy');
@@ -428,23 +425,26 @@ const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
 }, []);
 
 const calculatePrice = useCallback((metalPrice, commodity, type) => {
-  const unitMultiplier = getUnitMultiplier(commodity.unit);
+  const unitMultiplier = getUnitMultiplier(commodity.weight);
   const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
   const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
+  const charge = type === 'sell' ? commodity.sellCharge : commodity.buyCharge;
+  const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
+  const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'ask' : 'bid'));
   
   return (
-    ((((metalPrice / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
-    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(premium))
+    (((metalPrice + spread + premium) / 31.103) * 3.674 * commodity.unit * unitMultiplier *
+    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(charge)
   ).toFixed(4);
-}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, exchangeRate]);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB]);
 
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchAdminId = async () => {
       try {
         const email = localStorage.getItem('userEmail');
         const response = await axiosInstance.get(`/data/${email}`);
-        setUserId(response.data.data._id);
+        setAdminId(response.data.data._id);
         const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
         const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
         setSymbols(uppercaseSymbols);
@@ -454,25 +454,29 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
       }
     };
 
-    fetchUserId();
+    fetchAdminId();
   }, []);
 
   const handleSpreadOrMarginUpdate = useCallback(async (metal, type, newValue) => {
     try {
       const response = await axiosInstance.post('/update-spread', {
-        userId,
+        adminId,
         metal,
         type,
         value: parseFloat(newValue)
       });
   
       if (response.status === 200 && response.data.data) {
-        setSpreadMarginData(response.data.data);
+        setSpreadMarginData(prevData => ({
+          ...prevData,
+          ...response.data.data
+        }));
+        console.log('Updated spreadMarginData:', response.data.data);
       }
     } catch (error) {
       console.error('Error updating spread:', error);
     }
-  }, [userId]);
+  }, [adminId]);
 
 
   useEffect(() => {
@@ -549,7 +553,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     setOpenModal(false);
     const fetchUpdatedCommodities = async () => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
         if (response.data && response.data.commodities) {
           setCommodities(response.data.commodities);
         }
@@ -559,7 +563,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     };
   
     fetchUpdatedCommodities();
-  }, [userId]);
+  }, [adminId]);
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
@@ -572,21 +576,20 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     setSelectedCommodity({
       ...commodity
     });
-    console.log(selectedCommodity);
     setIsEditing(true);
     setOpenModal(true);
   }, []);
 
   const handleDelete = useCallback(async (id) => {
     try {
-      await axiosInstance.delete(`/commodities/${userId}/${id}`);
+      await axiosInstance.delete(`/commodities/${adminId}/${id}`);
       setCommodities(commodities.filter(commodity => commodity._id !== id));
       alert('Commodity deleted successfully');
     } catch (error) {
       console.error('Error deleting commodity:', error);
       alert('Failed to delete commodity. Please try again.');
     }
-  }, [userId, commodities]);
+  }, [adminId, commodities]);
 
   const handleCurrencyChange = useCallback((newCurrency, newExchangeRate) => {
     setCurrency(newCurrency);
@@ -600,33 +603,16 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     return commodities.map((row) => {
       const isGoldRelated = row.metal && (row.metal.toLowerCase().includes('gold') || 
                             row.metal.toLowerCase().includes('minted bar'));
-    
-    // Default to 'Unknown' or handle it as needed if 'row.metal' is undefined
-    const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
-    
-    const additionalPrice = isGoldRelated ? 0.5 : 0.05;
-    const metalBiddingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))
-      : 0;
-    const metalAskingPrice = marketData[metal] && marketData[metal].bid
-      ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + parseFloat(additionalPrice)
-      : 0;
-    const unitMultiplier = getUnitMultiplier(row.unit);
-    const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(row.purity);
-    const sellPremium = row.sellPremium || 0;
-    const buyPremium = row.buyPremium || 0;
-    const sellPrice = (
-      metalBiddingPrice && !isNaN(metalBiddingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? ((((metalBiddingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(sellPremium))
-        : 0
-       ).toFixed(4);
-    const buyPrice = (
-      metalAskingPrice && !isNaN(metalAskingPrice) && exchangeRate && row.unit && unitMultiplier && row.purity
-      ? ((((metalAskingPrice / 31.103) * exchangeRate * row.unit * unitMultiplier) *
-       (parseInt(row.purity) / Math.pow(10, digitsBeforeDecimal)))+parseFloat(buyPremium))
-        : 0
-       ).toFixed(4);
+      const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
+      const metalBiddingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid)
+        : 0;
+      const metalAskingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + (isGoldRelated ? 0.5 : 0.05)
+        : 0;
+  
+      const sellPrice = calculatePrice(metalAskingPrice, row, 'sell');
+      const buyPrice = calculatePrice(metalBiddingPrice, row, 'buy');
   
       return (
         <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
@@ -637,6 +623,8 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           <TableCell>{buyPrice}</TableCell>
           <TableCell>{row.sellPremium}</TableCell>
           <TableCell>{row.buyPremium}</TableCell>
+          <TableCell>{row.sellCharge}</TableCell>
+          <TableCell>{row.buyCharge}</TableCell>
           <TableCell>
             <IconButton
               onClick={() => handleEditCommodity(row)}
@@ -680,7 +668,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     copper: "COMEX:HG1!",
     gold: "TVC:GOLD",
     silver: "TVC:SILVER",
-    platinum: "COMEX:PL1!",
+    platinum: "TVC:PLATINUM",
   };
 
   return (
@@ -702,6 +690,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   metal={metal} 
                   type="bid" 
                   onSpreadUpdate={handleSpreadOrMarginUpdate} 
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
                 <PriceCard 
                   title="Ask" 
@@ -710,6 +699,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   metal={metal} 
                   type="ask" 
                   onSpreadUpdate={handleSpreadOrMarginUpdate} 
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
                 <ValueCard 
                   lowValue={marketData[metal]?.low} 
@@ -717,6 +707,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                   spreadMarginData={spreadMarginData}
                   metal={metal}
                   onMarginUpdate={handleSpreadOrMarginUpdate}
+                  getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
                 />
               </div>
             </div>
@@ -724,7 +715,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         ))}
       </div>
 
-      <Box sx={{ p: 10 }}>
+      <Box sx={{ p: 10 }} className="-mt-10">
         <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
           {uniqueMetals.map(metal => (
@@ -774,8 +765,10 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                 <TableCell>Unit</TableCell>
                 <TableCell>Sell ({currency})</TableCell>
                 <TableCell>Buy ({currency})</TableCell>
-                <TableCell>Sell Premium ({currency})</TableCell>
-                <TableCell>Buy Premium ({currency})</TableCell>
+                <TableCell>Sell Premium</TableCell>
+                <TableCell>Buy Premium</TableCell>
+                <TableCell>Sell Charges</TableCell>
+                <TableCell>Buy Charges</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>

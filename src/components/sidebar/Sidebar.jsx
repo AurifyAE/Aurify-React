@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, BarChart2, Image, MessageSquare, Newspaper, ShoppingCart, User } from 'lucide-react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import axiosInstance from '../../axiosInstance';
 
@@ -33,36 +32,28 @@ const SignOutButton = () => {
 };
 
 const FeatureDropdown = ({ features }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
   return (
     <div className="mt-8">
-      <h3
-        className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2 cursor-pointer flex items-center justify-between"
-        onClick={() => setIsOpen(!isOpen)}
-      >
+      <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
         FEATURES
-        {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </h3>
-      {isOpen && (
-        <ul className="space-y-1">
-          {features.map((feature, index) => (
-            <NavLink 
-              to={`/feature/${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
-              key={index}
-              className={({ isActive }) => (isActive ? 'text-purple-600' : 'text-gray-600')}
-            >
-              {({ isActive }) => (
-                <SidenavItem
-                  name={feature.name}
-                  icon={User} // You might want to use a different icon or create a mapping for feature icons
-                  isActive={isActive}
-                />
-              )}
-            </NavLink>
-          ))}
-        </ul>
-      )}
+      <ul className="space-y-1">
+        {features.map((feature, index) => (
+          <NavLink 
+            to={`/feature/${feature.name.toLowerCase().replace(/\s+/g, '-')}`}
+            key={index}
+            className={({ isActive }) => (isActive ? 'text-purple-600' : 'text-gray-600')}
+          >
+            {({ isActive }) => (
+              <SidenavItem
+                name={feature.name}
+                icon={User} // You might want to use a different icon or create a mapping for feature icons
+                isActive={isActive}
+              />
+            )}
+          </NavLink>
+        ))}
+      </ul>
     </div>
   );
 };
@@ -72,7 +63,7 @@ const Sidebar = () => {
     { name: "Dashboard", icon: Home, path: "dashboard" },
     { name: "Spot Rate", icon: BarChart2, path: "spot-rate" },
     { name: "Media", icon: Image, path: "media" },
-    { name: "Messages", icon: MessageSquare, path: "messages" },
+    { name: "Support", icon: MessageSquare, path: "support" },
     { name: "News", icon: Newspaper, path: "news" },
     // { name: "Shop", icon: ShoppingCart, path: "shop" },
     // { name: "Users", icon: User, path: "users" },
@@ -140,6 +131,8 @@ const Sidebar = () => {
         ))}
       </ul>
 
+      {features.length > 0 && <FeatureDropdown features={features} />}
+
       <div className="mt-8">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">ACCOUNT PAGES</h3>
         <ul className="space-y-1">
@@ -161,7 +154,7 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      {features.length > 0 && <FeatureDropdown features={features} />}
+      
       
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       <div className="mt-8">

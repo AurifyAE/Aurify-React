@@ -435,8 +435,8 @@ const UserList = ( ) => {
   //   setEditingSpread(null);
   // };
 
-  const handleToggleUserBlock = (userId) => {
-    const user = userData.find(u => u._id === userId);
+  const handleToggleUserBlock = (adminId) => {
+    const user = userData.find(u => u._id === adminId);
     if (!user) return; // Return early if user is not found
   
     const action = user.blocked !== undefined ? (user.blocked ? 'unblock' : 'block') : 'block'; // Check if blocked property exists
@@ -448,7 +448,7 @@ const UserList = ( ) => {
       onConfirm: () => {
         setUserData(prevData =>
           prevData.map(u =>
-            u._id === userId ? { ...u, blocked: u.blocked !== undefined ? !u.blocked : true } : u
+            u._id === adminId ? { ...u, blocked: u.blocked !== undefined ? !u.blocked : true } : u
           )
         );
         setShowNotification(true);

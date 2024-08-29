@@ -163,8 +163,6 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
 
   const saveBankDetails = async (bankData) => {
   const userEmail = localStorage.getItem('userEmail');
-  console.log("Bank data to be saved:", bankData);  // Log the bank data
-  console.log("User email:", userEmail);  // Log the user email
 
   try {
     const response = await axiosInstance.post('/save-bank-details', {
@@ -172,8 +170,6 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
       bankDetails: bankData
     });    
     
-    console.log('haaaai',bankData);
-
     if (response.data.success) {
       toast.success(editingBank ? 'Bank details updated successfully' : 'Bank details added successfully');
       fetchUserData(); // Refresh user data after saving

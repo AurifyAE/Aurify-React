@@ -1,10 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import html2canvas from 'html2canvas';
+import { Button } from "@nextui-org/react";
 import { format } from 'date-fns';
-import axiosInstance from '../axiosInstance';
-import { Card, CardBody, CardFooter, Image, Button, Modal, Text } from "@nextui-org/react";
-import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
+import html2canvas from 'html2canvas';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
+import { FaDownload, FaRedo, FaUpload } from 'react-icons/fa';
+// import { useMarketData } from '../context/MarketDataContext';
+import io from 'socket.io-client';
+import axiosInstance from '../axiosInstance';
+
 
 const BannerCreator = () => {
   const [background, setBackground] = useState(null);
@@ -13,14 +16,111 @@ const BannerCreator = () => {
   const [address, setAddress] = useState('');
   const [mobileNumber, setMobileNumber] = useState('');
   const [currentDate, setCurrentDate] = useState('');
-  const [bidRate, setBidRate] = useState('');
-  const [askRate, setAskRate] = useState('');
   const [createdBanners, setCreatedBanners] = useState([]);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [bannerToDelete, setBannerToDelete] = useState(null);
   const bannerRef = useRef(null);
   const backgroundInputRef = useRef(null);
   const logoInputRef = useRef(null);
+  const [marketData, setMarketData] = useState({});
+  const [spreadMarginData, setSpreadMarginData] = useState({});
+  const [symbols, setSymbols] = useState([]);
+  const [serverURL, setServerURL] = useState('');
+  const [adminId, setAdminId] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAdminId = async () => {
+      try {
+        const email = localStorage.getItem('userEmail');
+        const response = await axiosInstance.get(`/data/${email}`);
+        setAdminId(response.data.data._id);
+        const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
+        const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
+        setSymbols(uppercaseSymbols);
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
+      }
+    };
+
+    fetchAdminId();
+  }, []);
+
+  useEffect(() => {
+    const fetchServerURL = async () => {
+      try {
+        const response = await axiosInstance.get('/server-url');
+        setServerURL(response.data.selectedServerURL);
+      } catch (error) {
+        console.error('Error fetching server URL:', error);
+      }
+    };
+
+    fetchServerURL();
+  }, []);
+
+  useEffect(() => {
+    const fetchSpreadMarginData = async () => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
+        if (response.data) {
+          setSpreadMarginData(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching spread margin data:', error);
+      }
+    };
+
+    if (adminId) {
+      fetchSpreadMarginData();
+    }
+  }, [adminId]);
+
+  useEffect(() => {
+    if (!serverURL || symbols.length === 0) return;
+
+    const socket = io(serverURL, {
+      query: { secret: "aurify@123" },
+      transports: ['websocket'],
+    });
+
+    socket.on("connect", () => {
+      socket.emit("request-data", symbols);
+    });
+
+    socket.on("market-data", (data) => {
+      if (data && data.symbol) {
+        setMarketData(prevData => ({
+          ...prevData,
+          [data.symbol]: {
+            ...data,
+            bidChanged: prevData[data.symbol] && data.bid !== prevData[data.symbol].bid 
+              ? (data.bid > prevData[data.symbol].bid ? 'up' : 'down') 
+              : null,
+          }
+        }));
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [serverURL, symbols]);
+
+  useEffect(() => {
+    if (Object.keys(marketData).length > 0 && Object.keys(spreadMarginData).length > 0) {
+      setLoading(false);
+    }
+  }, [marketData, spreadMarginData]);
+
+  const getSpreadOrMarginFromDB = useCallback((metal, type) => {
+    const lowerMetal = metal.toLowerCase();
+    const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
+    return spreadMarginData[key] || 0;
+  }, [spreadMarginData]);
+  
 
   useEffect(() => {
     const updateDate = () => {
@@ -29,20 +129,6 @@ const BannerCreator = () => {
     updateDate();
     const intervalId = setInterval(updateDate, 1000 * 60);
     return () => clearInterval(intervalId);
-  }, []);
-
-  useEffect(() => {
-    const fetchClosingRate = async () => {
-      try {
-        const response = await axiosInstance.get('/closing-rate');
-        const { bid, ask } = response.data;
-        setBidRate(bid);
-        setAskRate(ask);
-      } catch (error) {
-        console.error('Error fetching closing rate:', error);
-      }
-    };
-    fetchClosingRate();
   }, []);
 
   const handleDragOver = (e) => {
@@ -58,7 +144,6 @@ const BannerCreator = () => {
   const handleFile = (file, setter) => {
     if (file) {
       setter(URL.createObjectURL(file));
-      // toast.success(`File uploaded successfully!`);
     }
   };
 
@@ -78,7 +163,7 @@ const BannerCreator = () => {
         link.click();
         
         setCreatedBanners(prev => [...prev, { img: image, title: companyName || 'Untitled' }]);
-        resetFields();
+        silentResetFields();
         toast.success('Banner created and downloaded successfully!');
         bannerRef.current.style.borderRadius = originalBorderRadius;
       });
@@ -93,28 +178,20 @@ const BannerCreator = () => {
     setMobileNumber('');
     toast.success('Fields reset successfully!');
   };
-
-  // const downloadBanner = (banner) => {
-  //   const link = document.createElement('a');
-  //   link.href = banner.img;
-  //   link.download = `${banner.title}.png`;
-  //   link.click();
-  //   toast.success('Banner downloaded successfully!');
-  // };
-
-  // const confirmDelete = (index) => {
-  //   setBannerToDelete(index);
-  //   setDeleteModalOpen(true);
-  // };
-
-  const deleteBanner = () => {
-    if (bannerToDelete !== null) {
-      setCreatedBanners(prev => prev.filter((_, i) => i !== bannerToDelete));
-      setDeleteModalOpen(false);
-      setBannerToDelete(null);
-      toast('Banner deleted!', { icon: '🗑️' });
-    }
+  
+  const silentResetFields = () => {
+    setBackground(null);
+    setLogo(null);
+    setCompanyName('');
+    setAddress('');
+    setMobileNumber('');
   };
+
+  const bidRate = marketData['Gold']?.bid ? (parseFloat(marketData['Gold'].bid) + parseFloat(getSpreadOrMarginFromDB('Gold','bid'))).toFixed(4)
+  : 'Loading...';
+  const askRate = bidRate 
+    ? (parseFloat(bidRate) + parseFloat(getSpreadOrMarginFromDB('Gold','ask'))+parseFloat(0.5)).toFixed(4)
+    : 'Loading...';
 
   return (
     <div className="flex flex-col space-y-8 p-6">
@@ -134,7 +211,7 @@ const BannerCreator = () => {
                 {background ? 'Background Added' : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span>Drag & Drop or Click to Upload Background</span>
+                    <span className='mx-4'>Drag & Drop or Click to Upload Background</span>
                   </>
                 )}
                 <input
@@ -153,7 +230,7 @@ const BannerCreator = () => {
                 {logo ? 'Logo Added' : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span>Drag & Drop or Click to Upload Logo</span>
+                    <span className='mx-4'>Drag & Drop or Click to Upload Logo</span>
                   </>
                 )}
                 <input
@@ -220,13 +297,13 @@ const BannerCreator = () => {
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">BID</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                        {bidRate}
+                      {bidRate}
                       </div>
                     </div>
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">ASK</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                        {askRate}
+                      {askRate}
                       </div>
                     </div>
                   </div>
