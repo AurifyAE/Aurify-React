@@ -371,8 +371,8 @@ const SpotRate = () => {
             purity: parseFloat(commodity.purity),
             unit: parseFloat(commodity.unit),
             weight: commodity.weight,
-            sellPremium: parseFloat(commodity.sellPremium),
-            buyPremium: parseFloat(commodity.buyPremium)
+            sellCharge: parseFloat(commodity.sellCharge),
+            buyCharge: parseFloat(commodity.buyCharge)
           }));
           setCommodities(parsedCommodities);        }
       } catch (error) {
@@ -425,18 +425,18 @@ const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
 }, []);
 
 const calculatePrice = useCallback((metalPrice, commodity, type) => {
-  console.log('calculation : ',metalPrice, commodity,type);
   const unitMultiplier = getUnitMultiplier(commodity.weight);
   const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
   const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
+  const charge = type === 'sell' ? commodity.sellCharge : commodity.buyCharge;
   const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
   const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'ask' : 'bid'));
   
   return (
-    ((((metalPrice + spread) / 31.103) * exchangeRate * commodity.unit * unitMultiplier) *
-    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(premium)
+    (((metalPrice + spread + premium) / 31.103) * 3.674 * commodity.unit * unitMultiplier *
+    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(charge)
   ).toFixed(4);
-}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, exchangeRate, getSpreadOrMarginFromDB]);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB]);
 
 
   useEffect(() => {
@@ -623,6 +623,8 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           <TableCell>{buyPrice}</TableCell>
           <TableCell>{row.sellPremium}</TableCell>
           <TableCell>{row.buyPremium}</TableCell>
+          <TableCell>{row.sellCharge}</TableCell>
+          <TableCell>{row.buyCharge}</TableCell>
           <TableCell>
             <IconButton
               onClick={() => handleEditCommodity(row)}
@@ -666,7 +668,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     copper: "COMEX:HG1!",
     gold: "TVC:GOLD",
     silver: "TVC:SILVER",
-    platinum: "COMEX:PL1!",
+    platinum: "TVC:PLATINUM",
   };
 
   return (
@@ -763,8 +765,10 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
                 <TableCell>Unit</TableCell>
                 <TableCell>Sell ({currency})</TableCell>
                 <TableCell>Buy ({currency})</TableCell>
-                <TableCell>Sell Premium ({currency})</TableCell>
-                <TableCell>Buy Premium ({currency})</TableCell>
+                <TableCell>Sell Premium</TableCell>
+                <TableCell>Buy Premium</TableCell>
+                <TableCell>Sell Charges</TableCell>
+                <TableCell>Buy Charges</TableCell>
                 <TableCell>Action</TableCell>
               </TableRow>
             </TableHead>

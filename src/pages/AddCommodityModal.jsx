@@ -17,9 +17,9 @@ const [toastMessage, setToastMessage] = useState('');
     unit: 1,
     weight: 'GM',
     sellPremiumUSD: '',
-    sellPremiumAED: '',
+    sellCharges: '',
     buyPremiumUSD: '',
-    buyPremiumAED: '',
+    buyCharges: '',
     buyAED: '',
     buyUSD: '',
     sellAED: '',
@@ -69,28 +69,14 @@ const [toastMessage, setToastMessage] = useState('');
 }, []);
 
 
-// useEffect(() => {
-//   if (initialData) {
-//     setFormData({
-//       ...initialData,
-//       sellPremiumAED: initialData.sellPremium || initialData.sellPremiumAED || '',
-//       buyPremiumAED: initialData.buyPremium || initialData.buyPremiumAED || '',
-//       sellPremiumUSD: convertCurrency(initialData.sellPremium || initialData.sellPremiumAED || '', currency, 'USD'),
-//       buyPremiumUSD: convertCurrency(initialData.buyPremium || initialData.buyPremiumAED || '', currency, 'USD'),
-//     });
-//     setCommodityId(initialData.id || initialData._id);
-//     setIsEditMode(isEditing);
-//   }
-// }, [initialData, isEditing, currency]);
-
 useEffect(() => {
   if (initialData && (isEditing || open)) {
     setFormData({
       ...initialData,
-      sellPremiumAED: initialData.sellPremium || initialData.sellPremiumAED || '',
-      buyPremiumAED: initialData.buyPremium || initialData.buyPremiumAED || '',
-      sellPremiumUSD: convertCurrency(initialData.sellPremium || initialData.sellPremiumAED || '', currency, 'USD'),
-      buyPremiumUSD: convertCurrency(initialData.buyPremium || initialData.buyPremiumAED || '', currency, 'USD'),
+      sellCharges: initialData.sellCharge || initialData.sellCharges || '',
+      buyCharges: initialData.buyCharge || initialData.buyCharges || '',
+      sellPremiumUSD: initialData.sellPremium || initialData.sellPremiumUSD || '',
+      buyPremiumUSD: initialData.buyPremium || initialData.buyPremiumUSD || '',
     });
     setCommodityId(initialData.id || initialData._id);
     setIsEditMode(true);
@@ -122,6 +108,18 @@ useEffect(() => {
     }
 }, [adminId]);
 
+const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
+  // Check if value is defined and not null
+  if (value === undefined || value === null) {
+    return 0; // or return a default value based on your requirements
+  }
+
+  const valueStr = value.toString();
+  const [integerPart] = valueStr.split('.');
+  return integerPart.length;
+}, []);
+
+
 
   const calculatePrices = useCallback(() => {
     if (formData.metal && formData.purity && formData.unit && formData.weight) {
@@ -134,17 +132,20 @@ useEffect(() => {
 
       const unitMultiplier = getUnitMultiplier(formData.weight);
       const purityValue = parseFloat(formData.purity);
-      const purityLength = formData.purity.toString().length;
-      const buyPremium = parseFloat(formData.buyPremiumAED) || 0;
-      const sellPremium = parseFloat(formData.sellPremiumAED) || 0;
+      const purityLength = getNumberOfDigitsBeforeDecimal(formData.purity);
+      
+      const sellPremiumUSD = parseFloat(formData.sellPremiumUSD) || 0;
+      const buyPremiumUSD = parseFloat(formData.buyPremiumUSD) || 0;
+      const sellCharge = parseFloat(formData.sellCharges) || 0;
+      const buyCharge = parseFloat(formData.buyCharges) || 0;
 
 
-      const baseSellPrice = (((metalBid + parseFloat(bidSpread)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
-      const baseBuyPrice = (((metalBid + parseFloat(askSpread) + additionalPrice) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+      const baseBuyPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(buyPremiumUSD)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+      const baseSellPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(askSpread) + additionalPrice + parseFloat(sellPremiumUSD)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
 
 
-      const sellPrice = baseSellPrice + sellPremium;
-      const buyPrice = baseBuyPrice + buyPremium;
+      const sellPrice = baseSellPrice + sellCharge;
+      const buyPrice = baseBuyPrice + buyCharge;
 
 
 
@@ -166,7 +167,7 @@ useEffect(() => {
 
   useEffect(() => {
     calculatePrices();
-  }, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyPremiumAED, formData.sellPremiumAED, calculatePrices]);
+  }, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyCharges, formData.sellCharges, calculatePrices]);
 
 const getUnitMultiplier = (weight) => {
   switch (weight) {
@@ -187,22 +188,15 @@ const handleChange = (e) => {
   let updatedValue = value;
   if (['purity', 'unit'].includes(name)) {
     updatedValue = value === '' ? '' : parseFloat(value) || 0;
-  } else if (['sellPremiumUSD', 'sellPremiumAED', 'buyPremiumUSD', 'buyPremiumAED', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
+  } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
     updatedValue = value === '' ? '' : parseFloat(value) || 0;
   }
 
-  let updatedFormData = { ...formData, [name]: updatedValue };
+  setFormData(prevState => ({
+    ...prevState,
+    [name]: updatedValue
+  }));
 
-  // Update the corresponding premium fields if necessary
-  if (name === 'sellPremiumUSD' || name === `sellPremium${currency}` || 
-      name === 'buyPremiumUSD' || name === `buyPremium${currency}`) {
-      const [field, currentCurrency] = name.split('Premium');
-      const otherCurrency = currentCurrency === 'USD' ? currency : 'USD';
-      const otherFieldName = `${field}Premium${otherCurrency}`;
-      updatedFormData[otherFieldName] = convertCurrency(value, currentCurrency, otherCurrency);
-  }
-
-  setFormData(updatedFormData);
   if (!['buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
     calculatePrices();
   }
@@ -260,14 +254,16 @@ useEffect(() => {
         purity: parseFloat(formData.purity),
         unit: parseFloat(formData.unit),
         weight: formData.weight,
-        sellPremium: parseFloat(formData.sellPremiumAED) || 0,
-        buyPremium: parseFloat(formData.buyPremiumAED)   || 0,
       };
+      
+      if (formData.sellCharges !== '') commodityData.sellCharge = parseFloat(formData.sellCharges) || 0;
+      if (formData.buyCharges !== '') commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
+      if (formData.sellPremiumUSD !== '') commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
+      if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
         let response;
       if (isEditMode) {
         // Update existing commodity
         response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
-        setIsEditMode(false);
 
       } else {
         // Add new commodity
@@ -293,9 +289,9 @@ useEffect(() => {
       unit: 1,
       weight: 'GM',
       sellPremiumUSD: '',
-      sellPremiumAED: '',
+      sellCharges: '',
       buyPremiumUSD: '',
-      buyPremiumAED: '',
+      buyCharges: '',
     });
     setIsEditMode(false);
     setCommodityId(null);
@@ -402,32 +398,29 @@ useEffect(() => {
               <MenuItem value={750}>750</MenuItem>
             </Select>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" fontWeight="medium" mb={1} textAlign="center">Sell Premium</Typography>
-            <Grid container spacing={1}>
-              <Grid item xs={6}>
-                <TextField
-                  name="sellPremiumUSD"
-                  placeholder="USD"
-                  value={formData.sellPremiumUSD}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  sx={inputStyle}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  name={`sellPremium${currency}`}
-                  placeholder={currency}
-                  value={formData[`sellPremium${currency}`]}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  sx={inputStyle}
-                />
-              </Grid>
-            </Grid>
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Sell Premium</Typography>
+            <TextField
+              name="sellPremiumUSD"
+              placeholder="USD"
+              value={formData.sellPremiumUSD}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Sell Charges</Typography>
+            <TextField
+              name="sellCharges"
+              placeholder={currency}
+              value={formData.sellCharges}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            />
           </Grid>
           <Grid item xs={3}>
             <Typography variant="body2" fontWeight="medium" mb={1}>Unit</Typography>
@@ -440,6 +433,7 @@ useEffect(() => {
               size="small"
               inputProps={{ min: 0, max: 1000, step: 0.1 }}
               required
+              sx={inputStyle}
             />
           </Grid>
           <Grid item xs={3}>
@@ -460,32 +454,29 @@ useEffect(() => {
               <MenuItem value="OZ">OZ</MenuItem>
             </Select>
           </Grid>
-          <Grid item xs={6}>
-            <Typography variant="body2" fontWeight="medium" mb={1} textAlign="center">Buy Premium</Typography>
-            <Grid container spacing={1}>
-              <Grid item xs={6}>
-                <TextField
-                  name="buyPremiumUSD"
-                  placeholder="USD"
-                  value={formData.buyPremiumUSD}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  sx={inputStyle}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  name={`buyPremium${currency}`}
-                  placeholder={currency}
-                  value={formData[`buyPremium${currency}`]}
-                  onChange={handleChange}
-                  fullWidth
-                  size="small"
-                  sx={inputStyle}
-                />
-              </Grid>
-            </Grid>
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Buy Premium</Typography>
+            <TextField
+              name="buyPremiumUSD"
+              placeholder="USD"
+              value={formData.buyPremiumUSD}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            />
+          </Grid>
+          <Grid item xs={3}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Buy Charges</Typography>
+            <TextField
+              name="buyCharges"
+              placeholder={currency}
+              value={formData.buyCharges}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            />
           </Grid>
           <Grid item xs={12}>
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
