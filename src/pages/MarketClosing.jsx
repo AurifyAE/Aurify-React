@@ -24,15 +24,15 @@ const BannerCreator = () => {
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [symbols, setSymbols] = useState([]);
   const [serverURL, setServerURL] = useState('');
-  const [userId, setUserId] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchAdminId = async () => {
       try {
         const email = localStorage.getItem('userEmail');
         const response = await axiosInstance.get(`/data/${email}`);
-        setUserId(response.data.data._id);
+        setAdminId(response.data.data._id);
         const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
         const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
         setSymbols(uppercaseSymbols);
@@ -41,7 +41,7 @@ const BannerCreator = () => {
       }
     };
 
-    fetchUserId();
+    fetchAdminId();
   }, []);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ const BannerCreator = () => {
   useEffect(() => {
     const fetchSpreadMarginData = async () => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
         if (response.data) {
           setSpreadMarginData(response.data);
         }
@@ -69,10 +69,10 @@ const BannerCreator = () => {
       }
     };
 
-    if (userId) {
+    if (adminId) {
       fetchSpreadMarginData();
     }
-  }, [userId]);
+  }, [adminId]);
 
   useEffect(() => {
     if (!serverURL || symbols.length === 0) return;

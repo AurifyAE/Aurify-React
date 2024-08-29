@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Switch from '@mui/material/Switch';
 import IconButton from '@mui/material/IconButton';
@@ -9,20 +9,25 @@ import axiosInstance from '../../axiosInstance';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { requestFCMToken } from '../../utils/firebaseUtils'
+import { useEffect } from 'react';
+import { registerServiceWorker } from '../../utils/serviceWorkerRegistration';
+import { RememberMe } from '@mui/icons-material';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [fcmToken, setFcmToken] = useState("");
+  console.log(fcmToken);
   const navigate = useNavigate();
 
   useEffect(() =>{
     const fetchFcmToken = async () => {
       try{
+        await registerServiceWorker(); 
         await requestFCMToken().then((token) => {
           setFcmToken(token);
         })
@@ -39,8 +44,11 @@ const LoginPage = () => {
     const values = {
       email, 
       password,
-      fcmToken
+      fcmToken,
+      rememberMe
     }
+    setEmailError('');
+    setPasswordError('');
     setEmailError('');
     setPasswordError('');
   
@@ -69,7 +77,6 @@ const LoginPage = () => {
       } else {
         setPasswordError('Login failed. Please try again.');
       }
-
     }
   };
   
@@ -134,6 +141,7 @@ const LoginPage = () => {
                     width: '100%', 
                     padding: '0.5rem', 
                     paddingRight: '2.5rem',
+                    paddingRight: '2.5rem',
                     border: '1px solid #d2d6dc', 
                     borderRadius: '0.375rem',
                     fontSize: '1rem',
@@ -164,7 +172,7 @@ const LoginPage = () => {
                 inputProps={{ 'aria-label': 'controlled' }}
                 style={{ color: '#2152ff' }}
               />
-              <label htmlFor="rememberMe" style={{ fontSize: '0.875rem', color: '#718096' }}>Remember me</label>
+              <label htmlFor="rememberMe" style={{ fontSize: '0.875rem', color: '#718096' }}>Trust the device</label>
             </div>
             
             <button type="submit" style={{ 

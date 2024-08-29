@@ -332,7 +332,7 @@ const SpotRate = () => {
   const [error, setError] = useState(null);
   const [symbols, setSymbols] = useState([]);
   const [serverURL, setServerURL] = useState('');
-  const [userId, setUserId] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [commodities, setCommodities] = useState([]);
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
@@ -359,9 +359,9 @@ const SpotRate = () => {
   }, []);
 
   useEffect(() => {
-    const fetchCommodities = async (userId) => {
+    const fetchCommodities = async (adminId) => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
         if (response.data) {
           setSpreadMarginData(response.data);
         }
@@ -382,10 +382,10 @@ const SpotRate = () => {
       }
     };
   
-    if (userId) {
-      fetchCommodities(userId);
+    if (adminId) {
+      fetchCommodities(adminId);
     }
-  }, [userId]);
+  }, [adminId]);
 
   useEffect(() => {
   setCommodities(prevCommodities => 
@@ -440,11 +440,11 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
 
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchAdminId = async () => {
       try {
         const email = localStorage.getItem('userEmail');
         const response = await axiosInstance.get(`/data/${email}`);
-        setUserId(response.data.data._id);
+        setAdminId(response.data.data._id);
         const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
         const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
         setSymbols(uppercaseSymbols);
@@ -454,13 +454,13 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
       }
     };
 
-    fetchUserId();
+    fetchAdminId();
   }, []);
 
   const handleSpreadOrMarginUpdate = useCallback(async (metal, type, newValue) => {
     try {
       const response = await axiosInstance.post('/update-spread', {
-        userId,
+        adminId,
         metal,
         type,
         value: parseFloat(newValue)
@@ -476,7 +476,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     } catch (error) {
       console.error('Error updating spread:', error);
     }
-  }, [userId]);
+  }, [adminId]);
 
 
   useEffect(() => {
@@ -553,7 +553,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     setOpenModal(false);
     const fetchUpdatedCommodities = async () => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${userId}`);
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
         if (response.data && response.data.commodities) {
           setCommodities(response.data.commodities);
         }
@@ -563,7 +563,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     };
   
     fetchUpdatedCommodities();
-  }, [userId]);
+  }, [adminId]);
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
@@ -582,14 +582,14 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
 
   const handleDelete = useCallback(async (id) => {
     try {
-      await axiosInstance.delete(`/commodities/${userId}/${id}`);
+      await axiosInstance.delete(`/commodities/${adminId}/${id}`);
       setCommodities(commodities.filter(commodity => commodity._id !== id));
       alert('Commodity deleted successfully');
     } catch (error) {
       console.error('Error deleting commodity:', error);
       alert('Failed to delete commodity. Please try again.');
     }
-  }, [userId, commodities]);
+  }, [adminId, commodities]);
 
   const handleCurrencyChange = useCallback((newCurrency, newExchangeRate) => {
     setCurrency(newCurrency);

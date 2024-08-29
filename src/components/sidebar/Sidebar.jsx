@@ -63,7 +63,7 @@ const Sidebar = () => {
     { name: "Dashboard", icon: Home, path: "dashboard" },
     { name: "Spot Rate", icon: BarChart2, path: "spot-rate" },
     { name: "Media", icon: Image, path: "media" },
-    { name: "Messages", icon: MessageSquare, path: "messages" },
+    { name: "Support", icon: MessageSquare, path: "support" },
     { name: "News", icon: Newspaper, path: "news" },
     // { name: "Shop", icon: ShoppingCart, path: "shop" },
     // { name: "Users", icon: User, path: "users" },

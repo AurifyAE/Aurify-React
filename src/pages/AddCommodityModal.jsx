@@ -27,7 +27,7 @@ const [toastMessage, setToastMessage] = useState('');
   });
   const [commodities, setCommodities] = useState([]);
   const [spotRates, setSpotRates] = useState(null);
-  const [userId, setUserId] = useState('');
+  const [adminId, setAdminId] = useState('');
   const [errors, setErrors] = useState(null);
 
   const exchangeRates = {
@@ -47,7 +47,7 @@ const [toastMessage, setToastMessage] = useState('');
 
 
   useEffect(() => {
-    const fetchUserId = async () => {
+    const fetchAdminId = async () => {
         try {
             const email = localStorage.getItem('userEmail');
             if (!email) {
@@ -56,7 +56,7 @@ const [toastMessage, setToastMessage] = useState('');
             }
             const response = await axiosInstance.get(`/data/${email}`);
             if (response && response.data && response.data.data) {
-                setUserId(response.data.data._id);
+                setAdminId(response.data.data._id);
             } else {
                 console.error('Invalid response or missing data:', response);
             }
@@ -65,7 +65,7 @@ const [toastMessage, setToastMessage] = useState('');
         }
     };
 
-    fetchUserId();
+    fetchAdminId();
 }, []);
 
 
@@ -101,9 +101,9 @@ useEffect(() => {
   
   useEffect(() => {
     const fetchSpotRates = async () => {
-        if (!userId) return;
+        if (!adminId) return;
         try {
-            const response = await axiosInstance.get(`/spotrates/${userId}`);
+            const response = await axiosInstance.get(`/spotrates/${adminId}`);
             if (response && response.data && typeof response.data === 'object') {
                 setSpotRates(response.data);
             } else {
@@ -117,10 +117,10 @@ useEffect(() => {
         }
     };
 
-    if (userId) {
+    if (adminId) {
         fetchSpotRates();
     }
-}, [userId]);
+}, [adminId]);
 
 
   const calculatePrices = useCallback(() => {
@@ -266,12 +266,12 @@ useEffect(() => {
         let response;
       if (isEditMode) {
         // Update existing commodity
-        response = await axiosInstance.patch(`/spotrate-commodity/${userId}/${initialData._id}`, commodityData);
+        response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
         setIsEditMode(false);
 
       } else {
         // Add new commodity
-        response = await axiosInstance.post('/spotrate-commodity', { userId, commodity: commodityData });
+        response = await axiosInstance.post('/spotrate-commodity', { adminId, commodity: commodityData });
       }
   
       if (response.status === 200) {

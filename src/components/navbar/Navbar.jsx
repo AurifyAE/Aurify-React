@@ -8,7 +8,7 @@ const Navbar = () => {
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [userId, setUserId] = useState(null);
+  const [adminId, setAdminId] = useState(null);
   const notificationRef = useRef(null);
   const navigate = useNavigate();
 
@@ -22,13 +22,13 @@ const Navbar = () => {
     };
   }, []);
 
-  const fetchUserIdAndNotifications = async () => {
+  const fetchAdminIdAndNotifications = async () => {
     const email = localStorage.getItem('userEmail');
     if (email) {
       try {
         const response = await axiosInstance.get(`/data/${email}`);
-        setUserId(response.data.data._id);
-        // Fetch notifications after setting userId
+        setAdminId(response.data.data._id);
+        // Fetch notifications after setting adminId
         const notificationsResponse = await axiosInstance.get(`/notifications/${response.data.data._id}`);
         setNotifications(notificationsResponse.data.data.notification || []);
       } catch (error) {
@@ -39,15 +39,15 @@ const Navbar = () => {
   };
   
   useEffect(() => {
-    fetchUserIdAndNotifications();
+    fetchAdminIdAndNotifications();
   }, []);
 
   useEffect(() => {
     const pollInterval = setInterval(() => {
-      fetchUserIdAndNotifications();
+      fetchAdminIdAndNotifications();
     }, 10000);
     return () => clearInterval(pollInterval); 
-  }, [userId]);
+  }, [adminId]);
   
 
 
@@ -63,7 +63,7 @@ const Navbar = () => {
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
     if (!showNotifications) {
-      fetchUserIdAndNotifications();
+      fetchAdminIdAndNotifications();
     }
   };
 
@@ -87,7 +87,7 @@ const Navbar = () => {
        // Replace with the actual admin ID
   
       // Make a DELETE request to the backend
-      const response = await axiosInstance.delete(`/notifications/${userId}/${notificationId}`);
+      const response = await axiosInstance.delete(`/notifications/${adminId}/${notificationId}`);
   
       if (response.data.success) {
         // Remove the notification from the local state if the deletion is successful
