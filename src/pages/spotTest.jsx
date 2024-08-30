@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, Paper, Button, IconButton,
-  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Skeleton
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -10,7 +10,8 @@ import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../context/CurrencyContext';
 import io from 'socket.io-client';
 import axiosInstance from '../axiosInstance';
-import { debounce } from 'lodash';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 
@@ -49,10 +50,12 @@ const PriceCard = React.memo(({ title, initialPrice, initialSpread, metal, type,
   const [spread, setSpread] = useState(initialSpread);
   const [isEditing, setIsEditing] = useState(false);
   const [tempSpread, setTempSpread] = useState(initialSpread);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setSpread(initialSpread);
     setTempSpread(initialSpread);
+    setIsLoading(false);
   }, [initialSpread]);
 
   const handleEditClick = useCallback(() => {
@@ -74,6 +77,16 @@ const PriceCard = React.memo(({ title, initialPrice, initialSpread, metal, type,
     }
   }, [metal, type, tempSpread, onSpreadUpdate]);
 
+  if (isLoading) {
+    return (
+      <div className="relative bg-white rounded-lg shadow-lg p-4">
+        <Skeleton variant="text" width="60%" height={24} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
@@ -159,10 +172,12 @@ const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, o
   }, [spreadMarginData, metal]);
   const [lowMargin, setLowMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'low'));
   const [highMargin, setHighMargin] = useState(() => getSpreadOrMarginFromDB(metal, 'high'));
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setLowMargin(getLowMargin());
     setHighMargin(getHighMargin());
+    setIsLoading(false);
   }, [spreadMarginData, getLowMargin, getHighMargin]);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -188,6 +203,18 @@ const ValueCard = React.memo(({ lowValue, highValue, spreadMarginData,  metal, o
     }
   }, [metal, lowMargin, highMargin, onMarginUpdate]);
 
+  if (isLoading) {
+    return (
+      <div className="relative bg-white rounded-lg shadow-lg p-4">
+        <Skeleton variant="text" width="60%" height={24} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+        <Skeleton variant="text" width="40%" height={20} />
+      </div>
+    );
+  }
   return (
     <div className="relative bg-white rounded-lg shadow-lg p-4">
       {!isEditing && (
@@ -287,7 +314,7 @@ const TradingViewWidget = React.memo(({ symbol, title }) => {
   const handleIframeLoad = useCallback(() => {
     setTimeout(() => {
       setIsLoading(false);
-    }, 500); // Optional delay for smooth transition
+    }, 100); // Optional delay for smooth transition
   }, []);
 
   return (
@@ -296,13 +323,8 @@ const TradingViewWidget = React.memo(({ symbol, title }) => {
         <h6 className="text-gray-800 font-medium mb-1">{title}</h6>
       </div>
       <div className="relative" style={{ height: '300px' }}>
-        {isLoading && (
-          <div className={`absolute inset-0 flex items-center justify-center bg-gray-100 ${!isLoading ? 'opacity-0 transition-opacity duration-300' : 'opacity-100'}`}>
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
-              <p className="mt-4 text-gray-600">Loading data, please wait...</p>
-            </div>
-          </div>
+      {isLoading && (
+          <Skeleton variant="rectangular" width="100%" height={300} />
         )}
         <div className="tradingview-widget-container" style={{ width: '100%', height: '300px' }}>
           <iframe
@@ -342,6 +364,7 @@ const SpotRate = () => {
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [commodityToDelete, setCommodityToDelete] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
@@ -361,34 +384,92 @@ const SpotRate = () => {
     }
   }, []);
 
+  const fetchServerURL = async () => {
+    try {
+      const response = await axiosInstance.get('/server-url');
+      setServerURL(response.data.selectedServerURL);
+    } catch (error) {
+      console.error('Error fetching server URL:', error);
+    }
+  };
+
+  const fetchAdminId = async () => {
+    try {
+      const email = localStorage.getItem('userEmail');
+      const response = await axiosInstance.get(`/data/${email}`);
+      setAdminId(response.data.data._id);
+      const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
+      const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
+      setSymbols(uppercaseSymbols);
+      setUniqueMetals(uniqueSymbols);
+    } catch (error) {
+      console.error('Error fetching user ID:', error);
+    }
+  };
+
+  const fetchCommodities = async (adminId) => {
+    try {
+      const response = await axiosInstance.get(`/spotrates/${adminId}`);
+      if (response.data) {
+        setSpreadMarginData(response.data);
+      }
+      if (response.data && response.data.commodities) {
+        const parsedCommodities = response.data.commodities.map(commodity => ({
+          ...commodity,
+          purity: parseFloat(commodity.purity),
+          unit: parseFloat(commodity.unit),
+          weight: commodity.weight,
+          sellCharge: parseFloat(commodity.sellCharge),
+          buyCharge: parseFloat(commodity.buyCharge)
+        }));
+        setCommodities(parsedCommodities);        }
+    } catch (error) {
+      console.error('Error fetching commodities:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchCommodities = async (adminId) => {
+    const fetchData = async () => {
       try {
-        const response = await axiosInstance.get(`/spotrates/${adminId}`);
-        if (response.data) {
-          setSpreadMarginData(response.data);
+        setIsLoading(true);
+        await fetchServerURL();
+        await fetchAdminId();
+        if (adminId) {
+          await fetchCommodities(adminId);
         }
-        if (response.data && response.data.commodities) {
-          const parsedCommodities = response.data.commodities.map(commodity => ({
-            ...commodity,
-            purity: parseFloat(commodity.purity),
-            unit: parseFloat(commodity.unit),
-            weight: commodity.weight,
-            sellCharge: parseFloat(commodity.sellCharge),
-            buyCharge: parseFloat(commodity.buyCharge)
-          }));
-          setCommodities(parsedCommodities);        }
       } catch (error) {
-        console.error('Error fetching commodities:', error);
+        console.error('Error fetching data:', error);
+        setError("An error occurred while fetching data");
       } finally {
-        setLoading(false);
+        // Add a 100ms delay before setting isLoading to false
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 100);
       }
     };
-  
-    if (adminId) {
-      fetchCommodities(adminId);
-    }
+
+    fetchData();
   }, [adminId]);
+
+  const renderLoadingSkeleton = () => (
+    <div className="p-6 grid gap-8 grid-cols-1 md:grid-cols-2 mx-4 md:mx-8 lg:mx-14">
+      {[1, 2, 3, 4].map((index) => (
+        <div key={index} className="col-span-1">
+          <Skeleton variant="rectangular" height={300} />
+          <div className="space-y-4 mt-4">
+            <Skeleton variant="rectangular" height={100} />
+            <Skeleton variant="rectangular" height={100} />
+            <Skeleton variant="rectangular" height={200} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+
+
 
   useEffect(() => {
   setCommodities(prevCommodities => 
@@ -442,23 +523,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
 }, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB]);
 
 
-  useEffect(() => {
-    const fetchAdminId = async () => {
-      try {
-        const email = localStorage.getItem('userEmail');
-        const response = await axiosInstance.get(`/data/${email}`);
-        setAdminId(response.data.data._id);
-        const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
-        const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
-        setSymbols(uppercaseSymbols);
-        setUniqueMetals(uniqueSymbols);
-      } catch (error) {
-        console.error('Error fetching user ID:', error);
-      }
-    };
-
-    fetchAdminId();
-  }, []);
+  
 
   const handleSpreadOrMarginUpdate = useCallback(async (metal, type, newValue) => {
     try {
@@ -482,18 +547,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
   }, [adminId]);
 
 
-  useEffect(() => {
-    const fetchServerURL = async () => {
-      try {
-        const response = await axiosInstance.get('/server-url');
-        setServerURL(response.data.selectedServerURL);
-      } catch (error) {
-        console.error('Error fetching server URL:', error);
-      }
-    };
-
-    fetchServerURL();
-  }, []);
+  
 
   
 
@@ -508,6 +562,14 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         await axiosInstance.delete(`/commodities/${adminId}/${commodityToDelete._id}`);
         setCommodities(prevCommodities => prevCommodities.filter(commodity => commodity._id !== commodityToDelete._id));
         setDeleteDialogOpen(false);
+        toast.success('Commodity deleted successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       } catch (error) {
         console.error('Error deleting commodity:', error);
       }
@@ -563,8 +625,24 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           commodity._id === commodityData._id ? { ...commodity, ...commodityData } : commodity
         )
       );
+      toast.success('Commodity updated successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     } else {
       setCommodities(prevCommodities => [...prevCommodities, commodityData]);
+      toast.success('Commodity added successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
     setIsEditing(false);
     setOpenModal(false);
@@ -597,16 +675,6 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     setOpenModal(true);
   }, []);
 
-  const handleDelete = useCallback(async (id) => {
-    try {
-      await axiosInstance.delete(`/commodities/${adminId}/${id}`);
-      setCommodities(commodities.filter(commodity => commodity._id !== id));
-      alert('Commodity deleted successfully');
-    } catch (error) {
-      console.error('Error deleting commodity:', error);
-      alert('Failed to delete commodity. Please try again.');
-    }
-  }, [adminId, commodities]);
 
   const handleCurrencyChange = useCallback((newCurrency, newExchangeRate) => {
     setCurrency(newCurrency);
@@ -617,6 +685,17 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
   
 
   const renderCommodityRows = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          {Array.from({ length: 10 }).map((_, cellIndex) => (
+            <TableCell key={cellIndex}>
+              <Skeleton variant="text" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
     return commodities.map((row) => {
       const isGoldRelated = row.metal && (row.metal.toLowerCase().includes('gold') || 
                             row.metal.toLowerCase().includes('minted bar'));
@@ -688,12 +767,20 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     platinum: "TVC:PLATINUM",
   };
 
+  const handleCloseDialog = (event, reason) => {
+    if (reason && reason === "backdropClick") 
+      return;
+    handleDeleteCancel();
+  };
+
   return (
     <Box className="min-h-screen flex flex-col bg-gray-100">
       <Box className="p-2">
         <CurrencySelector onCurrencyChange={handleCurrencyChange} />
       </Box>
-     
+      {isLoading ? (
+        renderLoadingSkeleton()
+      ) : (
       <div className="p-6 grid gap-8 grid-cols-1 md:grid-cols-2 mx-4 md:mx-8 lg:mx-14">
         {uniqueMetals.map((metal, index) => (
           <div key={metal} className={`col-span-1 ${index === uniqueMetals.length - 1 && uniqueMetals.length % 2 !== 0 ? 'md:col-span-2' : ''}`}>
@@ -731,6 +818,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           </div>
         ))}
       </div>
+      )}
 
       <Box sx={{ p: 10 }} className="-mt-10">
         <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
@@ -742,7 +830,11 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
               {`${metal} 1GM (in USD)`}
             </Typography>
             <Typography className="font-black text-xl ml-12">
-              {((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103).toFixed(4)}
+              {isLoading ? (
+              <Skeleton variant="text" width={80} />
+              ) : (
+              ((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103).toFixed(4)
+              )}
             </Typography>
           </div>
           <div className="flex justify-between items-center text-lg">
@@ -750,7 +842,11 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
               {`${metal} 1GM (in ${currency})`}
             </Typography>
             <Typography className="font-black text-xl ml-12">
-              {((((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103)) * exchangeRate).toFixed(4)}
+              {isLoading ? (
+              <Skeleton variant="text" width={80} />
+               ) : (
+             ((((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103)) * exchangeRate).toFixed(4)
+              )}
             </Typography>
           </div>
         </React.Fragment>
@@ -808,9 +904,10 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         />
         <Dialog
         open={deleteDialogOpen}
-        onClose={handleDeleteCancel}
+        onClose={handleCloseDialog}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        disableEscapeKeyDown={true}
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -848,6 +945,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
         </DialogActions>
       </Dialog>
       </Box>
+      <ToastContainer />
     </Box>
   );
 };
