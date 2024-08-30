@@ -15,7 +15,6 @@ function AdminProtect() {
     const verifyTokenAndCheckService = async () => {
       try {
         const res = await axiosInstance.post("/verify-token", { token });
-        console.log("Server response:", res.data);
 
         if (res.data.serviceExpired) {
           console.log("Service is expired.");

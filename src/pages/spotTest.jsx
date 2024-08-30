@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow, Paper, Button, IconButton
+  TableContainer, TableHead, TableRow, Paper, Button, IconButton,
+  Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -339,6 +340,8 @@ const SpotRate = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [open, setOpen] = useState(false);
   const [spreadMarginData, setSpreadMarginData] = useState({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commodityToDelete, setCommodityToDelete] = useState(null);
 
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
@@ -494,13 +497,27 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
 
   
 
-  const debouncedSetMarketData = useMemo(() => 
-    debounce((newData) => {
-      requestAnimationFrame(() => {
-        setMarketData(prevData => ({...prevData, ...newData}));
-      });
-    }, 16),
-  []);
+  const handleDeleteClick = useCallback((commodity) => {
+    setCommodityToDelete(commodity);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (commodityToDelete) {
+      try {
+        await axiosInstance.delete(`/commodities/${adminId}/${commodityToDelete._id}`);
+        setCommodities(prevCommodities => prevCommodities.filter(commodity => commodity._id !== commodityToDelete._id));
+        setDeleteDialogOpen(false);
+      } catch (error) {
+        console.error('Error deleting commodity:', error);
+      }
+    }
+  }, [adminId, commodityToDelete, setCommodities]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteDialogOpen(false);
+    setCommodityToDelete(null);
+  }, []);
 
 
 
@@ -644,7 +661,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
               <EditIcon fontSize="small" />
             </IconButton>
             <IconButton
-              onClick={() => handleDelete(row._id)}
+              onClick={() => handleDeleteClick(row)}
               sx={{
                 background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
                 color: 'white',
@@ -789,6 +806,47 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           currency={currency}
           spreadMarginData={spreadMarginData}
         />
+        <Dialog
+        open={deleteDialogOpen}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description" sx={{ marginTop: 2 }}>
+            Are you sure you want to delete this commodity? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: 1 }}>
+          <Button 
+            onClick={handleDeleteCancel}
+            sx={{
+              color: '#7928CA',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: 'rgba(121, 40, 202, 0.1)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            sx={{
+              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+              color: 'white',
+              fontWeight: 'bold',
+              '&:hover': {
+                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+              },
+            }}
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
       </Box>
     </Box>
   );

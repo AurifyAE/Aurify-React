@@ -1,4 +1,4 @@
-import React, { useState ,useEffect, useCallback } from 'react';
+import React, { useState ,useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Grid, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import axiosInstance from '../axiosInstance';
@@ -30,21 +30,51 @@ const [toastMessage, setToastMessage] = useState('');
   const [adminId, setAdminId] = useState('');
   const [errors, setErrors] = useState(null);
 
-  const exchangeRates = {
+  const exchangeRates = useMemo(() => ({
     AED: 3.674,
     USD: 1,
     EUR: 0.92,
     GBP: 0.79
-  };
-  const convertCurrency = (amount, fromCurrency, toCurrency) => {
+  }), []);
+  
+  const convertCurrency = useCallback((amount, fromCurrency, toCurrency) => {
     if (!amount) return '';
     const parsed = parseFloat(amount);
     if (isNaN(parsed)) return '';
     
     const inUSD = parsed / exchangeRates[fromCurrency];
     return (inUSD * exchangeRates[toCurrency]).toFixed(2);
-  };
+  }, [exchangeRates]);
 
+  const getUnitMultiplier = useCallback((weight) => {
+    switch (weight) {
+      case 'GM': return 1;
+      case 'KG': return 1000;
+      case 'TTB': return 116.6400;
+      case 'TOLA': return 11.664;
+      case 'OZ': return 31.1034768;
+      default: return 1;
+    }
+  }, []);
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      metal: 'Gold',
+      purity: 999,
+      unit: 1,
+      weight: 'GM',
+      sellPremiumUSD: '',
+      sellCharges: '',
+      buyPremiumUSD: '',
+      buyCharges: '',
+      buyAED: '',
+      buyUSD: '',
+      sellAED: '',
+      sellUSD: '',
+    });
+    setIsEditMode(false);
+    setCommodityId(null);
+  }, []);
 
   useEffect(() => {
     const fetchAdminId = async () => {
@@ -71,25 +101,28 @@ const [toastMessage, setToastMessage] = useState('');
 
 useEffect(() => {
   if (initialData && (isEditing || open)) {
-    setFormData({
+    setFormData(prevState => ({
+      ...prevState,
       ...initialData,
       sellCharges: initialData.sellCharge || initialData.sellCharges || '',
       buyCharges: initialData.buyCharge || initialData.buyCharges || '',
       sellPremiumUSD: initialData.sellPremium || initialData.sellPremiumUSD || '',
       buyPremiumUSD: initialData.buyPremium || initialData.buyPremiumUSD || '',
-    });
+    }));
     setCommodityId(initialData.id || initialData._id);
     setIsEditMode(true);
   } else if (open) {
     resetForm();
   }
-}, [initialData, isEditing, open, currency]);
+}, [initialData, isEditing, open]);
   
   useEffect(() => {
     const fetchSpotRates = async () => {
         if (!adminId) return;
         try {
+          console.log('admin : ', adminId);
             const response = await axiosInstance.get(`/spotrates/${adminId}`);
+            console.log(response);
             if (response && response.data && typeof response.data === 'object') {
                 setSpotRates(response.data);
             } else {
@@ -121,87 +154,72 @@ const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
 
 
 
-  const calculatePrices = useCallback(() => {
-    if (formData.metal && formData.purity && formData.unit && formData.weight) {
-      const metal = formData.metal;
+const calculatePrices = useCallback(() => {
+  setFormData(prevState => {
+    if (prevState.metal && prevState.purity && prevState.unit && prevState.weight) {
+      const metal = prevState.metal;
       const isGoldRelated = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'].includes(metal);
       const metalBid = isGoldRelated ? marketData['Gold']?.bid : (marketData[metal]?.bid || 0);
       const bidSpread = spreadMarginData[`${metal.toLowerCase()}BidSpread`] || 0;
       const askSpread = spreadMarginData[`${metal.toLowerCase()}AskSpread`] || 0;
       const additionalPrice = isGoldRelated ? 0.5 : 0.05;
 
-      const unitMultiplier = getUnitMultiplier(formData.weight);
-      const purityValue = parseFloat(formData.purity);
-      const purityLength = getNumberOfDigitsBeforeDecimal(formData.purity);
+      const unitMultiplier = getUnitMultiplier(prevState.weight);
+      const purityValue = parseFloat(prevState.purity);
+      const purityLength = String(prevState.purity).split('.')[0].length;
       
-      const sellPremiumUSD = parseFloat(formData.sellPremiumUSD) || 0;
-      const buyPremiumUSD = parseFloat(formData.buyPremiumUSD) || 0;
-      const sellCharge = parseFloat(formData.sellCharges) || 0;
-      const buyCharge = parseFloat(formData.buyCharges) || 0;
+      const sellPremiumUSD = parseFloat(prevState.sellPremiumUSD) || 0;
+      const buyPremiumUSD = parseFloat(prevState.buyPremiumUSD) || 0;
+      const sellCharge = parseFloat(prevState.sellCharges) || 0;
+      const buyCharge = parseFloat(prevState.buyCharges) || 0;
 
-
-      const baseBuyPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(buyPremiumUSD)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
-      const baseSellPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(askSpread) + additionalPrice + parseFloat(sellPremiumUSD)) / 31.103) * exchangeRate * formData.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
-
+      const baseBuyPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(buyPremiumUSD)) / 31.103) * exchangeRate * prevState.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+      const baseSellPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(askSpread) + additionalPrice + parseFloat(sellPremiumUSD)) / 31.103) * exchangeRate * prevState.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
 
       const sellPrice = baseSellPrice + sellCharge;
       const buyPrice = baseBuyPrice + buyCharge;
 
-
-
       if (isNaN(sellPrice) || isNaN(buyPrice)) {
         console.error('NaN detected in price calculation');
-        return;
+        return prevState;
       }
 
-      setFormData(prevState => ({
+      return {
         ...prevState,
         sellAED: sellPrice.toFixed(4),
         buyAED: buyPrice.toFixed(4),
         sellUSD: convertCurrency(sellPrice.toFixed(4), currency, 'USD'),
         buyUSD: convertCurrency(buyPrice.toFixed(4), currency, 'USD')
-      }));
+      };
     }
-  }, [formData, marketData, spreadMarginData, exchangeRate, currency]);
+    return prevState;
+  });
+}, [marketData, spreadMarginData, exchangeRate, currency, getUnitMultiplier, convertCurrency]);
 
 
-  useEffect(() => {
-    calculatePrices();
-  }, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyCharges, formData.sellCharges, calculatePrices]);
+useEffect(() => {
+  calculatePrices();
+}, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyCharges, formData.sellCharges, formData.buyPremiumUSD, formData.sellPremiumUSD, calculatePrices]);
 
-const getUnitMultiplier = (weight) => {
-  switch (weight) {
-    case 'GM': return 1;
-    case 'KG': return 1000;
-    case 'TTB': return 116.6400;
-    case 'TOLA': return 11.664;
-    case 'OZ': return 31.1034768;
-    default: return 1;
-  }
-};
+  
 
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  if (!name) return;
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    if (!name) return;
 
-  let updatedValue = value;
-  if (['purity', 'unit'].includes(name)) {
-    updatedValue = value === '' ? '' : parseFloat(value) || 0;
-  } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
-    updatedValue = value === '' ? '' : parseFloat(value) || 0;
-  }
+    let updatedValue = value;
+    if (['purity', 'unit'].includes(name)) {
+      updatedValue = value === '' ? '' : parseFloat(value) || 0;
+    } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
+      updatedValue = value === '' ? '' : parseFloat(value) || 0;
+    }
 
-  setFormData(prevState => ({
-    ...prevState,
-    [name]: updatedValue
-  }));
-
-  if (!['buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
-    calculatePrices();
-  }
-};
-
+    setFormData(prevState => ({
+      ...prevState,
+      [name]: updatedValue
+    }));
+  }, []);
 
 useEffect(() => {
   const fetchCommodities = async () => {
@@ -237,75 +255,49 @@ useEffect(() => {
 }, []);
 
   
+const handleSave = useCallback(async () => {
+  const requiredFields = ['metal', 'purity', 'unit', 'weight'];
+  const emptyFields = requiredFields.filter(field => !formData[field]);
 
-  const handleSave = async () => {
-    const requiredFields = ['metal', 'purity', 'unit', 'weight'];
-    const emptyFields = requiredFields.filter(field => !formData[field]);
-  
-    if (emptyFields.length > 0) {
-      setToastMessage(`${emptyFields.join(', ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
-      setToastOpen(true);
-      return;
+  if (emptyFields.length > 0) {
+    setToastMessage(`${emptyFields.join(', ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
+    setToastOpen(true);
+    return;
+  }
+
+  try {
+    const commodityData = {
+      metal: formData.metal,
+      purity: parseFloat(formData.purity),
+      unit: parseFloat(formData.unit),
+      weight: formData.weight,
+    };
+    
+    if (formData.sellCharges !== '') commodityData.sellCharge = parseFloat(formData.sellCharges) || 0;
+    if (formData.buyCharges !== '') commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
+    if (formData.sellPremiumUSD !== '') commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
+    if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
+
+    let response;
+    if (isEditMode) {
+      response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
+    } else {
+      response = await axiosInstance.post('/spotrate-commodity', { adminId, commodity: commodityData });
     }
-  
-    try {
-      const commodityData = {
-        metal: formData.metal,
-        purity: parseFloat(formData.purity),
-        unit: parseFloat(formData.unit),
-        weight: formData.weight,
-      };
-      
-      if (formData.sellCharges !== '') commodityData.sellCharge = parseFloat(formData.sellCharges) || 0;
-      if (formData.buyCharges !== '') commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
-      if (formData.sellPremiumUSD !== '') commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
-      if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
-        let response;
-      if (isEditMode) {
-        // Update existing commodity
-        response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
 
-      } else {
-        // Add new commodity
-        response = await axiosInstance.post('/spotrate-commodity', { adminId, commodity: commodityData });
-      }
-  
-      if (response.status === 200) {
+    if (response.status === 200) {
       onSave(commodityData, isEditMode);
       resetForm(); 
       onClose();
     } else {
       console.error('Failed to update/add commodity');
     }
-    } catch (error) {
-      console.error('Error saving commodity:', error);
-    }
-  };
+  } catch (error) {
+    console.error('Error saving commodity:', error);
+  }
+}, [formData, isEditMode, adminId, initialData, onSave, onClose, resetForm]);
 
-  const resetForm = () => {
-    setFormData({
-      metal: 'Gold',
-      purity: 999,
-      unit: 1,
-      weight: 'GM',
-      sellPremiumUSD: '',
-      sellCharges: '',
-      buyPremiumUSD: '',
-      buyCharges: '',
-    });
-    setIsEditMode(false);
-    setCommodityId(null);
-  };
-  // useEffect(() => {
-  //   if (open) {
-  //     if (initialData) {
-  //       setFormData(initialData);
-  //       setIsEditMode(true);
-  //     } else {
-  //       resetForm();
-  //     }
-  //   }
-  // }, [open, initialData]);
+  
 
   const handleToastClose = (event, reason) => {
     if (reason === 'clickaway') {
@@ -572,4 +564,4 @@ useEffect(() => {
   );
 };
 
-export default AddCommodityModal;
+export default React.memo(AddCommodityModal);

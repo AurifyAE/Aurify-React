@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import axiosInstance from '../axiosInstance';
-import { toast ,ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
@@ -12,6 +11,7 @@ const NewsUpload = () => {
   const [content, setContent] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+  const [expandedItems, setExpandedItems] = useState({});
 
   const openDeleteModal = (itemId) => {
     setItemToDelete(itemId);
@@ -23,13 +23,9 @@ const NewsUpload = () => {
     setItemToDelete(null);
   };
 
-  
-
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
       const userEmail = localStorage.getItem('userEmail');
-      console.log('User email from localStorage:', userEmail);
-
       if (!userEmail) {
         console.error('Admin email not found in localStorage');
         return;
@@ -111,7 +107,8 @@ const NewsUpload = () => {
         setEditingItem(null);
         setTitle('');
         setContent('');
-        setSelectedOption('Automated');
+        // Keep the selected option as 'Manual' after updating
+        setSelectedOption('Manual');
         toast.success('News item updated successfully!');
       }
     } catch (error) {
@@ -130,6 +127,13 @@ const NewsUpload = () => {
       console.error('Error deleting news:', error.response ? error.response.data : error);
       toast.error('Error deleting news item!');
     }
+  };
+
+  const toggleExpand = (itemId) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
   };
 
   const DeleteConfirmationModal = () => (
@@ -225,48 +229,48 @@ const NewsUpload = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {newsItems.map((item) => (
-          <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="p-6">
-              <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
-              <p className="text-gray-600 mb-4">{item.description}</p>
-              <div className="flex justify-between items-center text-sm text-gray-500">
-                <span>{new Date(item.createdAt).toLocaleString()}</span>
-                <div className="flex space-x-2"> {/* Added flex and space-x-2 for the gap */}
+      {selectedOption === 'Manual' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {newsItems.map((item) => (
+            <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
+                <div className={`text-gray-600 mb-4 ${expandedItems[item._id] ? 'max-h-full overflow-y-auto' : 'max-h-24 overflow-hidden'}`}>
+                  <p>{item.description}</p>
+                </div>
+                {item.description.length > 100 && (
                   <button
-                    onClick={() => handleEdit(item)}
-                    className="bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md"
+                    onClick={() => toggleExpand(item._id)}
+                    className="text-blue-500 hover:text-blue-700 mb-4 text-xs"
                   >
-                    Edit
+                    {expandedItems[item._id] ? 'View Less' : 'View More'}
                   </button>
-                  <button
-                    onClick={() => openDeleteModal(item._id)}
-                    className="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded-md"
-                  >
-                    Delete
-                  </button>
+                )}
+                <div className="flex justify-between items-center text-sm text-gray-500">
+                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => openDeleteModal(item._id)}
+                      className="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded-md"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
-
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
       {isModalOpen && <DeleteConfirmationModal />}
-
-      <ToastContainer
-        position="bottom-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-      </div>
+      <Toaster position="top-right" />
+    </div>
   );
 };
 

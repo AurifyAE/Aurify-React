@@ -49,8 +49,6 @@ const LoginPage = () => {
     }
     setEmailError('');
     setPasswordError('');
-    setEmailError('');
-    setPasswordError('');
   
     try {
       const response = await axiosInstance.post('/login',values);

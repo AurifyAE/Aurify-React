@@ -19,82 +19,91 @@ import ChatBotLayout from '../layout/ChatBotLayout';
 import axiosInstance from '../axiosInstance';
 import Protect from '../protectorRouter/adminProtect';
 
-
 function Routers() {
   const [features, setFeatures] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchFeatures = async () => {
-      const userEmail = localStorage.getItem('userEmail');
-      if (userEmail) {
-        try {
-          const response = await axiosInstance.get('/features', {
-            params: { email: userEmail },
-          });
-          if (response.data.success) {
-            setFeatures(response.data.data);
-          }
-        } catch (err) {
-          console.error('Failed to fetch features:', err);
+  const fetchFeatures = useCallback(async () => {
+    const userEmail = localStorage.getItem('userEmail');
+    if (userEmail) {
+      try {
+        setIsLoading(true);
+        const response = await axiosInstance.get('/features', {
+          params: { email: userEmail },
+        });
+        if (response.data.success) {
+          setFeatures(response.data.data);
         }
+      } catch (err) {
+        console.error('Failed to fetch features:', err);
+      } finally {
+        setIsLoading(false);
       }
-    };
-
-    fetchFeatures();
+    }
   }, []);
 
+  useEffect(() => {
+    fetchFeatures();
+  }, [fetchFeatures]);
+
   const isFeatureAccessible = useCallback((featureName) => {
-    // Log the features and featureName to debug
     console.log("Feature Name:", featureName);
     console.log("Features List:", features.map(f => f.name.toLowerCase()));
-
     return features.some(feature => feature.name.toLowerCase() === featureName.toLowerCase());
   }, [features]);
 
   const ProtectedRoute = ({ element: Element, path }) => {
+    if (isLoading) {
+      return <div>Loading...</div>; // Or a more sophisticated loading component
+    }
+    
     const featureName = path
-    .split('/feature/')[1]
-    .replace(/-/g, ' ')
-    .toLowerCase();
+      .split('/feature/')[1]
+      .replace(/-/g, ' ')
+      .toLowerCase();
     return isFeatureAccessible(featureName) ? <Element /> : <Navigate to="*" replace />;
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a more sophisticated loading component
+  }
 
   return (
     <Routes>
       <Route path="/" element={<Login />} />
       <Route element={<Protect/>}>
-      <Route path="dashboard" element={<DashboardLayout />} />
-      <Route path="spot-rate" element={<SpotRateLayout />} />
-      <Route path="media" element={<MediaLayout />} />
-      <Route path="support" element={<MessagesLayout />} />
-      <Route path="news" element={<NewsLayout />} />
-      <Route path="profile" element={<ProfileLayout />} />
-      <Route path="bank-details" element={<BankDetailsLayout />} />
+        <Route path="dashboard" element={<DashboardLayout />} />
+        <Route path="spot-rate" element={<SpotRateLayout />} />
+        <Route path="media" element={<MediaLayout />} />
+        <Route path="support" element={<MessagesLayout />} />
+        <Route path="news" element={<NewsLayout />} />
+        <Route path="profile" element={<ProfileLayout />} />
+        <Route path="bank-details" element={<BankDetailsLayout />} />
 
-      <Route
-        path="/feature/shop"
-        element={<ProtectedRoute element={ShopLayout} path="/feature/shop" />}
-      />
-      <Route
-        path="/feature/users"
-        element={<ProtectedRoute element={UsersLayout} path="/feature/users" />}
-      />
-      <Route
-        path="/feature/market-closing"
-        element={<ProtectedRoute element={MarketClosingLayout} path="/feature/market-closing" />}
-      />
-      <Route
-        path="/feature/24x7-chat"
-        element={<ProtectedRoute element={ChatLayout} path="/feature/24x7-chat" />}
-      />
-      <Route
-        path="/feature/digital-marketing"
-        element={<ProtectedRoute element={DigitalMarketingLayout} path="/feature/digital-marketing" />}
-      />
-      <Route
-        path="/feature/chatbot"
-        element={<ProtectedRoute element={ChatBotLayout} path="/feature/chatbot" />}
-      />
+        <Route
+          path="/feature/shop"
+          element={<ProtectedRoute element={ShopLayout} path="/feature/shop" />}
+        />
+        <Route
+          path="/feature/users"
+          element={<ProtectedRoute element={UsersLayout} path="/feature/users" />}
+        />
+        <Route
+          path="/feature/market-closing"
+          element={<ProtectedRoute element={MarketClosingLayout} path="/feature/market-closing" />}
+        />
+        <Route
+          path="/feature/24x7-chat"
+          element={<ProtectedRoute element={ChatLayout} path="/feature/24x7-chat" />}
+        />
+        <Route
+          path="/feature/digital-marketing"
+          element={<ProtectedRoute element={DigitalMarketingLayout} path="/feature/digital-marketing" />}
+        />
+        <Route
+          path="/feature/chatbot"
+          element={<ProtectedRoute element={ChatBotLayout} path="/feature/chatbot" />}
+        />
       </Route>
       <Route path="*" element={<NotFound />} />
       <Route path="500" element={<ServerError />} />

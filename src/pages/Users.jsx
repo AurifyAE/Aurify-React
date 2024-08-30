@@ -186,7 +186,6 @@ const theme = createTheme({
               </TableRow>
             </TableHead>
             <TableBody>
-              {/* {console.log("spread",spreads)} */}
               {spreads
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((spread, index) => (
@@ -369,7 +368,6 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
 
 const UserList = ( ) => {
   const adminId = localStorage.getItem('userEmail');
-  console.log('User email from localStorage:', adminId);
   const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
   const [showNotification, setShowNotification] = useState(false);
@@ -464,7 +462,6 @@ const UserList = ( ) => {
   
   const handleDeleteSpread = async (index) => {
     try {
-      console.log("svalue",spreadValues);
       const spreadToDelete = spreadValues[index]._id;
       const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/?email=${adminId}`);
       if (response.data.success) {

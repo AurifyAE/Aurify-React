@@ -25,7 +25,6 @@ const ContactForm = () => {
     e.preventDefault();
     try {
       const response = await axiosInstance.post('/contact', formData);
-      console.log(response.data);
       toast.success('Message sent successfully!', {
         position: 'top-right',
         duration: 3000,
@@ -52,7 +51,7 @@ const ContactForm = () => {
     <div className="flex p-8 rounded-lg shadow-lg h-full">
       <Toaster />
       {/* Get in touch section with dark purple linear gradient */}
-      <div className="w-90 pr-8 bg-gradient-to-b from-purple-800 to-purple-900 text-white p-6 rounded-lg">
+      <div className="w-90 pr-8 bg-gradient-to-b from-purple-600 to-purple-700 text-white p-6 rounded-lg">
         <h2 className="text-2xl font-bold mb-4">Get in touch</h2>
         
         <div className="mb-4">

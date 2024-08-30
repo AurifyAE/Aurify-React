@@ -125,9 +125,7 @@ const ProfilePage = () => {
   
   useEffect(() => {
     const fetchUserData = async () => {
-      const userEmail = localStorage.getItem('userEmail');
-      console.log(userEmail);
-      
+      const userEmail = localStorage.getItem('userEmail');      
       if (!userEmail) {
         setError('User not logged in');
         return;
@@ -137,7 +135,6 @@ const ProfilePage = () => {
         // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userEmail}`);
         
-        console.log('API Response:', response.data);
         setUserData(response.data);
       } catch (err) {
         setError('Failed to fetch user data: ' + err.message);
@@ -148,11 +145,11 @@ const ProfilePage = () => {
   }, []);
   
   
-  useEffect(() => {
-    if (userData) {
-      console.log('Updated userData:', userData); // Log state after it has been set
-    }
-  }, [userData]); // Dependency array contains userData
+  // useEffect(() => {
+  //   if (userData) {
+  //     console.log('Updated userData:', userData); // Log state after it has been set
+  //   }
+  // }, [userData]); // Dependency array contains userData
   
 
   return (
