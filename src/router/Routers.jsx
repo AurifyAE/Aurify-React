@@ -54,7 +54,7 @@ function Routers() {
 
   const ProtectedRoute = ({ element: Element, path }) => {
     if (isLoading) {
-      return <div>Loading...</div>; // Or a more sophisticated loading component
+      return <div></div>;
     }
     
     const featureName = path
@@ -65,7 +65,7 @@ function Routers() {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>; // Or a more sophisticated loading component
+    return <div></div>; 
   }
 
   return (

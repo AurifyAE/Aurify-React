@@ -30,31 +30,35 @@ const Banner = () => {
     onOpen();
   };
 
-  if (!banners || banners.length === 0) {
-    return null; // or a loading indicator
-  }
-
   return (
-    <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mr-8">
-        {banners.map((banner, index) => (
-          <Card key={banner._id || index} className="py-4 bg-white rounded-xl">
-            <CardHeader className="pb-0 pt-2 px-4 flex-col items-start">
-              <h3 className="text-tiny uppercase font-bold">{banner.title || 'Banner Title'}</h3>
-            </CardHeader>
-            <CardBody className="overflow-visible py-2">
-              <div className="aspect-square w-full overflow-hidden cursor-pointer"
-                   onClick={() => handleImageClick(`http://localhost:8000/uploads/${banner.imageUrl}`)}>
-                <img
-                  alt={banner.title || 'Banner image'}
-                  className="object-cover rounded-xl w-full h-full"
-                  src={`http://localhost:8000/uploads/${banner.imageUrl}`}
-                />
-              </div>
-            </CardBody>
-          </Card>
-        ))}
-      </div>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Digital Marketing</h1>
+      
+      {(!banners || banners.length === 0) ? (
+        <div className="flex justify-center items-center h-64">
+          <p className="text-xl text-gray-500">No banners available</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mr-8">
+          {banners.map((banner, index) => (
+            <Card key={banner._id || index} className="py-4 bg-white rounded-xl">
+              <CardHeader className="pb-0 pt-2 px-4 flex-col items-start">
+                <h3 className="text-tiny uppercase font-bold">{banner.title || 'Banner Title'}</h3>
+              </CardHeader>
+              <CardBody className="overflow-visible py-2">
+                <div className="aspect-square w-full overflow-hidden cursor-pointer"
+                     onClick={() => handleImageClick(`http://localhost:8000/uploads/${banner.imageUrl}`)}>
+                  <img
+                    alt={banner.title || 'Banner image'}
+                    className="object-cover rounded-xl w-full h-full"
+                    src={`http://localhost:8000/uploads/${banner.imageUrl}`}
+                  />
+                </div>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -78,7 +82,7 @@ const Banner = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
