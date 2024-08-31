@@ -20,7 +20,6 @@ export const MetalPricesProvider = ({ children }) => {
     });
 
     socket.on("connect", () => {
-      console.log("Connected to WebSocket server");
       socket.emit("request-data", symbols);
     });
 

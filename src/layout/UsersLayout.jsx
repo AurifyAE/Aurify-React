@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import Users from '../pages/Users';
+import Users from '../pages/User/Users';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 

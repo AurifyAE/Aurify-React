@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
@@ -26,7 +26,6 @@ const NewsUpload = () => {
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
       const userEmail = localStorage.getItem('userEmail');
-      console.log('User email from localStorage:', userEmail);
 
       if (!userEmail) {
         console.error('Admin email not found in localStorage');

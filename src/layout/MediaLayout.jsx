@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import Media from '../pages/Media';
+import Media from '../pages/Media/Media';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 

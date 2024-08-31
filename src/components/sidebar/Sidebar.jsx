@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { Button } from '@nextui-org/react';
+import { BarChart2, ChevronDown, ChevronUp, Home, Image, MessageSquare, Newspaper, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Home, BarChart2, Image, MessageSquare, Newspaper, ShoppingCart, User } from 'lucide-react';
 import logo from '../../assets/logo.png';
 import axiosInstance from '../../axios/axiosInstance';
 
 const SidenavItem = ({ icon: Icon, name, isActive }) => (
-  <li className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors duration-200 ${
+  < li className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors duration-200 ${
     isActive ? 'bg-white shadow-lg' : 'hover:bg-gray-100'
   }`}>
     <div className={`p-2 rounded-lg mr-3 ${
@@ -20,26 +21,19 @@ const SidenavItem = ({ icon: Icon, name, isActive }) => (
 const SignOutButton = () => {
   const navigate = useNavigate();
   const handleSignOut = () => {
-    // Remove all stored information
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('rememberMe');
-    
-    // Optionally, you can also clear the FCM token if you're storing it
-    // localStorage.removeItem('fcmToken');
-
-    // Redirect to the login page
     navigate('/');
   };
   return (
-    <button
+    <Button
       onClick={handleSignOut}
       className="w-full mt-auto bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center shadow-lg mb-8">
       Sign Out
-    </button>
+    </Button>
   );
 };
-
 
 const FeatureDropdown = ({ features }) => {
   return (
@@ -57,13 +51,99 @@ const FeatureDropdown = ({ features }) => {
             {({ isActive }) => (
               <SidenavItem
                 name={feature.name}
-                icon={User} // You might want to use a different icon or create a mapping for feature icons
+                icon={User}
                 isActive={isActive}
               />
             )}
           </NavLink>
         ))}
       </ul>
+    </div>
+  );
+};
+
+const AdditionalFeaturesDropdown = ({ features, onRequestFeature }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [hoveredFeature, setHoveredFeature] = useState(null);
+  const [requestStatus, setRequestStatus] = useState(null);
+
+  const handleRequestFeature = async (feature) => {
+    const userEmail = localStorage.getItem('userEmail');
+    setRequestStatus({ type: 'loading', message: 'Submitting request...' });
+    
+    try {
+
+      const response = await axiosInstance.post('/request-feature', {
+        email: userEmail,
+        feature,
+        reason: 'Requested via dropdown',
+        requestType: 'featureRequest'
+      });
+      
+      if (response.data.success) {
+        setRequestStatus({ type: 'success', message: 'Feature request submitted successfully' });
+      } else {
+        setRequestStatus({ type: 'error', message: response.data.message || 'Failed to submit feature request' });
+      }
+    } catch (err) {
+      console.error('Error details:', err);
+      setRequestStatus({ 
+        type: 'error', 
+        message: `Failed to submit feature request: ${err.response?.data?.message || err.message}` 
+      });
+    }
+
+    // Clear status after 5 seconds
+    setTimeout(() => setRequestStatus(null), 5000);
+  };
+
+  return (
+    <div className="mt-8">
+      <div
+        className="flex items-center justify-between cursor-pointer"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">
+          ADDITIONAL FEATURES
+        </h3>
+        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </div>
+      {isOpen && (
+        <ul className="space-y-1 mt-2">
+          {features.map((feature, index) => (
+            <li
+              key={index}
+              className="relative flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100"
+              onMouseEnter={() => setHoveredFeature(feature)}
+              onMouseLeave={() => setHoveredFeature(null)}
+            >
+              <User className="w-5 h-5 text-gray-600 mr-3" />
+              <span className="text-sm font-medium text-gray-600">{feature}</span>
+              {hoveredFeature === feature && (
+                <div className="absolute right-0 top-0 bottom-0 flex items-center">
+                  <Button
+                    size="sm"
+                    auto
+                    className="bg-purple-600 text-white"
+                    onClick={() => handleRequestFeature(feature)}
+                  >
+                    Request
+                  </Button>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {requestStatus && (
+        <div className={`mt-2 p-2 rounded ${
+          requestStatus.type === 'success' ? 'bg-green-100 text-green-800' :
+          requestStatus.type === 'error' ? 'bg-red-100 text-red-800' :
+          'bg-blue-100 text-blue-800'
+        }`}>
+          {requestStatus.message}
+        </div>
+      )}
     </div>
   );
 };
@@ -75,10 +155,6 @@ const Sidebar = () => {
     { name: "Media", icon: Image, path: "media" },
     { name: "Support", icon: MessageSquare, path: "support" },
     { name: "News", icon: Newspaper, path: "news" },
-    // { name: "Shop", icon: ShoppingCart, path: "shop" },
-    // { name: "Users", icon: User, path: "users" },
-    // { name: "Market Closing", icon: ShoppingCart, path: "market-closing" },
- 
   ];
 
   const accountRoutes = [
@@ -86,7 +162,10 @@ const Sidebar = () => {
     { name: "Bank Details", icon: User, path: "bank-details" },
   ];
 
+  const allFeatures = ["Chatbot", "Digital Marketing", "24x7 Chat", "Shop", "Users", "Market Closing"];
+
   const [features, setFeatures] = useState([]);
+  const [additionalFeatures, setAdditionalFeatures] = useState([]);
   const [error, setError] = useState(null);
   
   const fetchFeatures = async () => {
@@ -104,6 +183,7 @@ const Sidebar = () => {
       
       if (response.data.success) {
         setFeatures(response.data.data);
+        setAdditionalFeatures(allFeatures.filter(f => !response.data.data.some(rf => rf.name === f)));
       } else {
         setError(response.data.message || 'Failed to fetch features');
       }
@@ -164,7 +244,9 @@ const Sidebar = () => {
         </ul>
       </div>
 
-      
+      <AdditionalFeaturesDropdown
+        features={additionalFeatures}
+      />
       
       {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       <div className="mt-8">

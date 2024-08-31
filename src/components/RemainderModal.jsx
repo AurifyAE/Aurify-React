@@ -1,8 +1,8 @@
 import { Close as CloseIcon, EmailOutlined, PhoneOutlined } from '@mui/icons-material';
 import { Box, Button, Dialog, DialogContent, IconButton, Tooltip, Typography } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import React, { useEffect, useState } from 'react';
-import expired from '../assets/expired.png';
+import React from 'react';
+import alarm from '../assets/alarm.png';
 import logo from '../assets/logo.png';
 
 const theme = createTheme({
@@ -20,65 +20,53 @@ const theme = createTheme({
   },
 });
 
-const RenewalModal = ({ open, onClose }) => {
-  const [isOpen, setIsOpen] = useState(open);
-
-  useEffect(() => {
-    setIsOpen(open);
-  }, [open]);
-
-  const handleClose = () => {
-    setIsOpen(false);
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
-
+const ReminderModal = ({ open, onClose, message }) => {
   const handleContactSupport = () => {
-    window.location.href = 'mailto:techsupport@example.com?subject=Service Renewal Request';
+    window.location.href = 'mailto:techsupport@example.com?subject=Service Expiry Reminder';
   };
 
   return (
     <ThemeProvider theme={theme}>
       <Dialog 
-        open={isOpen} 
+        open={open} 
         onClose={(event, reason) => {
           if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-            handleClose();
+            onClose();
           }
         }}
-        maxWidth="sm" 
+        maxWidth="xs" 
         fullWidth
         disableEscapeKeyDown={true}
       >
-        <DialogContent sx={{ position: 'relative', p: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <DialogContent sx={{ position: 'relative', p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
           <IconButton
             aria-label="close"
-            onClick={handleClose}
+            onClick={onClose}
             sx={{
               position: 'absolute',
-              right: 8,
-              top: 8,
+              right: 4,
+              top: 4,
               color: (theme) => theme.palette.grey[500],
             }}
           >
             <CloseIcon />
           </IconButton>
-          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 3, mb: 2 }}>
-            <img src={expired} alt="Expired" style={{ width: 80, height: 80, marginBottom: 16 }} />
-            <Typography variant="h5" component="p" sx={{ color: 'error.main', fontWeight: 700, textAlign: 'center', mb: 2 }}>
-              Your session has expired
+          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 1, mb: 1 }}>
+          <img src={alarm} alt="Alarm" style={{ width: 60, height: 60, marginBottom: 8 }} />
+            <Typography variant="h6" component="p" sx={{ color: '#ff9800', fontWeight: 700, textAlign: 'center', mb: 1 }}>
+              Reminder: Service Expiry Approaching
             </Typography>
-            <Typography variant="body1" sx={{ mb: 3, textAlign: 'center' }}>
-            Please contact our technical support for assistance. We're here to help you restore your service.
+            <Typography variant="body2" sx={{ mb: 2, textAlign: 'center', color: '#616161' }}>
+              {message}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
             <Tooltip title="techsupport@example.com" placement="top">
               <Button 
                 onClick={handleContactSupport} 
                 variant="contained" 
                 startIcon={<EmailOutlined />}
+                size="small"
                 sx={{ 
                   borderRadius: 20, 
                   textTransform: 'none',
@@ -95,6 +83,7 @@ const RenewalModal = ({ open, onClose }) => {
                 onClick={() => window.location.href = 'tel:+971585023411'} 
                 variant="outlined" 
                 startIcon={<PhoneOutlined />}
+                size="small"
                 sx={{ 
                   borderRadius: 20, 
                   textTransform: 'none',
@@ -107,9 +96,9 @@ const RenewalModal = ({ open, onClose }) => {
               </Button>
             </Tooltip>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 'auto' }}>
-            <img src={logo} alt="Aurify Logo" style={{ width: 40, height: 40, marginRight: 8 }} />
-            <Typography variant="h6" component="span">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img src={logo} alt="Aurify Logo" style={{ width: 30, height: 30, marginRight: 4 }} />
+            <Typography variant="subtitle1" component="span">
               Aurify
             </Typography>
           </Box>
@@ -119,4 +108,4 @@ const RenewalModal = ({ open, onClose }) => {
   );
 };
 
-export default RenewalModal;
+export default ReminderModal;

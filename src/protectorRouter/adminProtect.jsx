@@ -17,20 +17,16 @@ function AdminProtect() {
         const res = await axiosInstance.post("/verify-token", { token });
 
         if (res.data.serviceExpired) {
-          console.log("Service is expired.");
           setIsServiceExpired(true);
           setAuth(false); // Prevent access to protected routes
         } else if (res.data.admin) {
-          console.log("Service is active.");
           setAuth(true);
         } else {
-          console.log("Admin not authenticated.");
           navigate("/");
         }
       } catch (error) {
         console.error("Error during verification:", error.message);
         if (error.response?.status === 403 && error.response?.data?.serviceExpired) {
-          console.log("Service expired, showing renewal modal.");
           setIsServiceExpired(true);
           setAuth(false);
         } else if (error.response?.data?.tokenExpired || error.response?.data?.tokenInvalid) {
@@ -47,12 +43,10 @@ function AdminProtect() {
   if (auth === null) return null; // Show nothing while loading
 
   if (tokenInvalid) {
-    console.log("Token is invalid or expired.");
     return <Navigate to="/" />;
   }
 
   if (isServiceExpired) {
-    console.log("Displaying Renewal Modal");
     return (
       <>
         <RenewalModal open={isServiceExpired} onClose={() => setIsServiceExpired(false)} />

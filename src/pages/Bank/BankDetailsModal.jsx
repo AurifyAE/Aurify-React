@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 import { 
   Dialog, DialogTitle, DialogContent, DialogActions, 
   Button, TextField, Select, MenuItem, 
@@ -14,7 +14,7 @@ const importAll = (r) => {
   return images;
 };
 
-const images = importAll(require.context('../assets/bank', false, /\.(jpg|png)$/));
+const images = importAll(require.context('../../assets/bank', false, /\.(jpg|png)$/));
 
 const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmail, onClose }) => {
   const initialBankState = {

@@ -2,9 +2,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { io } from "socket.io-client";
 import { Search, Paperclip, Send } from 'lucide-react';
 import Avatar from '../assets/Avatar.jpg'
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 
-const socket = io("http://localhost:8000");
+const socket = io(process.env.REACT_APP_API_URL);
 
 const EnhancedChatInterface = ({ adminId }) => {
   const [chats, setChats] = useState({});
@@ -131,7 +131,6 @@ const EnhancedChatInterface = ({ adminId }) => {
     
     try {
       const response = await axiosInstance.get(`/messages/${Id}/${selectedUser._id}`);
-      console.log(response.data.chat.conversation);
       if (response.data.chat.conversation) {
         setChats(prevChats => ({
           ...prevChats,

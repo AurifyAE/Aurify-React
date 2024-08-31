@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import Chat from '../pages/Chat';
+import Chat from '../pages/Chat/Chat';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 

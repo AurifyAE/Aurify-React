@@ -7,9 +7,9 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommodityModal from './AddCommodityModal';
-import { useCurrency } from '../context/CurrencyContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import io from 'socket.io-client';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -539,7 +539,6 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
           ...prevData,
           ...response.data.data
         }));
-        console.log('Updated spreadMarginData:', response.data.data);
       }
     } catch (error) {
       console.error('Error updating spread:', error);

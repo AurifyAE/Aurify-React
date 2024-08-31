@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../axios/axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 import { Card, CardHeader, CardBody, useDisclosure } from "@nextui-org/react";
 
 const Banner = () => {
@@ -47,11 +47,11 @@ const Banner = () => {
               </CardHeader>
               <CardBody className="overflow-visible py-2">
                 <div className="aspect-square w-full overflow-hidden cursor-pointer"
-                     onClick={() => handleImageClick(`http://localhost:8000/uploads/${banner.imageUrl}`)}>
+                     onClick={() => handleImageClick(`${process.env.REACT_API_KEY}/uploads/${banner.imageUrl}`)}>
                   <img
                     alt={banner.title || 'Banner image'}
                     className="object-cover rounded-xl w-full h-full"
-                    src={`http://localhost:8000/uploads/${banner.imageUrl}`}
+                    src={`${process.env.REACT_API_KEY}/uploads/${banner.imageUrl}`}
                   />
                 </div>
               </CardBody>

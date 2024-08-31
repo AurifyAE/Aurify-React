@@ -1,5 +1,5 @@
 import React from 'react';
-import comingSoon from '../assets/soon.jpg';
+import comingSoon from '../../assets/soon.jpg';
 
 const ChatBot = () => {
   return (

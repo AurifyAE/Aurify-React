@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import MarketClosing from '../pages/MarketClosing';
+import MarketClosing from '../pages/MarketClosing/MarketClosing';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import DigitalMarketing from '../pages/DigitalMarketing';
+import DigitalMarketing from '../pages/DigitalMarketing/DigitalMarketing';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 
