@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Bell } from 'lucide-react';
-import axiosInstance from '../../axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 import moment from 'moment';
 import { useNavigate } from 'react-router-dom'; 
 
@@ -30,13 +30,18 @@ const Navbar = () => {
         setAdminId(response.data.data._id);
         // Fetch notifications after setting adminId
         const notificationsResponse = await axiosInstance.get(`/notifications/${response.data.data._id}`);
-        setNotifications(notificationsResponse.data.data.notification || []);
+        if (notificationsResponse.data && notificationsResponse.data.data) {
+          setNotifications(notificationsResponse.data.data.notification || []);
+        } else {
+          setNotifications([]); // Set to empty array if no notifications
+        }
       } catch (error) {
         console.error('Error fetching user ID or notifications:', error);
         setNotifications([]); // Set to empty array on error
       }
     }
   };
+  
   
   useEffect(() => {
     fetchAdminIdAndNotifications();

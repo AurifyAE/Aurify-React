@@ -6,7 +6,7 @@ import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 // import { useMarketData } from '../context/MarketDataContext';
 import io from 'socket.io-client';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 
 
 const BannerCreator = () => {

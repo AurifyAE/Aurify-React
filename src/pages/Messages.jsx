@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 
 const ContactForm = () => {
   const [formData, setFormData] = useState({

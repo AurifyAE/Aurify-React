@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { Home, BarChart2, Image, MessageSquare, Newspaper, ShoppingCart, User } from 'lucide-react';
 import logo from '../../assets/logo.png';
-import axiosInstance from '../../axiosInstance';
+import axiosInstance from '../../axios/axiosInstance';
 
 const SidenavItem = ({ icon: Icon, name, isActive }) => (
   <li className={`flex items-center p-2 rounded-lg cursor-pointer transition-colors duration-200 ${
@@ -20,6 +20,15 @@ const SidenavItem = ({ icon: Icon, name, isActive }) => (
 const SignOutButton = () => {
   const navigate = useNavigate();
   const handleSignOut = () => {
+    // Remove all stored information
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('rememberMe');
+    
+    // Optionally, you can also clear the FCM token if you're storing it
+    // localStorage.removeItem('fcmToken');
+
+    // Redirect to the login page
     navigate('/');
   };
   return (
@@ -30,6 +39,7 @@ const SignOutButton = () => {
     </button>
   );
 };
+
 
 const FeatureDropdown = ({ features }) => {
   return (

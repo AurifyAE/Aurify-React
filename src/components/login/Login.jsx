@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Switch from '@mui/material/Switch';
-import IconButton from '@mui/material/IconButton';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import loginImage from '../../assets/GoldBar.jpg';
-import axiosInstance from '../../axiosInstance';
+import IconButton from '@mui/material/IconButton';
+import Switch from '@mui/material/Switch';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { requestFCMToken } from '../../utils/firebaseUtils'
-import { useEffect } from 'react';
+import loginImage from '../../assets/GoldBar.jpg';
+import axiosInstance from '../../axios/axiosInstance';
+import { requestFCMToken } from '../../utils/firebaseUtils';
 import { registerServiceWorker } from '../../utils/serviceWorkerRegistration';
-import { RememberMe } from '@mui/icons-material';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -21,40 +19,66 @@ const LoginPage = () => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [fcmToken, setFcmToken] = useState("");
-  console.log(fcmToken);
   const navigate = useNavigate();
 
-  useEffect(() =>{
+  useEffect(() => {
     const fetchFcmToken = async () => {
-      try{
-        await registerServiceWorker(); 
-        await requestFCMToken().then((token) => {
-          setFcmToken(token);
-        })
+      try {
+        await registerServiceWorker();
+        const token = await requestFCMToken();
+        setFcmToken(token);
+      } catch (error) {
+        console.log('Error in getting FCM token:', error);
       }
-      catch(error){
-        console.log('Error in getting FCM token :',error);
-      }
-    }
+    };
     fetchFcmToken();
-  },[]);
+
+    // Check for existing token and auto-login
+    const checkExistingToken = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // Verify the token with the backend
+          const response = await axiosInstance.post('/verify-token', { token });
+          if (response.data.serviceExpired) {
+            // Handle expired service
+            toast.error('Your service has expired. Please renew your subscription.');
+          } else {
+            // Token is valid, navigate to dashboard
+            navigate('/dashboard');
+          }
+        } catch (error) {
+          // Token is invalid or expired, clear it
+          localStorage.removeItem('token');
+          localStorage.removeItem('userEmail');
+          localStorage.removeItem('rememberMe');
+        }
+      }
+    };
+    checkExistingToken();
+  }, [navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     const values = {
-      email, 
+      email,
       password,
       fcmToken,
       rememberMe
-    }
+    };
     setEmailError('');
     setPasswordError('');
-  
+
     try {
-      const response = await axiosInstance.post('/login',values);
+      const response = await axiosInstance.post('/login', values);
       if (response.data.success) {
         localStorage.setItem('token', response.data.token);
         localStorage.setItem('userEmail', email);
+        if (rememberMe) {
+          localStorage.setItem('rememberMe', 'true');
+        } else {
+          localStorage.removeItem('rememberMe');
+        }
         toast.success('Login Successful', {
           position: "top-right",
           autoClose: 3000,
@@ -77,7 +101,6 @@ const LoginPage = () => {
       }
     }
   };
-  
 
   
   

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 import { Card, CardHeader, CardBody, useDisclosure } from "@nextui-org/react";
 
 const Banner = () => {

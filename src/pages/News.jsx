@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
@@ -26,6 +26,8 @@ const NewsUpload = () => {
   useEffect(() => {
     const fetchAdminEmailAndNews = async () => {
       const userEmail = localStorage.getItem('userEmail');
+      console.log('User email from localStorage:', userEmail);
+
       if (!userEmail) {
         console.error('Admin email not found in localStorage');
         return;
@@ -235,7 +237,7 @@ const NewsUpload = () => {
             <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
               <div className="p-6">
                 <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
-                <div className={`text-gray-600 mb-4 ${expandedItems[item._id] ? 'max-h-full overflow-y-auto' : 'max-h-24 overflow-hidden'}`}>
+                <div className={`text-gray-600 mb-4 ${expandedItems[item._id] ? 'max-h-full overflow-y-auto hide-scrollbar' : 'max-h-24 overflow-hidden'}`}>
                   <p>{item.description}</p>
                 </div>
                 {item.description.length > 100 && (

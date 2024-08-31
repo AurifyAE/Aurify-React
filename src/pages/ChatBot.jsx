@@ -7,6 +7,6 @@ const ChatBot = () => {
       <img src={comingSoon} alt="coming soon" className="w-1/2 h-auto mb-4" />
     </div>
   );
-};  
+};
 
 export default ChatBot;

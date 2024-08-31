@@ -1,8 +1,8 @@
-import { Button, Image, Modal, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure } from '@nextui-org/react';
+import { Button, Image, Modal, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow } from '@nextui-org/react';
 import React, { useEffect, useState } from 'react';
 import { toast, Toaster } from 'react-hot-toast';
-import { MdAddShoppingCart, MdDeleteForever } from 'react-icons/md';
-import axiosInstance from '../axiosInstance';
+import { MdAddShoppingCart } from 'react-icons/md';
+import axiosInstance from '../axios/axiosInstance';
 
 const Shop = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -11,11 +11,8 @@ const Shop = () => {
   const [email, setEmail] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  // const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const { isOpen: isDeleteModalOpen, onOpen: openDeleteModal, onClose: closeDeleteModal } = useDisclosure();
 
   useEffect(() => {
     const fetchAdminEmailAndShopItems = async () => {
@@ -65,28 +62,21 @@ const Shop = () => {
     }
   };
 
-  const handleDeleteClick = (id) => {
-    setItemToDelete(id);
-    openDeleteModal();
-  };
+  // const handleDeleteClick = (id) => {
+  //   setItemToDelete(id);
+  //   openDeleteModal();
+  // };
 
   // const closeDeleteModal = () => {
   //   setIsDeleteModalOpen(false);
   //   setItemToDelete(null);
   // };
 
-  const handleDeleteItem = async () => {
-    if (!itemToDelete) {
-      console.error('No item selected for deletion');
-      return;
-    }
-
+  const handleDeleteItem = async (id) => {
     try {
-      await axiosInstance.delete(`/shop-items/${itemToDelete}?email=${email}`);
-      setItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
+      await axiosInstance.delete(`/shop-items/${id}?email=${email}`);
+      setItems(prevItems => prevItems.filter(item => item._id !== id));
       toast.success('Item deleted successfully!');
-      closeDeleteModal();
-      setItemToDelete(null);
     } catch (error) {
       console.error('Error deleting shop item:', error.response ? error.response.data : error);
       toast.error('Failed to delete item. Please try again.');
@@ -162,34 +152,34 @@ const Shop = () => {
           <option value="copper">Copper</option>
         </select>
       </div>
-
-      <Table aria-label="Shop items table">
+      {filteredItems.length > 0 ? (
+      <Table aria-label="Shop items table" className="border-collapse">
         <TableHeader>
-          <TableColumn>IMAGE</TableColumn>
-          <TableColumn>NAME</TableColumn>
-          <TableColumn>TYPE</TableColumn>
-          <TableColumn>WEIGHT</TableColumn>
-          <TableColumn>RATE</TableColumn>
-          <TableColumn>ACTIONS</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">IMAGE</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">NAME</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">TYPE</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">WEIGHT</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">RATE</TableColumn>
+          <TableColumn className="bg-gray-200 font-bold text-center border border-gray-300 p-2">ACTIONS</TableColumn>
         </TableHeader>
         <TableBody>
           {filteredItems.map((item) => (
             <TableRow key={item._id}>
-              <TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">
                 <img
                   src={`http://localhost:8000${item.image}`}
                   alt={item.name}
                   width={50}
                   height={50}
-                  className="cursor-pointer"
+                  className="cursor-pointer mx-auto"
                   onClick={() => openImageModal(`http://localhost:8000${item.image}`)}
                 />
               </TableCell>
-              <TableCell>{item.name}</TableCell>
-              <TableCell>{item.type}</TableCell>
-              <TableCell>{item.weight}</TableCell>
-              <TableCell>{item.rate}</TableCell>
-              <TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">{item.name}</TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">{item.type}</TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">{item.weight}</TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">{item.rate}</TableCell>
+              <TableCell className="border border-gray-300 p-2 text-center">
                 <Button
                   auto
                   icon={<MdAddShoppingCart />}
@@ -200,9 +190,9 @@ const Shop = () => {
                 </Button>
                 <Button
                   auto
-                  icon={<MdDeleteForever />}
+                  // icon={<MdDeleteForever />}
                   className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                  onClick={() => handleDeleteClick(item._id)}
+                  onClick={() => handleDeleteItem(item._id)}
                 >
                   Delete
                 </Button>
@@ -211,6 +201,11 @@ const Shop = () => {
           ))}
         </TableBody>
       </Table>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No items available. Add some items to see them here.
+              </div>
+            )}
       
 
       {isModalOpen && (

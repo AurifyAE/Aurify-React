@@ -9,7 +9,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../context/CurrencyContext';
 import io from 'socket.io-client';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

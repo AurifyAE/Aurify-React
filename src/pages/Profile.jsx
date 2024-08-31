@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 
 const ProfilePage = () => {
   const [logo, setLogo] = useState(null);
@@ -167,8 +167,8 @@ const ProfilePage = () => {
             <img src={userData?.data?.logo ? `http://localhost:8000/uploads/${userData.data.logo}` : ''} alt="Company Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Tecnavis</h2>
-              <p className="text-sm text-gray-600">Aurify Solutions</p>
+              <h2 className="text-xl font-bold text-gray-800">{userData?.data?.userName ? userData.data.userName : ''}</h2>
+              <p className="text-sm text-gray-600">{userData?.data?.email ? userData.data.email : ''}</p>
             </div>
           </div>
           <div className="flex space-x-2">

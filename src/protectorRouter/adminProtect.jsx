@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, Outlet, Navigate } from "react-router-dom";
-import axiosInstance from "../axiosInstance";
+import axiosInstance from "../axios/axiosInstance";
 import RenewalModal from "../components/RenewalModal";
 
 function AdminProtect() {

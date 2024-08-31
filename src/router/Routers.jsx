@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../components/login/Login';
 import DashboardLayout from '../layout/DashboardLayout';
@@ -16,28 +16,26 @@ import ServerError from '../pages/ServerError';
 import ChatLayout from '../layout/ChatLayout';
 import DigitalMarketingLayout from '../layout/DigitalMarketLayout';
 import ChatBotLayout from '../layout/ChatBotLayout';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 import Protect from '../protectorRouter/adminProtect';
 
 function Routers() {
   const [features, setFeatures] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const hasFetchedFeatures = useRef(false);
 
   const fetchFeatures = useCallback(async () => {
     const userEmail = localStorage.getItem('userEmail');
-    if (userEmail) {
+    if (userEmail && !hasFetchedFeatures.current) {
       try {
-        setIsLoading(true);
         const response = await axiosInstance.get('/features', {
           params: { email: userEmail },
         });
         if (response.data.success) {
           setFeatures(response.data.data);
+          hasFetchedFeatures.current = true; // Mark as fetched
         }
       } catch (err) {
         console.error('Failed to fetch features:', err);
-      } finally {
-        setIsLoading(false);
       }
     }
   }, []);
@@ -46,16 +44,16 @@ function Routers() {
     fetchFeatures();
   }, [fetchFeatures]);
 
-  const isFeatureAccessible = useCallback((featureName) => {
-    console.log("Feature Name:", featureName);
-    console.log("Features List:", features.map(f => f.name.toLowerCase()));
-    return features.some(feature => feature.name.toLowerCase() === featureName.toLowerCase());
-  }, [features]);
+  const isFeatureAccessible = useCallback(
+    (featureName) => {
+      return features.some(
+        (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
+      );
+    },
+    [features]
+  );
 
   const ProtectedRoute = ({ element: Element, path }) => {
-    if (isLoading) {
-      return <div></div>;
-    }
     
     const featureName = path
       .split('/feature/')[1]
@@ -64,14 +62,10 @@ function Routers() {
     return isFeatureAccessible(featureName) ? <Element /> : <Navigate to="*" replace />;
   };
 
-  if (isLoading) {
-    return <div></div>; 
-  }
-
   return (
     <Routes>
       <Route path="/" element={<Login />} />
-      <Route element={<Protect/>}>
+      <Route element={<Protect />}>
         <Route path="dashboard" element={<DashboardLayout />} />
         <Route path="spot-rate" element={<SpotRateLayout />} />
         <Route path="media" element={<MediaLayout />} />

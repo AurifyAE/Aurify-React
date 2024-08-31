@@ -15,7 +15,7 @@ import {
 import { styled } from '@mui/material/styles';
 import React, { useEffect, useState } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
-import axiosInstance from '../axiosInstance';
+import axiosInstance from '../axios/axiosInstance';
 import BankDetailsModal from './BankDetailsModal';
 
 const StyledCard = styled(Card)({
