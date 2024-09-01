@@ -32,7 +32,7 @@ const EnhancedChatInterface = ({ adminId }) => {
         const response = await axiosInstance.get(`/data/${email}`);
         if (response && response.data && response.data.data) {
           setId(response.data.data._id);
-          return response.data.data._id; // Return the Id
+          return response.data.data._id;
         } else {
           console.error('Invalid response or missing data:', response);
         }
@@ -45,9 +45,8 @@ const EnhancedChatInterface = ({ adminId }) => {
       const adminId = await fetchAdminId();
       if (!adminId) return;
 
-      const emailId = localStorage.getItem('userEmail');
       try {
-        const response = await axiosInstance.get(`/admin/${emailId}/users`);
+        const response = await axiosInstance.get(`/admin/${adminId}/users`);
         if (response.data.success) {
           setUsers(response.data.users);
           await fetchAllChats(response.data.users, adminId);
@@ -73,6 +72,15 @@ const EnhancedChatInterface = ({ adminId }) => {
           time: message.timestamp
         });
         return updatedChats;
+      });
+
+      setFilteredUsers((prevUsers) => {
+        const updatedUsers = prevUsers.filter(user => user._id !== message.sender);
+        const userWithNewMessage = prevUsers.find(user => user._id === message.sender);
+        if (userWithNewMessage) {
+          return [userWithNewMessage, ...updatedUsers];
+        }
+        return prevUsers;
       });
     });
 
@@ -109,7 +117,6 @@ const EnhancedChatInterface = ({ adminId }) => {
       console.error('Error fetching all chats:', error);
     }
   };
-
 
   useEffect(() => {
     if (selectedUser && Id) {
@@ -159,15 +166,20 @@ const EnhancedChatInterface = ({ adminId }) => {
         if (response.data.success) {
           const room = `${Id}-${selectedUser._id}`;
           socket.emit('sendMessage', { ...messageData, room });
+          
+          // Update chats state immediately
           setChats(prevChats => ({
             ...prevChats,
             [selectedUser._id]: [...(prevChats[selectedUser._id] || []), messageData]
           }));
   
           setNewMessage("");
-          if (!filteredUsers.find(user => user._id === selectedUser._id)) {
-            setFilteredUsers(prevUsers => [...prevUsers, selectedUser]);
-          }
+          
+          // Update filteredUsers to move the current user to the top
+          setFilteredUsers(prevUsers => {
+            const updatedUsers = prevUsers.filter(user => user._id !== selectedUser._id);
+            return [selectedUser, ...updatedUsers];
+          });
         }
       } catch (error) {
         console.error('Error sending message:', error);

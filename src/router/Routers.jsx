@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../components/login/Login';
 import DashboardLayout from '../layout/DashboardLayout';
@@ -18,12 +18,13 @@ import DigitalMarketingLayout from '../layout/DigitalMarketLayout';
 import ChatBotLayout from '../layout/ChatBotLayout';
 import axiosInstance from '../axios/axiosInstance';
 import Protect from '../protectorRouter/adminProtect';
+import UserChatLayout from '../layout/UserChatLayout';
 
 function Routers() {
   const [features, setFeatures] = useState([]);
   const hasFetchedFeatures = useRef(false);
 
-  const fetchFeatures = useCallback(async () => {
+  const fetchFeatures = async () => {
     const userEmail = localStorage.getItem('userEmail');
     if (userEmail && !hasFetchedFeatures.current) {
       try {
@@ -38,29 +39,38 @@ function Routers() {
         console.error('Failed to fetch features:', err);
       }
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchFeatures();
-  }, [fetchFeatures]);
+  }, []); // Fetch features once after the initial render
 
-  const isFeatureAccessible = useCallback(
-    (featureName) => {
-      return features.some(
-        (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
-      );
-    },
-    [features]
-  );
+  const isFeatureAccessible = (featureName) => {
+    return features.some(
+      (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
+    );
+  };
 
   const ProtectedRoute = ({ element: Element, path }) => {
-    
     const featureName = path
       .split('/feature/')[1]
       .replace(/-/g, ' ')
       .toLowerCase();
-    return isFeatureAccessible(featureName) ? <Element /> : <Navigate to="*" replace />;
+
+    if (!hasFetchedFeatures.current) {
+      return null; // Don't render anything until features are fetched
+    }
+
+    return isFeatureAccessible(featureName) ? (
+      <Element />
+    ) : (
+      <Navigate to="*" replace />
+    );
   };
+
+  if (!hasFetchedFeatures.current) {
+    return null; // Return null or an empty fragment until features are fetched
+  }
 
   return (
     <Routes>
@@ -73,6 +83,7 @@ function Routers() {
         <Route path="news" element={<NewsLayout />} />
         <Route path="profile" element={<ProfileLayout />} />
         <Route path="bank-details" element={<BankDetailsLayout />} />
+        <Route path="userchat" element={<UserChatLayout />} />
 
         <Route
           path="/feature/shop"
