@@ -44,6 +44,7 @@ const UserSelectionAndChatInterface = () => {
 
     return () => {
       socket.off("message");
+      socket.off("connect");
     };
   }, [selectedUser, adminId]);
 
@@ -135,9 +136,10 @@ const UserSelectionAndChatInterface = () => {
             <div className="flex-1 bg-gray-50 p-4 overflow-y-auto">
               <div className="h-full flex flex-col justify-end">
                 <div>
-                  {messages.map((msg, index) => (
-                    <ChatMessage key={index} {...msg} isAdmin={msg.sender !== selectedUser._id} />
-                  ))}
+                {messages && messages.length > 0 && messages.map((msg, index) => (
+                  <ChatMessage key={index} {...msg} isAdmin={msg.sender !== selectedUser._id} />
+                ))}
+
                   <div ref={messageEndRef} />
                 </div>
               </div>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import axiosInstance from '../../axios/axiosInstance';
 
 const ProfilePage = () => {
@@ -51,6 +52,7 @@ const ProfilePage = () => {
         if (response.data.success) {
           setShowToast(true);
           setTimeout(() => setShowToast(false), 3000);
+          toast.success('Logo updated successfully!');
           
           // Update the local state with the new logo URL
           setUserData(prevData => ({
@@ -66,7 +68,7 @@ const ProfilePage = () => {
       } catch (error) {
         console.error('Error uploading logo:', error);
         // setShowToast(true);
-        // setToastMessage("Error uploading logo: " + (error.response?.data?.message || error.message));
+        toast.error("Error uploading logo: " + (error.response?.data?.message || error.message));
         setTimeout(() => setShowToast(false), 3000);
       }
     }
@@ -94,14 +96,14 @@ const ProfilePage = () => {
         location: userData.data.address || ''
       });
     }
-  }, [userData]);  
+  }, [userData]);  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileInfo(prevInfo => ({
       ...prevInfo,
-      [name]: value
-    }));
+      [name]: value
+    }));
   };
 
   const saveChanges = async () => {
@@ -114,9 +116,11 @@ const ProfilePage = () => {
       });
       if (response.status === 200) {
         console.log('Profile updated successfully');
+        toast.success('Profile updated successfully');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      toast.error('Error updating profile: ' + error.message);
     }
   };
   
@@ -126,6 +130,7 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       const userEmail = localStorage.getItem('userEmail');
+      console.log(userEmail);
       
       if (!userEmail) {
         setError('User not logged in');
@@ -136,6 +141,7 @@ const ProfilePage = () => {
         // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userEmail}`);
         
+        console.log('API Response:', response.data);
         setUserData(response.data);
       } catch (err) {
         setError('Failed to fetch user data: ' + err.message);
@@ -148,12 +154,14 @@ const ProfilePage = () => {
   
   useEffect(() => {
     if (userData) {
+      console.log('Updated userData:', userData); // Log state after it has been set
     }
   }, [userData]); // Dependency array contains userData
   
 
   return (
     <div className="relative bg-gray-100 mt-24 mr-6">
+      <Toaster position="top-right" />
       <div className="bg-gray-100 p-6 relative">
         <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 h-[158px] rounded-lg shadow-lg p-6 absolute inset-x-0 z-10 top-[-6rem]">
           {/* Content of the first div */}
@@ -166,8 +174,8 @@ const ProfilePage = () => {
             <img src={userData?.data?.logo ? `${process.env.REACT_APP_API_URL.replace('/api', '')}/uploads/${userData.data.logo}` : ''} alt="Company Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">{userData?.data?.userName ? userData.data.userName : ''}</h2>
-              <p className="text-sm text-gray-600">{userData?.data?.email ? userData.data.email : ''}</p>
+              <h2 className="text-xl font-bold text-gray-800">Tecnavis</h2>
+              <p className="text-sm text-gray-600">Aurify Solutions</p>
             </div>
           </div>
           <div className="flex space-x-2">

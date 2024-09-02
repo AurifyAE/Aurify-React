@@ -45,7 +45,6 @@ const EnhancedChatInterface = ({ adminId }) => {
       const adminId = await fetchAdminId();
       if (!adminId) return;
 
-      const emailId = localStorage.getItem('userEmail');
       try {
         const response = await axiosInstance.get(`/admin/${adminId}/users`);
         if (response.data.success) {
@@ -75,7 +74,14 @@ const EnhancedChatInterface = ({ adminId }) => {
         return updatedChats;
       });
     });
-
+    socket.on("newMessage", (message) => {
+      if (message.sender === selectedUser?._id || message.receiver === Id) {
+        setChats((prevChats) => ({
+          ...prevChats,
+          [message.sender]: [...(prevChats[message.sender] || []), message]
+        }));
+      }
+    });
     return () => {
       socket.off("message");
     };

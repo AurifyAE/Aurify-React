@@ -367,9 +367,10 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
 
 
 const UserList = ( ) => {
-  const adminId = localStorage.getItem('userEmail');
+  const email = localStorage.getItem('userEmail');
   const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
+  const [adminId,setAdminId] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
@@ -377,6 +378,29 @@ const UserList = ( ) => {
   const [spreadValues, setSpreadValues] = useState([]);
 
   //addspread starts
+  useEffect(() => {
+    const fetchData = async () => {
+      const userEmail = localStorage.getItem('userEmail');
+      console.log(userEmail);
+      
+      if (!userEmail) {
+        return;
+      }
+  
+      try {
+        // Include the email directly in the URL
+        const response = await axiosInstance.get(`/data/${userEmail}`);
+        
+        console.log('API Response:', response.data);
+        setAdminId(response.data.data._id);
+      } catch (err) {
+        console.error('Failed to fetch user data: ' + err);
+      }
+    };
+  
+    fetchData();
+  }, []);
+  
 
   useEffect(() => {
     if (adminId) {  // Only fetch data if adminId is available
@@ -399,7 +423,7 @@ const UserList = ( ) => {
 
   const fetchSpreadValues = async () => {
     try {
-      const response = await axiosInstance.get(`/admin/${adminId}/spread-values`);
+      const response = await axiosInstance.get(`/admin/${email}/spread-values`);
       if (response.data.success) {
         setSpreadValues(response.data.spreadValues);
       }
@@ -412,7 +436,7 @@ const UserList = ( ) => {
 
   const handleAddSpread = async (spreadValue,title) => {
     try {
-      const response = await axiosInstance.post(`/admin/${adminId}/spread-values`, { spreadValue,title });
+      const response = await axiosInstance.post(`/admin/${email}/spread-values`, { spreadValue,title });
       if (response.data.success) {
         setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
         setShowNotification(true);
@@ -463,7 +487,7 @@ const UserList = ( ) => {
   const handleDeleteSpread = async (index) => {
     try {
       const spreadToDelete = spreadValues[index]._id;
-      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/?email=${adminId}`);
+      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/${email}`);
       if (response.data.success) {
         setSpreadValues(prevValues => prevValues.filter((_, i) => i !== index));
         setShowNotification(true);

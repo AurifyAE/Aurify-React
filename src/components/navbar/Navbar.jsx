@@ -63,6 +63,10 @@ const Navbar = () => {
       navigate('/feature/digital-marketing');
       setShowNotifications(false);
     }
+    if (notification.message.toLowerCase().includes('new user')) {
+      navigate('/feature/users');
+      setShowNotifications(false);
+    }
   };
 
   const toggleNotifications = () => {
