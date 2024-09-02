@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../components/login/Login';
 import DashboardLayout from '../layout/DashboardLayout';
@@ -18,38 +18,43 @@ import DigitalMarketingLayout from '../layout/DigitalMarketLayout';
 import ChatBotLayout from '../layout/ChatBotLayout';
 import axiosInstance from '../axios/axiosInstance';
 import Protect from '../protectorRouter/adminProtect';
-import UserChatLayout from '../layout/UserChatLayout';
+import UserChatLayout from '../pages/Chat/UserChat';
 
 function Routers() {
-  const [features, setFeatures] = useState([]);
-  const hasFetchedFeatures = useRef(false);
+  const [features, setFeatures] = useState(null);
 
-  const fetchFeatures = async () => {
+  const fetchFeatures = useCallback(async () => {
     const userEmail = localStorage.getItem('userEmail');
-    if (userEmail && !hasFetchedFeatures.current) {
-      try {
-        const response = await axiosInstance.get('/features', {
-          params: { email: userEmail },
-        });
-        if (response.data.success) {
-          setFeatures(response.data.data);
-          hasFetchedFeatures.current = true; // Mark as fetched
-        }
-      } catch (err) {
-        console.error('Failed to fetch features:', err);
-      }
+    if (!userEmail) {
+      setFeatures([]); // Set empty array if no user email
+      return;
     }
-  };
+
+    try {
+      const response = await axiosInstance.get('/features', {
+        params: { email: userEmail },
+      });
+      if (response.data.success) {
+        setFeatures(response.data.data);
+      } else {
+        console.error('Failed to fetch features: Unexpected response format');
+        setFeatures([]); // Set empty array on failure
+      }
+    } catch (err) {
+      console.error('Failed to fetch features:', err);
+      setFeatures([]); // Set empty array on error
+    }
+  }, []);
 
   useEffect(() => {
     fetchFeatures();
-  }, []); // Fetch features once after the initial render
+  }, [fetchFeatures]);
 
-  const isFeatureAccessible = (featureName) => {
-    return features.some(
+  const isFeatureAccessible = useCallback((featureName) => {
+    return features && features.some(
       (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
     );
-  };
+  }, [features]);
 
   const ProtectedRoute = ({ element: Element, path }) => {
     const featureName = path
@@ -57,7 +62,7 @@ function Routers() {
       .replace(/-/g, ' ')
       .toLowerCase();
 
-    if (!hasFetchedFeatures.current) {
+    if (features === null) {
       return null; // Don't render anything until features are fetched
     }
 
@@ -68,8 +73,8 @@ function Routers() {
     );
   };
 
-  if (!hasFetchedFeatures.current) {
-    return null; // Return null or an empty fragment until features are fetched
+  if (features === null) {
+    return null; // Don't render routes until features are fetched
   }
 
   return (

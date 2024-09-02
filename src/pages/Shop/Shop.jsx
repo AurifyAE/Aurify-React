@@ -176,6 +176,15 @@ const Shop = () => {
     setImageModalOpen(true);
   };
 
+  const getImageUrl = (imagePath) => {
+    const apiUrl = process.env.REACT_APP_API_URL;
+    const trimmedApiUrl = apiUrl.substring(0, apiUrl.lastIndexOf('/')); 
+    const url = `${trimmedApiUrl}/${imagePath}`;
+    console.log('Image URL:', url); // Add this line
+    return url;
+  };
+  
+
   return (
     <div className="container mx-auto px-4">
       <Toaster position="top-center" />
@@ -229,14 +238,12 @@ const Shop = () => {
               <TableRow key={item._id}>
                 <TableCell className="text-center">
                   <img
-                    src={`${process.env.REACT_APP_API}${item.image}`}
+                    src={getImageUrl(item.image)}
                     alt={item.name}
                     width={50}
                     height={50}
                     className="cursor-pointer mx-auto"
-                    onClick={() =>
-                      openImageModal(`${process.env.REACT_APP_API}${item.image}`)
-                    }
+                    onClick={() => openImageModal(getImageUrl(item.image))}
                   />
                 </TableCell>
                 <TableCell className="text-center">{item.name}</TableCell>
@@ -433,7 +440,7 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
             {editingItem && editingItem.image && (
               <div className="mb-4">
                 <img
-                  src={`${process.env.REACT_APP_API}/` + editingItem.image}
+                  src={`${process.env.REACT_APP_API_URL}/${editingItem.image}`}
                   alt={editingItem.name}
                   className="w-32 h-32 object-cover rounded"
                 />

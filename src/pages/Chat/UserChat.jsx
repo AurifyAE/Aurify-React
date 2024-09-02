@@ -4,7 +4,7 @@ import { Search, Paperclip, Send } from 'lucide-react';
 import Avatar from '../../assets/Avatar.jpg';
 import axiosInstance from '../../axios/axiosInstance';
 
-const socket = io(process.env.REACT_API_URL);
+const socket = io(process.env.REACT_APP_API_URL.replace('/api', ''));
 
 const UserSelectionAndChatInterface = () => {
   const [users, setUsers] = useState([]);
@@ -22,17 +22,7 @@ const UserSelectionAndChatInterface = () => {
   useEffect(() => {
     if (adminId) {
       fetchUsers();
-      socket.emit('login', { userId: adminId, userType: 'admin' });
-      
-      socket.on("message", (message) => {
-        setMessages((prevMessages) => [...prevMessages, message]);
-        updateUserOrder(message.sender);
-      });
     }
-
-    return () => {
-      socket.off("message");
-    };
   }, [adminId]);
 
   useEffect(() => {
@@ -44,7 +34,17 @@ const UserSelectionAndChatInterface = () => {
   useEffect(() => {
     if (selectedUser && adminId) {
       fetchMessages();
+      
+      socket.emit('login', { userId: selectedUser._id, userType: 'user' });
+
+      socket.on("message", (message) => {
+        setMessages((prevMessages) => [...prevMessages, message]);
+      });
     }
+
+    return () => {
+      socket.off("message");
+    };
   }, [selectedUser, adminId]);
 
   const fetchAdminInfo = async () => {
@@ -67,6 +67,7 @@ const UserSelectionAndChatInterface = () => {
   const fetchUsers = async () => {
     try {
       const response = await axiosInstance.get(`/admin/${adminId}/users`);
+      console.log(response.data);
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -86,33 +87,24 @@ const UserSelectionAndChatInterface = () => {
     if (newMessage.trim() !== "" && adminId && selectedUser) {
       const messageData = {
         message: newMessage,
-        sender: adminId,
-        receiver: selectedUser._id,
+        sender: selectedUser._id,
+        receiver: adminId,
         time: new Date().toISOString(),
       };
 
       try {
-        const response = await axiosInstance.post(`/messages/${selectedUser._id}`, messageData);
+        const response = await axiosInstance.post(`/messages/${adminId}`, messageData);
 
         if (response.data.success) {
           const room = `${adminId}-${selectedUser._id}`;
           socket.emit('sendMessage', { ...messageData, room });
           setMessages((prevMessages) => [...prevMessages, messageData]);
           setNewMessage("");
-          updateUserOrder(selectedUser._id);
         }
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
-  };
-
-  const updateUserOrder = (userId) => {
-    setUsers((prevUsers) => {
-      const updatedUser = prevUsers.find(user => user._id === userId);
-      const otherUsers = prevUsers.filter(user => user._id !== userId);
-      return [updatedUser, ...otherUsers];
-    });
   };
 
   const handleKeyDown = (e) => {
@@ -125,26 +117,30 @@ const UserSelectionAndChatInterface = () => {
   return (
     <div className="flex h-full bg-gray-100 overflow-hidden px-4 mb-6">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col rounded-lg overflow-hidden h-full hide-scrollbar">
+      <div className="flex-1 flex flex-col rounded-lg overflow-hidden h-full">
         {selectedUser ? (
           <>
             {/* Chat Header */}
             <div className="bg-white shadow px-4 py-3">
               <div className="flex items-center space-x-3">
-                <img src={Avatar} alt={selectedUser.userName} className="w-10 h-10 rounded-full" />
+                <img src={Avatar} alt={adminInfo ? adminInfo.userName : "Admin"} className="w-10 h-10 rounded-full" />
                 <div>
-                  <h3 className="font-semibold text-gray-800">{selectedUser.userName}</h3>
-                  <p className="text-sm text-gray-500">{selectedUser.location || "No location"}</p>
+                  <h3 className="font-semibold text-gray-800">{adminInfo ? adminInfo.userName : "Admin"}</h3>
+                  <p className="text-sm text-gray-500">Support Agent</p>
                 </div>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 bg-gray-50 p-4 overflow-y-auto hide-scrollbar">
-              {messages.map((msg, index) => (
-                <ChatMessage key={index} {...msg} isAdmin={msg.sender === adminId} />
-              ))}
-              <div ref={messageEndRef} />
+            <div className="flex-1 bg-gray-50 p-4 overflow-y-auto">
+              <div className="h-full flex flex-col justify-end">
+                <div>
+                  {messages.map((msg, index) => (
+                    <ChatMessage key={index} {...msg} isAdmin={msg.sender !== selectedUser._id} />
+                  ))}
+                  <div ref={messageEndRef} />
+                </div>
+              </div>
             </div>
 
             {/* Message Input */}
@@ -220,10 +216,10 @@ const UserItem = ({ user, isSelected, onClick }) => (
 );
 
 const ChatMessage = ({ message, time, isAdmin }) => (
-  <div className={`flex ${isAdmin ? 'justify-end' : 'justify-start'} mb-4`}>
-    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isAdmin ? 'bg-purple-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
+  <div className={`flex ${isAdmin ? 'justify-start' : 'justify-end'} mb-4`}>
+    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isAdmin ? 'bg-gray-200 text-gray-800' : 'bg-purple-500 text-white'}`}>
       <p className="text-sm">{message}</p>
-      <p className={`text-xs mt-1 ${isAdmin ? 'text-purple-200' : 'text-gray-500'}`}>
+      <p className={`text-xs mt-1 ${isAdmin ? 'text-gray-500' : 'text-purple-200'}`}>
         {new Date(time).toLocaleTimeString()}
       </p>
     </div>

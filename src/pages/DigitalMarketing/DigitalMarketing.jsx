@@ -47,11 +47,11 @@ const Banner = () => {
               </CardHeader>
               <CardBody className="overflow-visible py-2">
                 <div className="aspect-square w-full overflow-hidden cursor-pointer"
-                     onClick={() => handleImageClick(`${process.env.REACT_API_KEY}/uploads/${banner.imageUrl}`)}>
+                     onClick={() => handleImageClick(`${process.env.REACT_APP_API_URL.replace('/api', '')}/uploads/${banner.imageUrl}`)}>
                   <img
                     alt={banner.title || 'Banner image'}
                     className="object-cover rounded-xl w-full h-full"
-                    src={`${process.env.REACT_API_KEY}/uploads/${banner.imageUrl}`}
+                    src={`${process.env.REACT_APP_API_URL.replace('/api', '')}/uploads/${banner.imageUrl}`}
                   />
                 </div>
               </CardBody>
