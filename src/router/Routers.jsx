@@ -47,7 +47,10 @@ function Routers() {
   }, []);
 
   useEffect(() => {
-    fetchFeatures();
+    const userEmail = localStorage.getItem('userEmail');
+    if (userEmail) {
+      fetchFeatures(); // Fetch features after login
+    }
   }, [fetchFeatures]);
 
   const isFeatureAccessible = useCallback((featureName) => {
