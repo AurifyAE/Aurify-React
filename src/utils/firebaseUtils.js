@@ -3,17 +3,17 @@ import { getMessaging, getToken } from 'firebase/messaging';
 
 // Define the Firebase configuration object with appropriate types
 const firebaseConfig = {
-  apiKey: 'AIzaSyCAHapnxRWqH8lwgYuFjrHQ7rDrkRlSe54',
-  authDomain: 'pushnotifaction-11aab.firebaseapp.com',
-  projectId: 'pushnotifaction-11aab',
-  storageBucket: 'pushnotifaction-11aab.appspot.com',
-  messagingSenderId: '329227476273',
-  appId: '1:329227476273:web:d977025db3317cafeee410',
-  measurementId: 'G-LB4BB5PSG5',
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
 // Define the VAPID key as a constant string
-const vapidKey = 'BEugoszFFht1wxmeOdaA_3f3mpT_x-gR3KneVOa2zUcl3jPOBVmwqSoNncQyPQcgdggcT7C1yTXtx5mn8bbJcVY';
+const vapidKey = process.env.REACT_APP_VAPID_KEY;
 
 // Initialize Firebase app
 const app = initializeApp(firebaseConfig);
@@ -25,8 +25,11 @@ const messaging = getMessaging(app);
 export const requestFCMToken = async () => {
   try {
     const permission = await Notification.requestPermission();
+    console.log(permission);
     if (permission === 'granted') {
       // Get the FCM token using the VAPID key
+      console.log(messaging);
+      console.log(getToken(messaging, { vapidKey }));
       return getToken(messaging, { vapidKey });
     } else {
       throw new Error('Notification permission not granted');

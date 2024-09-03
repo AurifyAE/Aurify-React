@@ -58,16 +58,33 @@ const Navbar = () => {
 
   
 
-  const handleNotificationClick = (notification) => {
+  const handleNotificationClick = async (notification) => {
+    let route = '';
     if (notification.message.toLowerCase().includes('new banner')) {
-      navigate('/feature/digital-marketing');
-      setShowNotifications(false);
+      route = '/feature/digital-marketing';
+    } else if (notification.message.toLowerCase().includes('new user')) {
+      route = '/feature/users';
     }
-    if (notification.message.toLowerCase().includes('new user')) {
-      navigate('/feature/users');
-      setShowNotifications(false);
+
+    if (route) {
+      try {
+        // Delete the notification
+        await axiosInstance.delete(`/notifications/${adminId}/${notification._id}`);
+        
+        // Update local state
+        setNotifications(prevNotifications => 
+          prevNotifications.filter(n => n._id !== notification._id)
+        );
+
+        // Navigate to the appropriate route
+        navigate(route);
+        setShowNotifications(false);
+      } catch (error) {
+        console.error('Error deleting notification:', error);
+      }
     }
   };
+
 
   const toggleNotifications = () => {
     setShowNotifications(!showNotifications);
