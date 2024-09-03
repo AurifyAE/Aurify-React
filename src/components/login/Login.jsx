@@ -109,7 +109,10 @@ const LoginPage = () => {
         setPasswordError(response.data.message || "Login failed");
       }
     } catch (err) {
-      if (err.response?.data?.message) {
+      if (err.response && err.response.status === 500) {
+        navigate('/500'); // Redirect to 500 page
+      }
+      else if (err.response?.data?.message) {
         setPasswordError(err.response.data.message);
       } else {
         setPasswordError("Login failed. Please try again.");
