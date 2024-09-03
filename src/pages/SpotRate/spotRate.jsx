@@ -584,8 +584,14 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
 
 
   useEffect(() => {
+    const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
+
+    if (!socketSecret) {
+      console.error('Socket secret is not defined in environment variables');
+      return;
+    }
     const socket = io(serverURL, {
-      query: { secret: "aurify@123" },
+      query: { secret: socketSecret },
       transports: ['websocket'],
     });
   

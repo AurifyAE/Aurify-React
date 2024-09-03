@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@nextui-org/react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { MdAddShoppingCart } from "react-icons/md";
 
@@ -29,6 +29,19 @@ const Shop = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  const fetchItems = useCallback(async () => {
+    try {
+      const shopResponse = await axiosInstance.get(`/shop-items?email=${email}`);
+      // Sort items by createdAt date in ascending order (oldest first)
+      const sortedItems = shopResponse.data.shops.sort((a, b) => {
+        return new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id);
+      });
+      setItems(sortedItems);
+    } catch (error) {
+      console.error("Error fetching shop items:", error);
+    }
+  }, [email]);
 
   useEffect(() => {
     const fetchAdminEmailAndShopItems = async () => {
@@ -46,10 +59,7 @@ const Shop = () => {
           adminResponse.data.data.email
         ) {
           setEmail(adminResponse.data.data.email);
-          const shopResponse = await axiosInstance.get(
-            `/shop-items?email=${adminResponse.data.data.email}`
-          );
-          setItems(shopResponse.data.shops);
+          await fetchItems();
         } else {
           console.error("Unexpected response structure:", adminResponse.data);
         }
@@ -62,31 +72,21 @@ const Shop = () => {
     };
 
     fetchAdminEmailAndShopItems();
-  }, [refreshTrigger]);
+  }, [fetchItems]);
 
   const handleAddItem = async (newItem) => {
     const formData = new FormData();
     Object.keys(newItem).forEach((key) => {
       formData.append(key, newItem[key]);
     });
-    const email = localStorage.getItem("userEmail");
     try {
-      const response = await axiosInstance.post(
-        `/shop-items/${email}`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (response.data && response.data.shops) {
-        setItems((prevItems) => [
-          response.data.shops[response.data.shops.length - 1],
-          ...prevItems,
-        ]);
-        toast.success("New item added successfully!");
-      }
+      await axiosInstance.post(`/shop-items/${email}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      toast.success("New item added successfully!");
+      await fetchItems(); // Refetch all items to ensure correct order
       setIsModalOpen(false);
     } catch (error) {
       console.error("Error adding shop item:", error);
@@ -139,7 +139,7 @@ const Shop = () => {
         formDataToSend.append("image", updatedItem.image);
       }
 
-      const response = await axiosInstance.patch(
+      await axiosInstance.patch(
         `/shop-items/${editingItem._id}?email=${email}`,
         formDataToSend,
         {
@@ -148,17 +148,10 @@ const Shop = () => {
           },
         }
       );
-      if (response.data) {
-        setItems((prevItems) =>
-          prevItems.map((item) =>
-            item._id === editingItem._id ? response.data : item
-          )
-        );
-        setEditingItem(null);
-        setIsModalOpen(false);
-        setRefreshTrigger((prev) => prev + 1);
-        toast.success("Item updated successfully!");
-      }
+      setEditingItem(null);
+      setIsModalOpen(false);
+      await fetchItems(); // Refetch all items to ensure correct order
+      toast.success("Item updated successfully!");
     } catch (error) {
       console.error(
         "Error updating shop item:",
@@ -168,6 +161,7 @@ const Shop = () => {
     }
   };
 
+
   const filteredItems =
     filter === "all" ? items : items.filter((item) => item.type === filter);
 
@@ -176,13 +170,11 @@ const Shop = () => {
     setImageModalOpen(true);
   };
 
-  const getImageUrl = (imagePath) => {
+  const getImageUrl = useCallback((imagePath) => {
     const apiUrl = process.env.REACT_APP_API_URL;
-    const trimmedApiUrl = apiUrl.substring(0, apiUrl.lastIndexOf('/')); 
-    const url = `${trimmedApiUrl}/${imagePath}`;
-    console.log('Image URL:', url); // Add this line
-    return url;
-  };
+    const trimmedApiUrl = apiUrl.substring(0, apiUrl.lastIndexOf('/'));
+    return `${trimmedApiUrl}/${imagePath}`;
+  }, []);
   
 
   return (
@@ -440,7 +432,7 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
             {editingItem && editingItem.image && (
               <div className="mb-4">
                 <img
-                  src={`${process.env.REACT_APP_API_URL}/${editingItem.image}`}
+                  src={`${process.env.REACT_APP_API_URL.replace('/api', '')}/${editingItem.image}`}
                   alt={editingItem.name}
                   className="w-32 h-32 object-cover rounded"
                 />
