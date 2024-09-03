@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import ServerError from './components/500.jsx';
 import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
@@ -21,7 +22,7 @@ if ("serviceWorker" in navigator) {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <ErrorBoundary >
+    <ErrorBoundary fallback={<ServerError />}>
     <App />
     </ErrorBoundary>
   </React.StrictMode>
