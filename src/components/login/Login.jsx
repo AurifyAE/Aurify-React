@@ -19,16 +19,33 @@ const LoginPage = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [fcmToken, setFcmToken] = useState("");
+  const [isTokenLoading, setIsTokenLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
+    const maxAttempts = 3;
+    let attempts = 0;
+
     const fetchFcmToken = async () => {
+      setIsTokenLoading(true);
       try {
         await registerServiceWorker();
         const token = await requestFCMToken();
         setFcmToken(token);
+        setIsTokenLoading(false);
       } catch (error) {
-        console.log("Error in getting FCM token:", error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(fetchFcmToken, 2000);
+        } else {
+          toast.info('Having trouble securing your login. Refreshing the page...', {
+            position: "top-center",
+            autoClose: 3000,
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+        }
       }
     };
     fetchFcmToken();
@@ -68,6 +85,13 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isTokenLoading) {
+      toast.warning('Please wait while we secure your login...', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
     const values = {
       email,
       password,

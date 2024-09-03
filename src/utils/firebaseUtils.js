@@ -25,11 +25,8 @@ const messaging = getMessaging(app);
 export const requestFCMToken = async () => {
   try {
     const permission = await Notification.requestPermission();
-    console.log(permission);
     if (permission === 'granted') {
       // Get the FCM token using the VAPID key
-      console.log(messaging);
-      console.log(getToken(messaging, { vapidKey }));
       return getToken(messaging, { vapidKey });
     } else {
       throw new Error('Notification permission not granted');

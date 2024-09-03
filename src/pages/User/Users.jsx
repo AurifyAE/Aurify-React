@@ -381,7 +381,6 @@ const UserList = ( ) => {
   useEffect(() => {
     const fetchData = async () => {
       const userEmail = localStorage.getItem('userEmail');
-      console.log(userEmail);
       
       if (!userEmail) {
         return;
@@ -391,7 +390,6 @@ const UserList = ( ) => {
         // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userEmail}`);
         
-        console.log('API Response:', response.data);
         setAdminId(response.data.data._id);
       } catch (err) {
         console.error('Failed to fetch user data: ' + err);

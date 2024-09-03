@@ -36,7 +36,6 @@ function AdminProtect() {
           error.response?.status === 403 &&
           error.response?.data?.serviceExpired
         ) {
-          console.log("Service expired, showing renewal modal.");
           setIsServiceExpired(true);
           setAuth(false);
         } else if (
@@ -64,7 +63,6 @@ function AdminProtect() {
           (now - closedDate) / (1000 * 60 * 60 * 24)
         );
         if (daysSinceClosed >= 1) {
-          console.log("first");
           setShowReminderModal(true);
         }
       } else {
@@ -82,12 +80,10 @@ function AdminProtect() {
   if (auth === null) return null; // Show nothing while loading
 
   if (tokenInvalid) {
-    console.log("Token is invalid or expired.");
     return <Navigate to="/" />;
   }
 
   if (isServiceExpired) {
-    console.log("Displaying Renewal Modal");
     return (
       <>
         <RenewalModal
@@ -99,7 +95,6 @@ function AdminProtect() {
   }
 
   if (showReminderModal && reminderMessage) {
-    console.log("Displaying Reminder Modal");
     return (
       <>
         <ReminderModal

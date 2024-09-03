@@ -1,9 +1,8 @@
-// src/api/auth.js
-
 import axiosInstance from "../axios/axiosInstance";
 
 export const loginUser = async (email, password, fcmToken, rememberMe) => {
   try {
+    console.log(email,password,fcmToken,rememberMe)
     const response = await axiosInstance.post("/login", {
       email,
       password,

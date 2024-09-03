@@ -68,7 +68,6 @@ const UserSelectionAndChatInterface = () => {
   const fetchUsers = async () => {
     try {
       const response = await axiosInstance.get(`/admin/${adminId}/users`);
-      console.log(response.data);
       setUsers(response.data.users);
     } catch (error) {
       console.error('Error fetching users:', error);

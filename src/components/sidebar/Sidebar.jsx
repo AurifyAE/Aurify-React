@@ -98,21 +98,12 @@ const AdditionalFeaturesDropdown = ({ features }) => {
     setRequestStatus({ type: "loading", message: "Submitting request..." });
 
     try {
-      console.log("Sending request with data:", {
-        email: userEmail,
-        feature,
-        reason: "Requested via dropdown",
-        requestType: "featureRequest",
-      });
-
       const response = await axiosInstance.post("/request-feature", {
         email: userEmail,
         feature,
         reason: "Requested via dropdown",
         requestType: "featureRequest",
       });
-
-      console.log("Response:", response);
 
       if (response.data.success) {
         setRequestStatus({
