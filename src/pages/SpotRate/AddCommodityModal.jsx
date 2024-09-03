@@ -139,18 +139,6 @@ useEffect(() => {
     }
 }, [adminId]);
 
-const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
-  // Check if value is defined and not null
-  if (value === undefined || value === null) {
-    return 0; // or return a default value based on your requirements
-  }
-
-  const valueStr = value.toString();
-  const [integerPart] = valueStr.split('.');
-  return integerPart.length;
-}, []);
-
-
 
 const calculatePrices = useCallback(() => {
   setFormData(prevState => {

@@ -22,11 +22,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  Modal,
-  Backdrop,
-  Fade,
 } from '@mui/material';
-import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Edit as EditIcon , Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import axiosInstance from '../../axios/axiosInstance';
 
@@ -192,9 +189,6 @@ const theme = createTheme({
                     <TableCell align="center">{spread.title}</TableCell>
                     <TableCell align="center">{spread.spreadValue}</TableCell>
                     <TableCell align="center">
-                      {/* <IconButton onClick={() => handleEditClick(index)} color="primary" size="small">
-                        <EditIcon fontSize="small" />
-                      </IconButton> */}
                       <IconButton onClick={() => handleDeleteClick(index)} color="error" size="small">
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -241,12 +235,6 @@ const theme = createTheme({
           </DialogActions>
         </Dialog>
 
-        {/* <SpreadEditModal
-          open={editModalOpen}
-          handleClose={handleEditClose}
-          spread={editSpreadIndex !== null ? spreads[editSpreadIndex] : ''}
-          onSave={handleEditSave}
-        /> */}
       </Paper>
     );
   };
@@ -366,13 +354,11 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
 
 const UserList = ( ) => {
   const email = localStorage.getItem('userEmail');
-  const [spreads, setSpreads] = useState([]);
   const [userData, setUserData] = useState([]);
   const [adminId,setAdminId] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
-  const [editingSpread, setEditingSpread] = useState(null);
   const [spreadValues, setSpreadValues] = useState([]);
 
   //addspread starts
@@ -506,22 +492,6 @@ const UserList = ( ) => {
             />
           </Box>
         </Container>
-
-        {/* <SpreadEditModal
-          open={!!editingSpread}
-          handleClose={() => setEditingSpread(null)}
-          spread={editingSpread?.value || ''}
-          onSave={handleSaveSpread}
-          onClose={(event, reason) => {
-            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-              onClose();
-            }
-          }}
-          maxWidth="sm"
-          fullWidth
-          disableBackdropClick={true}
-          disableEscapeKeyDown={true}
-        /> */}
 
         <Snackbar
           open={showNotification}

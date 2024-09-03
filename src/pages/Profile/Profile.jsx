@@ -9,20 +9,8 @@ const ProfilePage = () => {
   const [isLogoSubmitted, setIsLogoSubmitted] = useState(false);
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
-  const [emailSettings, setEmailSettings] = useState({
-    follows: true,
-    answers: false,
-    mentions: true,
-  });
-  const [appSettings, setAppSettings] = useState({
-    launches: false,
-    updates: true,
-    newsletter: false,
-  });
 
-  const handleButtonClick = () => {
-    document.getElementById('logoInput').click();
-  };
+
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
@@ -73,12 +61,6 @@ const ProfilePage = () => {
       }
     }
   };
-
-  const Toast = ({ message }) => (
-    <div className="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-md shadow-lg">
-      {message}
-    </div>
-  );
 
   const [profileInfo, setProfileInfo] = useState({
     email: '',

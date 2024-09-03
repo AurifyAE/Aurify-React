@@ -24,7 +24,6 @@ const Shop = () => {
   const [filter, setFilter] = useState("all");
   const [email, setEmail] = useState("");
   const [editingItem, setEditingItem] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);

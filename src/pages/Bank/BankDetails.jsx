@@ -51,7 +51,6 @@ const AddButton = styled(Button)({
 });
 
 const BankDetails = () => {
-  const [bankDetails, setBankDetails] = useState([]);
   const [userData, setUserData] = useState({});
   const [error, setError] = useState({});
   const [editingBank, setEditingBank] = useState(null);
