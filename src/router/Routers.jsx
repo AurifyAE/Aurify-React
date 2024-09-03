@@ -1,31 +1,33 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from '../components/login/Login';
-import DashboardLayout from '../layout/DashboardLayout';
-import SpotRateLayout from '../layout/SpotRateLayout';
-import MediaLayout from '../layout/MediaLayout';
-import MessagesLayout from '../layout/MessagesLayout';
-import NewsLayout from '../layout/NewsLayout';
-import ShopLayout from '../layout/ShopLayout';
-import ProfileLayout from '../layout/ProfileLayout';
-import BankDetailsLayout from '../layout/BankDetailsLayout';
-import UsersLayout from '../layout/UsersLayout';
-import MarketClosingLayout from '../layout/MarketClosingLayout';
-import NotFound from '../pages/Error/NotFound';
-import ServerError from '../pages/Error/ServerError';
-import ChatLayout from '../layout/ChatLayout';
-import DigitalMarketingLayout from '../layout/DigitalMarketLayout';
-import ChatBotLayout from '../layout/ChatBotLayout';
-import axiosInstance from '../axios/axiosInstance';
-import Protect from '../protectorRouter/adminProtect';
-import UserChatLayout from '../pages/Chat/UserChat';
+import { Spinner } from "@nextui-org/react";
+
+import React, { useCallback, useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import axiosInstance from "../axios/axiosInstance";
+import Login from "../components/login/Login";
+import BankDetailsLayout from "../layout/BankDetailsLayout";
+import ChatBotLayout from "../layout/ChatBotLayout";
+import ChatLayout from "../layout/ChatLayout";
+import DashboardLayout from "../layout/DashboardLayout";
+import DigitalMarketingLayout from "../layout/DigitalMarketLayout";
+import MarketClosingLayout from "../layout/MarketClosingLayout";
+import MediaLayout from "../layout/MediaLayout";
+import MessagesLayout from "../layout/MessagesLayout";
+import NewsLayout from "../layout/NewsLayout";
+import ProfileLayout from "../layout/ProfileLayout";
+import ShopLayout from "../layout/ShopLayout";
+import SpotRateLayout from "../layout/SpotRateLayout";
+import UsersLayout from "../layout/UsersLayout";
+import UserChatLayout from "../pages/Chat/UserChat";
+import NotFound from "../pages/Error/NotFound";
+import ServerError from "../pages/Error/ServerError";
+import Protect from "../protectorRouter/adminProtect";
 
 function Routers() {
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchFeatures = useCallback(async () => {
-    const userEmail = localStorage.getItem('userEmail');
+    const userEmail = localStorage.getItem("userEmail");
     if (!userEmail) {
       setFeatures([]); // Set empty array if no user email
       setLoading(false);
@@ -33,17 +35,17 @@ function Routers() {
     }
 
     try {
-      const response = await axiosInstance.get('/features', {
+      const response = await axiosInstance.get("/features", {
         params: { email: userEmail },
       });
       if (response.data.success) {
         setFeatures(response.data.data);
       } else {
-        console.error('Failed to fetch features: Unexpected response format');
+        console.error("Failed to fetch features: Unexpected response format");
         setFeatures([]);
       }
     } catch (err) {
-      console.error('Failed to fetch features:', err);
+      console.error("Failed to fetch features:", err);
       setFeatures([]);
     } finally {
       setLoading(false);
@@ -65,11 +67,16 @@ function Routers() {
 
   const ProtectedRoute = ({ element: Element, path }) => {
     const featureName = path
-      .split('/feature/')[1]
-      .replace(/-/g, ' ')
+      .split("/feature/")[1]
+      .replace(/-/g, " ")
       .toLowerCase();
 
-    if (loading) return <div>Loading...</div>; // Show loading while fetching
+    if (loading)
+      return (
+        <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      ); // Show loading while fetching
 
     return isFeatureAccessible(featureName) ? (
       <Element />
@@ -79,7 +86,11 @@ function Routers() {
   };
 
   if (loading) {
-    return <div>Loading...</div>; // Global loading state
+    return (
+      <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    ); // Global loading state
   }
 
   return (
