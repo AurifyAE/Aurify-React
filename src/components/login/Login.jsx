@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import loginImage from "../../assets/GoldBar.jpg";
-import axiosInstance from "../../axios/axiosInstance";
+import { loginUser, verifyToken } from "../../api/adminAPi";
 import { requestFCMToken } from "../../utils/firebaseUtils";
 import { registerServiceWorker } from "../../utils/serviceWorkerRegistration";
 
@@ -19,34 +19,54 @@ const LoginPage = () => {
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [fcmToken, setFcmToken] = useState("");
+  const [isTokenLoading, setIsTokenLoading] = useState(true);
   const navigate = useNavigate();
-
   useEffect(() => {
+    const maxAttempts = 3;
+    let attempts = 0;
+
     const fetchFcmToken = async () => {
+      setIsTokenLoading(true);
       try {
         await registerServiceWorker();
         const token = await requestFCMToken();
-        setFcmToken(token);
+        if (token) {
+          setFcmToken(token);
+          setIsTokenLoading(false);
+        } else {
+          throw new Error('FCM token not received');
+        }
       } catch (error) {
-        console.log("Error in getting FCM token:", error);
+        console.log('Error in getting FCM token:', error);
+        attempts++;
+        if (attempts < maxAttempts) {
+          console.log(`Retrying... Attempt ${attempts} of ${maxAttempts}`);
+          setTimeout(fetchFcmToken, 2000);
+        } else {
+          console.log('Max attempts reached. Refreshing page...');
+          toast.info('Having trouble securing your login. Refreshing the page...', {
+            position: "top-center",
+            autoClose: 3000,
+          });
+          setTimeout(() => {
+            window.location.reload();
+          }, 3000);
+        }
       }
     };
-    fetchFcmToken();
 
-    // Check for existing token and auto-login
+    fetchFcmToken();
     const checkExistingToken = async () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
           // Verify the token with the backend
-          const response = await axiosInstance.post("/verify-token", { token });
-          if (response.data.serviceExpired) {
-            // Handle expired service
+          const response = await verifyToken(token);
+          if (response.serviceExpired) {
             toast.error(
               "Your service has expired. Please renew your subscription."
             );
           } else {
-            // Token is valid, navigate to dashboard
             navigate("/dashboard");
           }
         } catch (error) {
@@ -59,6 +79,7 @@ const LoginPage = () => {
     };
     checkExistingToken();
   }, [navigate]);
+  
 
   const validatePassword = (password) => {
     const regex =
@@ -68,6 +89,13 @@ const LoginPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (isTokenLoading) {
+      toast.warning('Please wait while we secure your login...', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
     const values = {
       email,
       password,
@@ -85,7 +113,7 @@ const LoginPage = () => {
     }
 
     try {
-      const response = await axiosInstance.post("/login", values);
+      const response = await loginUser(email, password, fcmToken, rememberMe);
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userEmail", email);
