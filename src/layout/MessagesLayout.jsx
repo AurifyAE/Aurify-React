@@ -1,6 +1,6 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
-import Messages from '../pages/Messages';
+import Messages from '../pages/Support/Support';
 import Navbar from '../components/navbar/Navbar';
 import Footer from '../components/footer/Footer';
 
