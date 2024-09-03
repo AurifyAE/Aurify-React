@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { Button } from "@nextui-org/react";
 import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
-// import { useMarketData } from '../context/MarketDataContext';
 import io from 'socket.io-client';
 import axiosInstance from '../../axios/axiosInstance';
 

@@ -77,8 +77,6 @@ const theme = createTheme({
     const [spreadToDelete, setSpreadToDelete] = useState(null);
     const [spreadTitle, setSpreadTitle] = useState('Rate'); // Default value is 'Rate'
 
-    // const [editModalOpen, setEditModalOpen] = useState(false);
-    // const [editSpreadIndex, setEditSpreadIndex] = useState(null);
 
     const handleSubmit = (e) => {
       e.preventDefault();
@@ -445,15 +443,6 @@ const UserList = ( ) => {
     }
   };
 
-  // const handleSaveSpread = (editedValue) => {
-  //   const updatedSpreads = spreads.map((spread, idx) =>
-  //     idx === editingSpread.index ? editedValue : spread
-  //   );
-  //   setSpreads(updatedSpreads);
-  //   setShowNotification(true);
-  //   setNotificationMessage('Spread updated successfully');
-  //   setEditingSpread(null);
-  // };
 
   const handleToggleUserBlock = (adminId) => {
     const user = userData.find(u => u._id === adminId);

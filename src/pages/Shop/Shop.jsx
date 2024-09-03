@@ -377,8 +377,6 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
               type="text"
               name="name"
               defaultValue={editingItem?.name}
-              // value={formData.name}
-              // onChange={handleChange}
               placeholder="Name"
               className="w-full border rounded px-2 py-1"
               required
@@ -389,8 +387,6 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
             <select
               name="type"
               defaultValue={editingItem?.type}
-              // value={formData.type}
-              // onChange={handleChange}
               placeholder="Type"
               className="w-full border rounded px-2 py-1"
             >
@@ -407,8 +403,6 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
               step="0.01"
               name="weight"
               defaultValue={editingItem?.weight}
-              // value={formData.weight}
-              // onChange={handleChange}
               placeholder="Weight"
               className="w-full border rounded px-2 py-1"
               required
@@ -420,8 +414,6 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
               type="number"
               name="rate"
               defaultValue={editingItem?.rate}
-              // value={formData.rate}
-              // onChange={handleChange}
               placeholder="Rate"
               className="w-full border rounded px-2 py-1"
               required

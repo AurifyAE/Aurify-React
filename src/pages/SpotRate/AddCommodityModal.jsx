@@ -314,15 +314,6 @@ const handleSave = useCallback(async () => {
   },
   };
 
-  // useEffect(() => {
-  //   if (initialData && isEditing) {
-  //     setFormData(initialData);
-  //     setCommodityId(initialData._id);
-  //     setIsEditMode(true);
-  //   } else {
-  //     resetForm();
-  //   }
-  // }, [initialData, isEditing, open]);
  
 
   return (
