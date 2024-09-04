@@ -1,5 +1,4 @@
 import { Spinner } from "@nextui-org/react";
-
 import React, { useCallback, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import axiosInstance from "../axios/axiosInstance";
@@ -25,6 +24,7 @@ import Protect from "../protectorRouter/adminProtect";
 function Routers() {
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const fetchFeatures = useCallback(async () => {
     const userEmail = localStorage.getItem("userEmail");
@@ -53,8 +53,10 @@ function Routers() {
   }, []);
 
   useEffect(() => {
-    fetchFeatures(); // Fetch features after login
-  }, [fetchFeatures]);
+    if (isLoggedIn) {
+      fetchFeatures();
+    }
+  }, [fetchFeatures, isLoggedIn]);
 
   const isFeatureAccessible = useCallback(
     (featureName) =>
@@ -85,17 +87,20 @@ function Routers() {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
-        <Spinner size="lg" />
-      </div>
-    ); // Global loading state
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
+  //       <Spinner size="lg" />
+  //     </div>
+  //   ); // Global loading state
+  // }
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route
+        path="/"
+        element={<Login onLoginSuccess={() => setIsLoggedIn(true)} />}
+      />
       <Route element={<Protect />}>
         <Route path="dashboard" element={<DashboardLayout />} />
         <Route path="spot-rate" element={<SpotRateLayout />} />
@@ -107,6 +112,7 @@ function Routers() {
         <Route path="userchat" element={<UserChatLayout />} />
 
         {/* Protected Routes */}
+
         <Route
           path="/feature/shop"
           element={<ProtectedRoute element={ShopLayout} path="/feature/shop" />}
