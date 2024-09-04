@@ -1,4 +1,4 @@
-import React, { useState, useEffect,onClose } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Table,
@@ -471,6 +471,10 @@ const UserList = ( ) => {
     }
   };
 
+  const handleCloseConfirmDialog = () => {
+    setConfirmDialog({ ...confirmDialog, isOpen: false });
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <Box sx={{ backgroundColor: '#f3f4f6', minHeight: '100vh', py: 4 }}>
@@ -503,25 +507,9 @@ const UserList = ( ) => {
             {notificationMessage}
           </Alert>
         </Snackbar>
-        {/* <Dialog 
-          open={open} 
-          onClose={(event, reason) => {
-            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-              onClose();
-            }
-          }}
-          maxWidth="sm" 
-          fullWidth
-          disableBackdropClick={true}
-          disableEscapeKeyDown={true}
-        ></Dialog> */}
         <Dialog
           open={confirmDialog.isOpen}
-          onClose={(event, reason) => {
-            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-              onClose();
-            }
-          }}
+          onClose={handleCloseConfirmDialog}
           maxWidth="sm" 
           fullWidth
           disableBackdropClick={true}

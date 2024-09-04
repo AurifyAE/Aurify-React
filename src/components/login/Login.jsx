@@ -11,7 +11,7 @@ import axiosInstance from "../../axios/axiosInstance";
 import { requestFCMToken } from "../../utils/firebaseUtils";
 import { registerServiceWorker } from "../../utils/serviceWorkerRegistration";
 
-const LoginPage = () => {
+const LoginPage = ({ onLoginSuccess })=> {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -49,7 +49,6 @@ const LoginPage = () => {
       }
     };
     fetchFcmToken();
-
     // Check for existing token and auto-login
     const checkExistingToken = async () => {
       const token = localStorage.getItem("token");
@@ -76,6 +75,8 @@ const LoginPage = () => {
     };
     checkExistingToken();
   }, [navigate]);
+
+
 
   const validatePassword = (password) => {
     const regex =
@@ -126,6 +127,7 @@ const LoginPage = () => {
           pauseOnHover: true,
           draggable: true,
         });
+        if (onLoginSuccess) onLoginSuccess();
         setTimeout(() => {
           navigate("/dashboard");
         }, 1000);
