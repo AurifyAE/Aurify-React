@@ -1,6 +1,14 @@
+import React, { useEffect, useState } from "react";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@nextui-org/react";
 import logo from "../../assets/logo.png";
 import axiosInstance from "../../axios/axiosInstance";
-import { Button } from "@nextui-org/react";
 import {
   Home as HomeIcon,
   ShowChart as ShowChartIcon,
@@ -17,7 +25,7 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon
 } from '@mui/icons-material';
-import React, { useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { NavLink, useNavigate } from "react-router-dom";
 
 const SidenavItem = ({ icon: Icon, name, isActive }) => (
@@ -111,6 +119,9 @@ const AdditionalFeaturesDropdown = ({ features }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [requestStatus, setRequestStatus] = useState(null);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+
 
   const getFeatureIcon = (featureName) => {
     switch (featureName.toLowerCase()) {
@@ -124,14 +135,46 @@ const AdditionalFeaturesDropdown = ({ features }) => {
     }
   };
 
-  const handleRequestFeature = async (feature) => {
+  const handleRequestFeature = (feature) => {
+    setSelectedFeature(feature);
+    setIsRequestModalOpen(true);
+  };
+
+  const closeRequestModal = () => {
+    setIsRequestModalOpen(false);
+    setSelectedFeature(null);
+  };
+
+  const showSuccessToast = (feature) => {
+    toast.success(
+      (t) => (
+        <div className="flex items-center">
+          <span className="text-green-500 mr-2">✓</span>
+          <span>Successfully requested: {feature}</span>
+        </div>
+      ),
+      {
+        style: {
+          background: "#10B981",
+          color: "#FFFFFF",
+        },
+        iconTheme: {
+          primary: "#FFFFFF",
+          secondary: "#10B981",
+        },
+      }
+    );
+  };
+
+  const confirmRequest = async () => {
+    closeRequestModal();
     const userEmail = localStorage.getItem("userEmail");
     setRequestStatus({ type: "loading", message: "Submitting request..." });
 
     try {
       const response = await axiosInstance.post("/request-feature", {
         email: userEmail,
-        feature,
+        feature: selectedFeature,
         reason: "Requested via dropdown",
         requestType: "featureRequest",
       });
@@ -141,6 +184,7 @@ const AdditionalFeaturesDropdown = ({ features }) => {
           type: "success",
           message: "Feature request submitted successfully",
         });
+        showSuccessToast(selectedFeature);
       } else {
         setRequestStatus({
           type: "error",
@@ -157,9 +201,9 @@ const AdditionalFeaturesDropdown = ({ features }) => {
       });
     }
 
-    // Clear status after 5 seconds
     setTimeout(() => setRequestStatus(null), 5000);
   };
+
 
   return (
     <div className="mt-8">
@@ -219,6 +263,34 @@ const AdditionalFeaturesDropdown = ({ features }) => {
           {requestStatus.message}
         </div>
       )}
+      <Modal
+        isOpen={isRequestModalOpen}
+        onClose={closeRequestModal}
+        isDismissable={false}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+             Feature Request
+          </ModalHeader>
+          <ModalBody>
+            <p>
+              Are you sure you want to request the "{selectedFeature}" feature ?
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              className="bg-purple-600 text-white"
+              variant="flat"
+              onPress={confirmRequest}
+            >
+              Request
+            </Button>
+            <Button color="primary" onPress={closeRequestModal}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
@@ -342,6 +414,7 @@ const Sidebar = () => {
       <div className="mt-8">
         <SignOutButton />
       </div>
+      <Toaster position="top-center" />
     </nav>
   );
 };
