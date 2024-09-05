@@ -517,10 +517,10 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
   const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'ask' : 'bid'));
   
   return (
-    (((metalPrice + spread + premium) / 31.103) * 3.674 * commodity.unit * unitMultiplier *
+    (((metalPrice + spread + premium) / 31.103) * exchangeRate * commodity.unit * unitMultiplier *
     (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(charge)
   ).toFixed(4);
-}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB]);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB, exchangeRate]);
 
 
   

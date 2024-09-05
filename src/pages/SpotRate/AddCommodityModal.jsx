@@ -41,9 +41,8 @@ const [toastMessage, setToastMessage] = useState('');
     if (!amount) return '';
     const parsed = parseFloat(amount);
     if (isNaN(parsed)) return '';
-    
     const inUSD = parsed / exchangeRates[fromCurrency];
-    return (inUSD * exchangeRates[toCurrency]).toFixed(2);
+    return (inUSD * exchangeRates[toCurrency]).toFixed(4);
   }, [exchangeRates]);
 
   const getUnitMultiplier = useCallback((weight) => {
