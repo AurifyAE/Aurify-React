@@ -23,7 +23,8 @@ import {
   Group as GroupIcon,
   MonetizationOn as MonetizationOnIcon,
   ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
+  ExpandLess as ExpandLessIcon,
+  Settings as SettingsIcon
 } from '@mui/icons-material';
 import toast, { Toaster } from "react-hot-toast";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -62,6 +63,7 @@ const SignOutButton = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("reminderModalClosedDate");
     localStorage.removeItem("rememberMe"); 
+    localStorage.removeItem("adminId");
     navigate("/");
     window.location.reload();
   };
@@ -180,10 +182,6 @@ const AdditionalFeaturesDropdown = ({ features }) => {
       });
 
       if (response.data.success) {
-        setRequestStatus({
-          type: "success",
-          message: "Feature request submitted successfully",
-        });
         showSuccessToast(selectedFeature);
       } else {
         setRequestStatus({
@@ -230,15 +228,15 @@ const AdditionalFeaturesDropdown = ({ features }) => {
                 <div className="p-2 rounded-lg mr-3 bg-purple-100">
                   <Icon className="w-5 h-5 text-purple-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-600">
+                <span className="text-sm font-medium text-gray-600 mr-20">
                   {feature}
-                </span>
+                </span>
                 {hoveredFeature === feature && (
                   <div className="absolute right-0 top-0 bottom-0 flex items-center">
                     <Button
                       size="sm"
                       auto
-                      className="bg-purple-600 text-white"
+                      className="bg-purple-600 text-white ml-4"
                       onClick={() => handleRequestFeature(feature)}
                     >
                       Request
@@ -300,7 +298,7 @@ const Sidebar = () => {
     { name: "Dashboard", icon: HomeIcon, path: "dashboard" },
     { name: "Spot Rate", icon: ShowChartIcon, path: "spot-rate" },
     { name: "Media", icon: ImageIcon, path: "media" },
-    { name: "Support", icon: SupportIcon, path: "support" },
+    { name: "Support", icon: SettingsIcon, path: "support" },
     { name: "News", icon: NewspaperIcon, path: "news" },
   ];
 

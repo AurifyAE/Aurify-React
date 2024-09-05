@@ -70,6 +70,7 @@ const LoginPage = ({ onLoginSuccess })=> {
           localStorage.removeItem("token");
           localStorage.removeItem("userEmail");
           localStorage.removeItem("rememberMe");
+          localStorage.removeItem("adminId");
         }
       }
     };
@@ -114,6 +115,7 @@ const LoginPage = ({ onLoginSuccess })=> {
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userEmail", email);
+        localStorage.setItem("adminId", response.data.adminId);
         if (rememberMe) {
           localStorage.setItem("rememberMe", "true");
         } else {

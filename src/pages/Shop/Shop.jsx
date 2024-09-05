@@ -229,12 +229,12 @@ const Shop = () => {
               <TableRow key={item._id}>
                 <TableCell className="text-center">
                   <img
-                    src={getImageUrl(item.image)}
+                    src={item.image}
                     alt={item.name}
                     width={50}
                     height={50}
                     className="cursor-pointer mx-auto"
-                    onClick={() => openImageModal(getImageUrl(item.image))}
+                    onClick={() => openImageModal(item.image)}
                   />
                 </TableCell>
                 <TableCell className="text-center">{item.name}</TableCell>
@@ -423,7 +423,7 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
             {editingItem && editingItem.image && (
               <div className="mb-4">
                 <img
-                  src={`${process.env.REACT_APP_API_URL.replace('/api', '')}/${editingItem.image}`}
+                  src={editingItem.image}
                   alt={editingItem.name}
                   className="w-32 h-32 object-cover rounded"
                 />

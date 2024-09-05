@@ -146,11 +146,11 @@ const ProfilePage = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className="w-14 h-14 rounded-lg flex items-center justify-center text-white text-2xl font-bold mr-3">
-            <img src={userData?.data?.logo ? `${process.env.REACT_APP_API_URL.replace('/api', '')}/uploads/${userData.data.logo}` : ''} alt="Company Logo" className="w-full h-full object-cover" />
+            <img src={userData?.data?.logo ? userData.data.logo : ''} alt="Company Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Tecnavis</h2>
-              <p className="text-sm text-gray-600">Aurify Solutions</p>
+              <h2 className="text-xl font-bold text-gray-800">{userData?.data?.userName ? userData.data.userName : ''}</h2>
+              <p className="text-sm text-gray-600">{userData?.data?.email ? userData.data.email : ''}</p>
             </div>
           </div>
           <div className="flex space-x-2">
@@ -233,7 +233,7 @@ const ProfilePage = () => {
           {logo ? (
             <img src={logo} alt="Selected Logo" className="w-full h-full object-cover" />
           ) : userData?.data?.logo ? (
-            <img src={`${process.env.REACT_APP_API_URL.replace('/api', '')}/uploads/${userData.data.logo}`} alt="Company Logo" className="w-full h-full object-cover" />
+            <img src={userData.data.logo} alt="Company Logo" className="w-full h-full object-cover" />
           ) : (
             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
