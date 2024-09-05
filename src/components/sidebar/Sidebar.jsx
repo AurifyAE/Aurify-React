@@ -2,15 +2,21 @@ import logo from "../../assets/logo.png";
 import axiosInstance from "../../axios/axiosInstance";
 import { Button } from "@nextui-org/react";
 import {
-  BarChart2,
-  ChevronDown,
-  ChevronUp,
-  Home,
-  Image,
-  MessageSquare,
-  Newspaper,
-  User,
-} from "lucide-react";
+  Home as HomeIcon,
+  ShowChart as ShowChartIcon,
+  Image as ImageIcon,
+  Support as SupportIcon,
+  Newspaper as NewspaperIcon,
+  Person as PersonIcon,
+  AccountBalance as AccountBalanceIcon,
+  Chat as ChatIcon,
+  Campaign as CampaignIcon,
+  Storefront as StorefrontIcon,
+  Group as GroupIcon,
+  MonetizationOn as MonetizationOnIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon
+} from '@mui/icons-material';
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -62,6 +68,17 @@ const SignOutButton = () => {
 };
 
 const FeatureDropdown = ({ features }) => {
+  const getFeatureIcon = (featureName) => {
+    switch (featureName.toLowerCase()) {
+      case 'chatbot': return ChatIcon;
+      case 'digital marketing': return CampaignIcon;
+      case '24x7 chat': return ChatIcon;
+      case 'shop': return StorefrontIcon;
+      case 'users': return GroupIcon;
+      case 'market closing': return MonetizationOnIcon;
+      default: return PersonIcon;
+    }
+  };
   return (
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
@@ -79,7 +96,7 @@ const FeatureDropdown = ({ features }) => {
             {({ isActive }) => (
               <SidenavItem
                 name={feature.name}
-                icon={User}
+                icon={getFeatureIcon(feature.name)}
                 isActive={isActive}
               />
             )}
@@ -94,6 +111,18 @@ const AdditionalFeaturesDropdown = ({ features }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [requestStatus, setRequestStatus] = useState(null);
+
+  const getFeatureIcon = (featureName) => {
+    switch (featureName.toLowerCase()) {
+      case 'chatbot': return ChatIcon;
+      case 'digital marketing': return CampaignIcon;
+      case '24x7 chat': return ChatIcon;
+      case 'shop': return StorefrontIcon;
+      case 'users': return GroupIcon;
+      case 'market closing': return MonetizationOnIcon;
+      default: return PersonIcon;
+    }
+  };
 
   const handleRequestFeature = async (feature) => {
     const userEmail = localStorage.getItem("userEmail");
@@ -141,35 +170,40 @@ const AdditionalFeaturesDropdown = ({ features }) => {
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">
           ADDITIONAL FEATURES
         </h3>
-        {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        {isOpen ? <ExpandLessIcon size={16} /> : <ExpandMoreIcon size={16} />}
       </div>
       {isOpen && (
         <ul className="space-y-1 mt-2">
-          {features.map((feature, index) => (
-            <li
-              key={index}
-              className="relative flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100"
-              onMouseEnter={() => setHoveredFeature(feature)}
-              onMouseLeave={() => setHoveredFeature(null)}
-            >
-              <User className="w-5 h-5 text-gray-600 mr-3" />
-              <span className="text-sm font-medium text-gray-600">
-                {feature}
-              </span>
-              {hoveredFeature === feature && (
-                <div className="absolute right-0 top-0 bottom-0 flex items-center">
-                  <Button
-                    size="sm"
-                    auto
-                    className="bg-purple-600 text-white"
-                    onClick={() => handleRequestFeature(feature)}
-                  >
-                    Request
-                  </Button>
+          {features.map((feature, index) => {
+            const Icon = getFeatureIcon(feature);
+            return (
+              <li
+                key={index}
+                className="relative flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-100"
+                onMouseEnter={() => setHoveredFeature(feature)}
+                onMouseLeave={() => setHoveredFeature(null)}
+              >
+                <div className="p-2 rounded-lg mr-3 bg-purple-100">
+                  <Icon className="w-5 h-5 text-purple-600" />
                 </div>
-              )}
-            </li>
-          ))}
+                <span className="text-sm font-medium text-gray-600">
+                  {feature}
+                </span>
+                {hoveredFeature === feature && (
+                  <div className="absolute right-0 top-0 bottom-0 flex items-center">
+                    <Button
+                      size="sm"
+                      auto
+                      className="bg-purple-600 text-white"
+                      onClick={() => handleRequestFeature(feature)}
+                    >
+                      Request
+                    </Button>
+                  </div>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
       {requestStatus && (
@@ -191,16 +225,16 @@ const AdditionalFeaturesDropdown = ({ features }) => {
 
 const Sidebar = () => {
   const routes = [
-    { name: "Dashboard", icon: Home, path: "dashboard" },
-    { name: "Spot Rate", icon: BarChart2, path: "spot-rate" },
-    { name: "Media", icon: Image, path: "media" },
-    { name: "Support", icon: MessageSquare, path: "support" },
-    { name: "News", icon: Newspaper, path: "news" },
+    { name: "Dashboard", icon: HomeIcon, path: "dashboard" },
+    { name: "Spot Rate", icon: ShowChartIcon, path: "spot-rate" },
+    { name: "Media", icon: ImageIcon, path: "media" },
+    { name: "Support", icon: SupportIcon, path: "support" },
+    { name: "News", icon: NewspaperIcon, path: "news" },
   ];
 
   const accountRoutes = [
-    { name: "Profile", icon: User, path: "profile" },
-    { name: "Bank Details", icon: User, path: "bank-details" },
+    { name: "Profile", icon: PersonIcon, path: "profile" },
+    { name: "Bank Details", icon: AccountBalanceIcon, path: "bank-details" },
   ];
 
   const allFeatures = [
