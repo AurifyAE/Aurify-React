@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import axiosInstance from '../../axios/axiosInstance';
 
 const ProfilePage = () => {
@@ -136,7 +136,6 @@ const ProfilePage = () => {
 
   return (
     <div className="relative bg-gray-100 mt-24 mr-6">
-      <Toaster position="top-right" />
       <div className="bg-gray-100 p-6 relative">
         <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 h-[158px] rounded-lg shadow-lg p-6 absolute inset-x-0 z-10 top-[-6rem]">
           {/* Content of the first div */}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import axiosInstance from '../../axios/axiosInstance';
 
 const NewsUpload = () => {
@@ -270,7 +270,6 @@ const NewsUpload = () => {
         </div>
       )}
       {isModalOpen && <DeleteConfirmationModal />}
-      <Toaster position="top-right" />
     </div>
   );
 };

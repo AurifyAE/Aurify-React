@@ -63,7 +63,6 @@ const SignOutButton = () => {
     localStorage.removeItem("userEmail");
     localStorage.removeItem("reminderModalClosedDate");
     localStorage.removeItem("rememberMe"); 
-    localStorage.removeItem("adminId");
     navigate("/");
     window.location.reload();
   };

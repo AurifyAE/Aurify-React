@@ -3,10 +3,9 @@ import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { Button } from "@nextui-org/react";
 import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import io from 'socket.io-client';
 import axiosInstance from '../../axios/axiosInstance';
-
 
 const BannerCreator = () => {
   const [background, setBackground] = useState(null);
@@ -124,7 +123,6 @@ const BannerCreator = () => {
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
     return spreadMarginData[key] || 0;
   }, [spreadMarginData]);
-  
 
   useEffect(() => {
     const updateDate = () => {
@@ -199,7 +197,6 @@ const BannerCreator = () => {
 
   return (
     <div className="flex flex-col space-y-8 p-6">
-      <Toaster position="top-right" />
       <div className="flex space-x-8">
         <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Create</h2>

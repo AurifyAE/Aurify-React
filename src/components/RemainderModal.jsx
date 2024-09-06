@@ -61,7 +61,7 @@ const ReminderModal = ({ open, onClose, message }) => {
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 2 }}>
-            <Tooltip title="techsupport@example.com" placement="top">
+            <Tooltip title="aurifycontact@gmail.com" placement="top">
               <Button 
                 onClick={handleContactSupport} 
                 variant="contained" 

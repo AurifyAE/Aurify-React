@@ -33,23 +33,9 @@ const DashboardContent = () => {
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
   const [userCount, setUserCount] = useState(null); //fetch the userdata count
+  const [adminId, setAdminId] = useState(null);
 
-  useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        const adminId = localStorage.getItem("adminId");
-        const response = await axiosInstance.get(`/admin/${adminId}/device`);
-        if (response.data.success) {
-          setActiveDeviceCount(response.data.activeDeviceCount || 0);
-        } else {
-          setError(response.data.message || "Failed to fetch admin data");
-        }
-      } catch (error) {
-        setError("Error fetching admin data: " + error.message);
-      }
-    };
-    fetchAdminData();
-  }, []);
+  
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -62,6 +48,9 @@ const DashboardContent = () => {
       try {
         const response = await axiosInstance.get(`/data/${userEmail}`);
         setUserData(response.data);
+        setAdminId(response.data.data._id);
+        await fetchUser(response.data.data._id);
+        await fetchAdminData(response.data.data._id);
       } catch (err) {
         setError("Failed to fetch user data: " + err.message);
       }
@@ -70,21 +59,29 @@ const DashboardContent = () => {
     fetchUserData();
   }, []);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const adminId = localStorage.getItem("adminId");
-        const response = await axiosInstance.get(`/admin/${adminId}/users`);
-        if (response.data.success) {
-          setUserCount(response.data.users.length);
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+  const fetchAdminData = async (id) => {
+    try {
+      const response = await axiosInstance.get(`/admin/${id}/device`);
+      if (response.data.success) {
+        setActiveDeviceCount(response.data.activeDeviceCount || 0);
+      } else {
+        setError(response.data.message || "Failed to fetch admin data");
       }
-    };
-    fetchUser();
-  }, []);
+    } catch (error) {
+      setError("Error fetching admin data: " + error.message);
+    }
+  };
 
+  const fetchUser = async (id) => {
+    try {
+      const response = await axiosInstance.get(`/admin/${id}/users`);
+      if (response.data.success) {
+        setUserCount(response.data.users.length);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
   const salesData = [
     { name: "Apr", Gold: 50, Silver: 100 },
     { name: "May", Gold: 150, Silver: 200 },

@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import React, { useEffect, useState } from 'react';
-import { Toaster, toast } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import axiosInstance from '../../axios/axiosInstance';
 import BankDetailsModal from './BankDetailsModal';
 
@@ -144,7 +144,6 @@ const BankDetails = () => {
 
   return (
     <Container sx={{ backgroundColor: '#f3f4f6', minHeight: '100vh', fontFamily: 'Open Sans, sans-serif' }}>
-      <Toaster position="top-right" />
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} pt={3}>
         <Typography variant="h4" component="h1" sx={{ color: '#828ea2', fontWeight: 'bold' }}>
           Bank Details
