@@ -22,7 +22,7 @@ const Shop = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [items, setItems] = useState([]);
   const [filter, setFilter] = useState("all");
-  const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [editingItem, setEditingItem] = useState(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
@@ -31,7 +31,8 @@ const Shop = () => {
 
   const fetchItems = useCallback(async () => {
     try {
-      const shopResponse = await axiosInstance.get(`/shop-items?email=${email}`);
+      const userName = localStorage.getItem("userName");
+      const shopResponse = await axiosInstance.get(`/shop-items/${userName}`);
       // Sort items by createdAt date in ascending order (oldest first)
       const sortedItems = shopResponse.data.shops.sort((a, b) => {
         return new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id);
@@ -40,24 +41,24 @@ const Shop = () => {
     } catch (error) {
       console.error("Error fetching shop items:", error);
     }
-  }, [email]);
+  }, [userName]);
 
   useEffect(() => {
-    const fetchAdminEmailAndShopItems = async () => {
-      const userEmail = localStorage.getItem("userEmail");
-      if (!userEmail) {
-        console.error("Admin email not found in localStorage");
+    const fetchAdminUserNameAndShopItems = async () => {
+      const userName = localStorage.getItem("userName");
+      if (!userName) {
+        console.error("userName not found in localStorage");
         return;
       }
 
       try {
-        const adminResponse = await axiosInstance.get(`/data/${userEmail}`);
+        const adminResponse = await axiosInstance.get(`/data/${userName}`);
         if (
           adminResponse.data &&
           adminResponse.data.data &&
-          adminResponse.data.data.email
+          adminResponse.data.data.userName
         ) {
-          setEmail(adminResponse.data.data.email);
+          setUserName(adminResponse.data.data.userName);
           await fetchItems();
         } else {
           console.error("Unexpected response structure:", adminResponse.data);
@@ -70,7 +71,7 @@ const Shop = () => {
       }
     };
 
-    fetchAdminEmailAndShopItems();
+    fetchAdminUserNameAndShopItems();
   }, [fetchItems]);
 
   const handleAddItem = async (newItem) => {
@@ -79,7 +80,7 @@ const Shop = () => {
       formData.append(key, newItem[key]);
     });
     try {
-      await axiosInstance.post(`/shop-items/${email}`, formData, {
+      await axiosInstance.post(`/shop-items/${userName}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -107,7 +108,7 @@ const Shop = () => {
     if (!itemToDelete) return;
 
     try {
-      await axiosInstance.delete(`/shop-items/${itemToDelete}?email=${email}`);
+      await axiosInstance.delete(`/shop-items/${itemToDelete}?userName=${userName}`);
       setItems((prevItems) =>
         prevItems.filter((item) => item._id !== itemToDelete)
       );
@@ -139,7 +140,7 @@ const Shop = () => {
       }
 
       await axiosInstance.patch(
-        `/shop-items/${editingItem._id}?email=${email}`,
+        `/shop-items/${editingItem._id}?userName=${userName}`,
         formDataToSend,
         {
           headers: {
@@ -336,26 +337,87 @@ const Shop = () => {
 };
 
 const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
+  const [fileError, setFileError] = useState("");
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    // Reset form errors when the modal opens or closes
+    setFormErrors({});
+    setFileError("");
+  }, [editingItem]);
+
+  const validateFile = (file) => {
+    const validTypes = ["image/jpeg", "image/png"];
+    if (!file) {
+      return true; // No file is valid for both new items and editing
+    }
+
+    if (!validTypes.includes(file.type)) {
+      return "Please upload a JPEG or PNG image.";
+    }
+    return true;
+  };
+
+  const validateForm = (formData) => {
+    const errors = {};
+    const name = formData.get("name");
+    const type = formData.get("type");
+    const weight = parseFloat(formData.get("weight"));
+    const rate = parseFloat(formData.get("rate"));
+
+    if (!editingItem) {
+      // Validate all fields for new items
+      if (!name) errors.name = "Name is required";
+      if (!type) errors.type = "Type is required";
+      if (isNaN(weight) || weight <= 0) errors.weight = "Weight is required";
+      if (isNaN(rate) || rate <= 0) errors.rate = "Rate is required";
+    } else {
+      // Validate only changed fields for editing
+      if (name !== editingItem.name && !name) errors.name = "Name is required";
+      if (type !== editingItem.type && !type) errors.type = "Type is required";
+      if (weight !== editingItem.weight && (isNaN(weight) || weight <= 0))
+        errors.weight = "Weight must be a positive number";
+      if (rate !== editingItem.rate && (isNaN(rate) || rate <= 0))
+        errors.rate = "Rate must be a positive number";
+    }
+
+    return errors;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
+    const errors = validateForm(formData);
 
-    // Validate form data
-    const name = formData.get("name") || "";
-    const type = formData.get("type") || "";
-    const weight = parseFloat(formData.get("weight")) || 0;
-    const rate = parseFloat(formData.get("rate")) || 0;
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
 
-    // Only include fields that have valid values
+    const imageFile = formData.get("image");
+    // Change: Only validate the image if there's no current image or a new file is selected
+    if (
+      !editingItem?.image ||
+      (imageFile instanceof File && imageFile.size > 0)
+    ) {
+      const fileValidationResult = validateFile(imageFile);
+      if (fileValidationResult !== true) {
+        setFileError(fileValidationResult);
+        return;
+      }
+    }
+
     const updatedItem = {
-      ...(name && { name }),
-      ...(type && { type }),
-      ...(weight && { weight }),
-      ...(rate && { rate }),
+      name: formData.get("name"),
+      type: formData.get("type"),
+      weight: parseFloat(formData.get("weight")),
+      rate: parseFloat(formData.get("rate")),
     };
 
-    if (formData.get("image") instanceof File) {
-      updatedItem.image = formData.get("image");
+    if (imageFile instanceof File && imageFile.size > 0) {
+      updatedItem.image = imageFile;
+    } else if (editingItem && editingItem.image) {
+      updatedItem.image = editingItem.image;
     }
 
     onAddItem(updatedItem);
@@ -363,98 +425,115 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg max-w-md w-full m-4">
-        <h2 className="text-2xl font-bold mb-4">
-          {" "}
-          {editingItem ? "Edit Item" : "Add New Item"}
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block mb-2">Name:</label>
-            <input
-              type="text"
-              name="name"
-              defaultValue={editingItem?.name}
-              placeholder="Name"
-              className="w-full border rounded px-2 py-1"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block mb-2">Type:</label>
-            <select
-              name="type"
-              defaultValue={editingItem?.type}
-              placeholder="Type"
-              className="w-full border rounded px-2 py-1"
-            >
-              <option value="gold">Gold</option>
-              <option value="silver">Silver</option>
-              <option value="platinum">Platinum</option>
-              <option value="copper">Copper</option>
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block mb-2">Weight:</label>
-            <input
-              type="number"
-              step="0.01"
-              name="weight"
-              defaultValue={editingItem?.weight}
-              placeholder="Weight"
-              className="w-full border rounded px-2 py-1"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block mb-2">Rate:</label>
-            <input
-              type="number"
-              name="rate"
-              defaultValue={editingItem?.rate}
-              placeholder="Rate"
-              className="w-full border rounded px-2 py-1"
-              required
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block mb-2">Upload Image:</label>
-            {editingItem && editingItem.image && (
-              <div className="mb-4">
-                <img
-                  src={editingItem.image}
-                  alt={editingItem.name}
-                  className="w-32 h-32 object-cover rounded"
-                />
-                <p>Current Image</p>
-              </div>
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              name="image"
-              className="w-full border rounded px-2 py-1"
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="mr-2 px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
+    <Modal isOpen={true} onClose={onClose} scrollBehavior="inside" size="lg" isDismissable={false} isKeyboardDismissDisabled={true}>
+      <ModalContent className="hide-scrollbar">
+        {(onClose) => (
+          <>
+            <ModalHeader className="flex flex-col gap-1">
               {editingItem ? "Edit Item" : "Add New Item"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </ModalHeader>
+            <ModalBody>
+              <form onSubmit={handleSubmit} id="itemForm">
+                <div className="mb-4">
+                  <label className="block mb-2">Name:</label>
+                  <input
+                    type="text"
+                    name="name"
+                    defaultValue={editingItem?.name}
+                    placeholder="Name"
+                    className="w-full border rounded px-2 py-1"
+                  />
+                  {formErrors.name && (
+                    <p className="text-red-500 mt-1">{formErrors.name}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block mb-2">Type:</label>
+                  <select
+                    name="type"
+                    defaultValue={editingItem?.type}
+                    placeholder="Type"
+                    className="w-full border rounded px-2 py-1"
+                  >
+                    <option value="gold">Gold</option>
+                    <option value="silver">Silver</option>
+                    <option value="platinum">Platinum</option>
+                    <option value="copper">Copper</option>
+                  </select>
+                  {formErrors.type && (
+                    <p className="text-red-500 mt-1">{formErrors.type}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block mb-2">Weight:</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="weight"
+                    defaultValue={editingItem?.weight}
+                    placeholder="Weight"
+                    className="w-full border rounded px-2 py-1"
+                  />
+                  {formErrors.weight && (
+                    <p className="text-red-500 mt-1">{formErrors.weight}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block mb-2">Rate:</label>
+                  <input
+                    type="number"
+                    name="rate"
+                    defaultValue={editingItem?.rate}
+                    placeholder="Rate"
+                    className="w-full border rounded px-2 py-1"
+                  />
+                  {formErrors.rate && (
+                    <p className="text-red-500 mt-1">{formErrors.rate}</p>
+                  )}
+                </div>
+                <div className="mb-4">
+                  <label className="block mb-2">Upload Image:</label>
+                  {editingItem && editingItem.image && (
+                    <div className="mb-4">
+                      <img
+                        src={editingItem.image}
+                        alt={editingItem.name}
+                        className="w-32 h-32 object-cover rounded"
+                      />
+                      <p>Current Image</p>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    name="image"
+                    className="w-full border rounded px-2 py-1"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      const validationResult = validateFile(file);
+                      setFileError(
+                        validationResult === true ? "" : validationResult
+                      );
+                    }}
+                  />
+                  {fileError && (
+                    <p className="text-red-500 mt-1">{fileError}</p>
+                  )}
+                </div>
+              </form>
+            </ModalBody>
+            <ModalFooter>
+              <Button auto flat color="danger" onPress={onClose}>
+                Cancel
+              </Button>
+              <Button auto type="submit" form="itemForm">
+                {editingItem ? "Edit Item" : "Add New Item"}
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
   );
 };
 

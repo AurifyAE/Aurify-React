@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import axiosInstance from '../../axios/axiosInstance';
 
 const ProfilePage = () => {
@@ -9,6 +9,7 @@ const ProfilePage = () => {
   const [isLogoSubmitted, setIsLogoSubmitted] = useState(false);
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
+  
 
 
 
@@ -62,6 +63,13 @@ const ProfilePage = () => {
     }
   };
 
+  const [originalProfileInfo, setOriginalProfileInfo] = useState({
+    email: '',
+    fullName: '',
+    mobile: '',
+    location: ''
+  });
+
   const [profileInfo, setProfileInfo] = useState({
     email: '',
     fullName: '',
@@ -71,14 +79,16 @@ const ProfilePage = () => {
   
   useEffect(() => {
     if (userData?.data) {
-      setProfileInfo({
+      const newProfileInfo = {
         email: userData.data.email || '',
         fullName: userData.data.userName || '',
         mobile: userData.data.contact || '',
         location: userData.data.address || ''
-      });
+      };
+      setProfileInfo(newProfileInfo);
+      setOriginalProfileInfo(newProfileInfo);
     }
-  }, [userData]);  
+  }, [userData]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +98,15 @@ const ProfilePage = () => {
     }));
   };
 
+  const hasChanges = () => {
+    return Object.keys(profileInfo).some(key => profileInfo[key] !== originalProfileInfo[key]);
+  };
+
   const saveChanges = async () => {
+    if (!hasChanges()) {
+      toast.info('No changes were made');
+      return;
+    }
     try {
       const response = await axiosInstance.put(`/update-profile/${userData.data._id}`, {
         email: profileInfo.email,
@@ -98,6 +116,7 @@ const ProfilePage = () => {
       });
       if (response.status === 200) {
         toast.success('Profile updated successfully');
+        setOriginalProfileInfo({...profileInfo});
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -110,16 +129,16 @@ const ProfilePage = () => {
   
   useEffect(() => {
     const fetchUserData = async () => {
-      const userEmail = localStorage.getItem('userEmail');
+      const userName = localStorage.getItem('userName');
       
-      if (!userEmail) {
+      if (!userName) {
         setError('User not logged in');
         return;
       }
   
       try {
         // Include the email directly in the URL
-        const response = await axiosInstance.get(`/data/${userEmail}`);
+        const response = await axiosInstance.get(`/data/${userName}`);
         setUserData(response.data);
       } catch (err) {
         setError('Failed to fetch user data: ' + err.message);
@@ -136,6 +155,14 @@ const ProfilePage = () => {
 
   return (
     <div className="relative bg-gray-100 mt-24 mr-6">
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            zIndex: 9999, // Ensure the toast is above other elements
+          },
+        }}
+      />
       <div className="bg-gray-100 p-6 relative">
         <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 h-[158px] rounded-lg shadow-lg p-6 absolute inset-x-0 z-10 top-[-6rem]">
           {/* Content of the first div */}
@@ -148,7 +175,7 @@ const ProfilePage = () => {
             <img src={userData?.data?.logo ? userData.data.logo : ''} alt="Company Logo" className="w-full h-full object-cover" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-800">{userData?.data?.userName ? userData.data.userName : ''}</h2>
+              <h2 className="text-xl font-bold text-gray-800">{userData?.data?.companyName ? userData.data.companyName : ''}</h2>
               <p className="text-sm text-gray-600">{userData?.data?.email ? userData.data.email : ''}</p>
             </div>
           </div>
@@ -184,7 +211,7 @@ const ProfilePage = () => {
       <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
       <div className="space-y-4">
         <InputField 
-          label="Full Name" 
+          label="UserName" 
           name="fullName" 
           value={profileInfo.fullName} 
           onChange={handleInputChange} 
@@ -218,6 +245,7 @@ const ProfilePage = () => {
         <button 
           className="w-full bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 transition duration-300 mt-4"
           onClick={saveChanges}
+          disabled={!hasChanges()}
         >
           SAVE CHANGES
         </button>

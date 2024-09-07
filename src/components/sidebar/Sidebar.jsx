@@ -6,6 +6,7 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Skeleton,
 } from "@nextui-org/react";
 import logo from "../../assets/logo.png";
 import axiosInstance from "../../axios/axiosInstance";
@@ -13,7 +14,6 @@ import {
   Home as HomeIcon,
   ShowChart as ShowChartIcon,
   Image as ImageIcon,
-  Support as SupportIcon,
   Newspaper as NewspaperIcon,
   Person as PersonIcon,
   AccountBalance as AccountBalanceIcon,
@@ -60,11 +60,11 @@ const SignOutButton = () => {
   const navigate = useNavigate();
   const handleSignOut = () => {
     localStorage.removeItem("token");
-    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
     localStorage.removeItem("reminderModalClosedDate");
     localStorage.removeItem("rememberMe"); 
     navigate("/");
-    window.location.reload();
+    // window.location.reload();
   };
   return (
     <Button
@@ -76,7 +76,7 @@ const SignOutButton = () => {
   );
 };
 
-const FeatureDropdown = ({ features }) => {
+const FeatureDropdown = ({ features, isLoading }) => {
   const getFeatureIcon = (featureName) => {
     switch (featureName.toLowerCase()) {
       case 'chatbot': return ChatIcon;
@@ -88,6 +88,18 @@ const FeatureDropdown = ({ features }) => {
       default: return PersonIcon;
     }
   };
+  if (isLoading) {
+    return (
+      <div className="mt-8">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
+          FEATURES
+        </h3>
+        {[...Array(3)].map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full mb-2 rounded-lg" />
+        ))}
+      </div>
+    );
+  }
   return (
     <div className="mt-8">
       <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
@@ -116,7 +128,7 @@ const FeatureDropdown = ({ features }) => {
   );
 };
 
-const AdditionalFeaturesDropdown = ({ features }) => {
+const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [requestStatus, setRequestStatus] = useState(null);
@@ -169,12 +181,12 @@ const AdditionalFeaturesDropdown = ({ features }) => {
 
   const confirmRequest = async () => {
     closeRequestModal();
-    const userEmail = localStorage.getItem("userEmail");
+    const userName = localStorage.getItem("userName");
     setRequestStatus({ type: "loading", message: "Submitting request..." });
 
     try {
       const response = await axiosInstance.post("/request-feature", {
-        email: userEmail,
+        userName: userName,
         feature: selectedFeature,
         reason: "Requested via dropdown",
         requestType: "featureRequest",
@@ -200,7 +212,18 @@ const AdditionalFeaturesDropdown = ({ features }) => {
 
     setTimeout(() => setRequestStatus(null), 5000);
   };
-
+  if (isLoading) {
+    return (
+      <div className="mt-8">
+        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
+          ADDITIONAL FEATURES
+        </h3>
+        {[...Array(3)].map((_, index) => (
+          <Skeleton key={index} className="h-10 w-full mb-2 rounded-lg" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8">
@@ -318,18 +341,20 @@ const Sidebar = () => {
   const [features, setFeatures] = useState([]);
   const [additionalFeatures, setAdditionalFeatures] = useState([]);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const fetchFeatures = async () => {
-    const userEmail = localStorage.getItem("userEmail");
+    const userName = localStorage.getItem("userName");
 
-    if (!userEmail) {
+    if (!userName) {
       setError("Admin not logged in");
+      setIsLoading(false);
       return;
     }
 
     try {
       const response = await axiosInstance.get("/features", {
-        params: { email: userEmail },
+        params: { userName: userName },
       });
 
       if (response.data.success) {
@@ -344,6 +369,8 @@ const Sidebar = () => {
       }
     } catch (err) {
       setError("Failed to fetch admin features: " + err.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -352,40 +379,17 @@ const Sidebar = () => {
   }, []);
 
   return (
-    <nav className="w-64 bg-gray-100 h-screen p-4 overflow-y-auto hide-scrollbar">
-      <div className="flex items-center mb-8">
-        <img src={logo} alt="Logo" className="w-14 h-14 mr-1" />
-        <span className="text-xl font-bold text-gray-800">Dashboard</span>
+    <nav className="w-64 bg-gray-100 h-screen flex flex-col">
+      <div className="p-4 flex-shrink-0">
+        <div className="flex items-center mb-8">
+          <img src={logo} alt="Logo" className="w-14 h-14 mr-1" />
+          <span className="text-xl font-bold text-gray-800">Dashboard</span>
+        </div>
       </div>
 
-      <ul className="space-y-1">
-        {routes.map((route) => (
-          <NavLink
-            to={`/${route.path}`}
-            key={route.path}
-            className={({ isActive }) =>
-              isActive ? "text-purple-600" : "text-gray-600"
-            }
-          >
-            {({ isActive }) => (
-              <SidenavItem
-                name={route.name}
-                icon={route.icon}
-                isActive={isActive}
-              />
-            )}
-          </NavLink>
-        ))}
-      </ul>
-
-      {features.length > 0 && <FeatureDropdown features={features} />}
-
-      <div className="mt-8">
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
-          ACCOUNT PAGES
-        </h3>
+      <div className="flex-grow overflow-y-auto hide-scrollbar p-4">
         <ul className="space-y-1">
-          {accountRoutes.map((route) => (
+          {routes.map((route) => (
             <NavLink
               to={`/${route.path}`}
               key={route.path}
@@ -403,12 +407,40 @@ const Sidebar = () => {
             </NavLink>
           ))}
         </ul>
+
+        <FeatureDropdown features={features} isLoading={isLoading} />
+
+        <div className="mt-8">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
+            ACCOUNT PAGES
+          </h3>
+          <ul className="space-y-1">
+            {accountRoutes.map((route) => (
+              <NavLink
+                to={`/${route.path}`}
+                key={route.path}
+                className={({ isActive }) =>
+                  isActive ? "text-purple-600" : "text-gray-600"
+                }
+              >
+                {({ isActive }) => (
+                  <SidenavItem
+                    name={route.name}
+                    icon={route.icon}
+                    isActive={isActive}
+                  />
+                )}
+              </NavLink>
+            ))}
+          </ul>
+        </div>
+
+        <AdditionalFeaturesDropdown features={additionalFeatures} isLoading={isLoading} />
+
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
 
-      <AdditionalFeaturesDropdown features={additionalFeatures} />
-
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      <div className="mt-8">
+      <div className="p-4 flex-shrink-0">
         <SignOutButton />
       </div>
       <Toaster position="top-center" />

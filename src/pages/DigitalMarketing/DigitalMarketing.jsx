@@ -12,12 +12,12 @@ const Banner = () => {
   }, []);
 
   const fetchBanner = async () => {
-    const userEmail = localStorage.getItem('userEmail');
-    if (!userEmail) {
+    const userName = localStorage.getItem('userName');
+    if (!userName) {
       return;
     }
     try {
-      const response = await axiosInstance.get(`/data/${userEmail}`);
+      const response = await axiosInstance.get(`/data/${userName}`);
       const responseBanner = await axiosInstance.get(`/banners/${response.data.data._id}`);
       setBanners(responseBanner.data.data);
     } catch (error) {

@@ -23,10 +23,10 @@ const Navbar = () => {
   }, []);
 
   const fetchAdminIdAndNotifications = async () => {
-    const email = localStorage.getItem('userEmail');
-    if (email) {
+    const userName = localStorage.getItem('userName');
+    if (userName) {
       try {
-        const response = await axiosInstance.get(`/data/${email}`);
+        const response = await axiosInstance.get(`/data/${userName}`);
         setAdminId(response.data.data._id);
         // Fetch notifications after setting adminId
         const notificationsResponse = await axiosInstance.get(`/notifications/${response.data.data._id}`);

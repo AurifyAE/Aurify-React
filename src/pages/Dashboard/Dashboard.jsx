@@ -39,14 +39,14 @@ const DashboardContent = () => {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const userEmail = localStorage.getItem("userEmail");
-      if (!userEmail) {
+      const userName = localStorage.getItem("userName");
+      if (!userName) {
         setError("User not logged in");
         return;
       }
 
       try {
-        const response = await axiosInstance.get(`/data/${userEmail}`);
+        const response = await axiosInstance.get(`/data/${userName}`);
         setUserData(response.data);
         setAdminId(response.data.data._id);
         await fetchUser(response.data.data._id);

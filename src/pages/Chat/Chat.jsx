@@ -24,12 +24,12 @@ const EnhancedChatInterface = ({ adminId }) => {
   useEffect(() => {
     const fetchAdminId = async () => {
       try {
-        const email = localStorage.getItem('userEmail');
-        if (!email) {
-          console.error('User email not found in localStorage.');
+        const userName = localStorage.getItem('userName');
+        if (!userName) {
+          console.error('userName not found in localStorage.');
           return;
         }
-        const response = await axiosInstance.get(`/data/${email}`);
+        const response = await axiosInstance.get(`/data/${userName}`);
         if (response && response.data && response.data.data) {
           setId(response.data.data._id);
           return response.data.data._id; // Return the Id

@@ -1,6 +1,6 @@
+import React, { useState, useEffect } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Spinner } from "@nextui-org/react";
-import React, { useCallback, useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
 import axiosInstance from "../axios/axiosInstance";
 import Login from "../components/login/Login";
 import BankDetailsLayout from "../layout/BankDetailsLayout";
@@ -25,18 +25,39 @@ function Routers() {
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const location = useLocation();
 
-  const fetchFeatures = useCallback(async () => {
-    const userEmail = localStorage.getItem("userEmail");
-    if (!userEmail) {
-      setFeatures([]); // Set empty array if no user email
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        setIsLoggedIn(true);
+        if (location.state && location.state.features) {
+          setFeatures(location.state.features);
+          setLoading(false);
+        } else {
+          fetchFeatures();
+        }
+      } else {
+        setIsLoggedIn(false);
+        setLoading(false);
+      }
+    };
+
+    checkLoginStatus();
+  }, [location]);
+
+  const fetchFeatures = async () => {
+    const userName = localStorage.getItem("userName");
+    if (!userName) {
+      setFeatures([]);
       setLoading(false);
       return;
     }
 
     try {
       const response = await axiosInstance.get("/features", {
-        params: { email: userEmail },
+        params: { userName: userName },
       });
       if (response.data.success) {
         setFeatures(response.data.data);
@@ -50,22 +71,13 @@ function Routers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchFeatures();
-    }
-  }, [fetchFeatures, isLoggedIn]);
-
-  const isFeatureAccessible = useCallback(
-    (featureName) =>
-      features &&
-      features.some(
-        (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
-      ),
-    [features]
-  );
+  const isFeatureAccessible = (featureName) =>
+    features &&
+    features.some(
+      (feature) => feature.name.toLowerCase() === featureName.toLowerCase()
+    );
 
   const ProtectedRoute = ({ element: Element, path }) => {
     const featureName = path
@@ -73,12 +85,13 @@ function Routers() {
       .replace(/-/g, " ")
       .toLowerCase();
 
-    if (loading)
+    if (loading) {
       return (
         <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
           <Spinner size="lg" />
         </div>
-      ); // Show loading while fetching
+      );
+    }
 
     return isFeatureAccessible(featureName) ? (
       <Element />
@@ -87,19 +100,24 @@ function Routers() {
     );
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
-  //       <Spinner size="lg" />
-  //     </div>
-  //   ); // Global loading state
-  // }
+  const handleLoginSuccess = (fetchedFeatures) => {
+    setIsLoggedIn(true);
+    setFeatures(fetchedFeatures);
+  };
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 h-full w-full backdrop-blur-md bg-transparent flex items-center justify-center">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
   return (
     <Routes>
       <Route
         path="/"
-        element={<Login onLoginSuccess={() => setIsLoggedIn(true)} />}
+        element={<Login onLoginSuccess={handleLoginSuccess} />}
       />
       <Route element={<Protect />}>
         <Route path="dashboard" element={<DashboardLayout />} />

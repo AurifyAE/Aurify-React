@@ -74,7 +74,7 @@ const BankDetails = () => {
       const method = editingBank ? 'put' : 'post';
 
       const response = await axiosInstance[method](endpoint, {
-        email: localStorage.getItem('userEmail'),
+        userName: localStorage.getItem('userName'),
         bankDetails: newBank
       });
 
@@ -103,7 +103,7 @@ const BankDetails = () => {
     try {
       const response = await axiosInstance.delete('/delete-bank-details', {
         data: {
-          email: localStorage.getItem('userEmail'),
+          userName: localStorage.getItem('userName'),
           accountNumber: deleteConfirmation.accountNumber
         }
       });
@@ -123,15 +123,15 @@ const BankDetails = () => {
   };
 
   const fetchUserData = async () => {
-    const userEmail = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
     
-    if (!userEmail) {
+    if (!userName) {
       setError('User not logged in');
       return;
     }
 
     try {
-      const response = await axiosInstance.get(`/data/${userEmail}`);
+      const response = await axiosInstance.get(`/data/${userName}`);
       setUserData(response.data);
     } catch (err) {
       setError('Failed to fetch user data: ' + err.message);
@@ -215,7 +215,7 @@ const BankDetails = () => {
         handleClose={handleClose} 
         handleSave={handleSave}
         editingBank={editingBank}
-        userEmail={localStorage.getItem('userEmail')}
+        userName={localStorage.getItem('userName')}
       />
       <Dialog
         open={deleteConfirmation.open}

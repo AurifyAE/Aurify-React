@@ -6,7 +6,7 @@ import Footer from '../components/footer/Footer';
 
 const ProfileLayout = () => {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen overflow-hidden">
       <div className="fixed h-full">
         <Sidebar />
       </div>

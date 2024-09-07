@@ -78,12 +78,12 @@ const [toastMessage, setToastMessage] = useState('');
   useEffect(() => {
     const fetchAdminId = async () => {
         try {
-            const email = localStorage.getItem('userEmail');
-            if (!email) {
-                console.error('User email not found in localStorage.');
+            const userName = localStorage.getItem('userName');
+            if (!userName) {
+                console.error('userName not found in localStorage.');
                 return;
             }
-            const response = await axiosInstance.get(`/data/${email}`);
+            const response = await axiosInstance.get(`/data/${userName}`);
             if (response && response.data && response.data.data) {
                 setAdminId(response.data.data._id);
             } else {
@@ -165,7 +165,6 @@ const calculatePrices = useCallback(() => {
       const buyPrice = baseBuyPrice + buyCharge;
 
       if (isNaN(sellPrice) || isNaN(buyPrice)) {
-        console.error('NaN detected in price calculation');
         return prevState;
       }
 
@@ -208,13 +207,13 @@ useEffect(() => {
 
 useEffect(() => {
   const fetchCommodities = async () => {
-      const userEmail = localStorage.getItem('userEmail');
-      if (!userEmail) {
+      const userName = localStorage.getItem('userName');
+      if (!userName) {
           setError('User not logged in');
           return;
       }
       try {
-          const response = await axiosInstance.get(`/data/${userEmail}`);
+          const response = await axiosInstance.get(`/data/${userName}`);
           if (response && response.data && response.data.data && Array.isArray(response.data.data.commodities)) {
               const fetchedCommodities = response.data.data.commodities;
               const goldItems = [

@@ -1,7 +1,3 @@
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
-import IconButton from "@mui/material/IconButton";
-import Switch from "@mui/material/Switch";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
@@ -10,16 +6,21 @@ import loginImage from "../../assets/GoldBar.jpg";
 import axiosInstance from "../../axios/axiosInstance";
 import { requestFCMToken } from "../../utils/firebaseUtils";
 import { registerServiceWorker } from "../../utils/serviceWorkerRegistration";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
+import IconButton from "@mui/material/IconButton";
+import Switch from "@mui/material/Switch";
 
 const LoginPage = ({ onLoginSuccess })=> {
-  const [email, setEmail] = useState("");
+  const [userName, setUserName] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState("");
+  const [userNameError, setUserNameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [fcmToken, setFcmToken] = useState("");
   const [isTokenLoading, setIsTokenLoading] = useState(true);
+  const [features, setFeatures] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +69,7 @@ const LoginPage = ({ onLoginSuccess })=> {
         } catch (error) {
           // Token is invalid or expired, clear it
           localStorage.removeItem("token");
-          localStorage.removeItem("userEmail");
+          localStorage.removeItem("userName");
           localStorage.removeItem("rememberMe");
         }
       }
@@ -84,6 +85,24 @@ const LoginPage = ({ onLoginSuccess })=> {
     return regex.test(password);
   };
 
+  const fetchFeatures = async (userName) => {
+    try {
+      const response = await axiosInstance.get("/features", {
+        params: { userName },
+      });
+      if (response.data.success) {
+        setFeatures(response.data.data);
+        return response.data.data;
+      } else {
+        console.error("Failed to fetch features: Unexpected response format");
+        return [];
+      }
+    } catch (err) {
+      console.error("Failed to fetch features:", err);
+      return [];
+    }
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     if (isTokenLoading) {
@@ -94,12 +113,12 @@ const LoginPage = ({ onLoginSuccess })=> {
       return;
     }
     const values = {
-      email,
+      userName,
       password,
       fcmToken,
       rememberMe,
     };
-    setEmailError("");
+    setUserNameError("");
     setPasswordError("");
 
     if (!validatePassword(password)) {
@@ -113,12 +132,13 @@ const LoginPage = ({ onLoginSuccess })=> {
       const response = await axiosInstance.post("/login", values);
       if (response.data.success) {
         localStorage.setItem("token", response.data.token);
-        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userName", userName);
         if (rememberMe) {
           localStorage.setItem("rememberMe", "true");
         } else {
           localStorage.removeItem("rememberMe");
         }
+        const fetchedFeatures = await fetchFeatures(userName);
         toast.success("Login Successful", {
           position: "top-right",
           autoClose: 3000,
@@ -127,9 +147,9 @@ const LoginPage = ({ onLoginSuccess })=> {
           pauseOnHover: true,
           draggable: true,
         });
-        if (onLoginSuccess) onLoginSuccess();
+        if (onLoginSuccess) onLoginSuccess(fetchedFeatures);
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate("/dashboard", { state: { features: fetchedFeatures } });
         }, 1000);
       } else {
         setPasswordError(response.data.message || "Login failed");
@@ -187,13 +207,13 @@ const LoginPage = ({ onLoginSuccess })=> {
             Welcome back
           </h2>
           <p style={{ color: "#718096", marginBottom: "2rem" }}>
-            Enter your email and password to sign in
+            Enter your user name and password to sign in
           </p>
 
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: "1rem" }}>
               <label
-                htmlFor="email"
+                htmlFor="userName"
                 style={{
                   display: "block",
                   fontSize: "0.875rem",
@@ -202,14 +222,14 @@ const LoginPage = ({ onLoginSuccess })=> {
                   marginBottom: "0.5rem",
                 }}
               >
-                Email
+                UserName
               </label>
               <input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="userName"
+                id="userName"
+                name="userName"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
                 style={{
                   width: "100%",
                   padding: "0.5rem",
@@ -220,7 +240,7 @@ const LoginPage = ({ onLoginSuccess })=> {
                 }}
                 placeholder="test@gmail.com"
               />
-              {emailError && (
+              {userNameError && (
                 <p
                   style={{
                     color: "red",
@@ -228,7 +248,7 @@ const LoginPage = ({ onLoginSuccess })=> {
                     marginTop: "0.25rem",
                   }}
                 >
-                  {emailError}
+                  {userNameError}
                 </p>
               )}
             </div>

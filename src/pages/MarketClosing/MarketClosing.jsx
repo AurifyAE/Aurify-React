@@ -1,19 +1,19 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import html2canvas from 'html2canvas';
-import { format } from 'date-fns';
 import { Button } from "@nextui-org/react";
-import { FaDownload, FaTrash, FaRedo, FaUpload } from 'react-icons/fa';
-import toast from 'react-hot-toast';
-import io from 'socket.io-client';
-import axiosInstance from '../../axios/axiosInstance';
+import { format } from "date-fns";
+import html2canvas from "html2canvas";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { FaDownload, FaRedo, FaUpload } from "react-icons/fa";
+import io from "socket.io-client";
+import axiosInstance from "../../axios/axiosInstance";
 
 const BannerCreator = () => {
   const [background, setBackground] = useState(null);
   const [logo, setLogo] = useState(null);
-  const [companyName, setCompanyName] = useState('');
-  const [address, setAddress] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [currentDate, setCurrentDate] = useState('');
+  const [companyName, setCompanyName] = useState("");
+  const [address, setAddress] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [currentDate, setCurrentDate] = useState("");
   const [createdBanners, setCreatedBanners] = useState([]);
   const bannerRef = useRef(null);
   const backgroundInputRef = useRef(null);
@@ -21,21 +21,28 @@ const BannerCreator = () => {
   const [marketData, setMarketData] = useState({});
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [symbols, setSymbols] = useState([]);
-  const [serverURL, setServerURL] = useState('');
-  const [adminId, setAdminId] = useState('');
+  const [serverURL, setServerURL] = useState("");
+  const [adminId, setAdminId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [textColor, setTextColor] = useState("#000000");
 
   useEffect(() => {
     const fetchAdminId = async () => {
       try {
-        const email = localStorage.getItem('userEmail');
-        const response = await axiosInstance.get(`/data/${email}`);
+        const userName = localStorage.getItem("userName");
+        const response = await axiosInstance.get(`/data/${userName}`);
         setAdminId(response.data.data._id);
-        const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
-        const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
+        const uniqueSymbols = [
+          ...new Set(
+            response.data.data.commodities.map((commodity) => commodity.symbol)
+          ),
+        ];
+        const uppercaseSymbols = uniqueSymbols.map((symbol) =>
+          symbol.toUpperCase()
+        );
         setSymbols(uppercaseSymbols);
       } catch (error) {
-        console.error('Error fetching user ID:', error);
+        console.error("Error fetching user ID:", error);
       }
     };
 
@@ -45,10 +52,10 @@ const BannerCreator = () => {
   useEffect(() => {
     const fetchServerURL = async () => {
       try {
-        const response = await axiosInstance.get('/server-url');
+        const response = await axiosInstance.get("/server-url");
         setServerURL(response.data.selectedServerURL);
       } catch (error) {
-        console.error('Error fetching server URL:', error);
+        console.error("Error fetching server URL:", error);
       }
     };
 
@@ -63,7 +70,7 @@ const BannerCreator = () => {
           setSpreadMarginData(response.data);
         }
       } catch (error) {
-        console.error('Error fetching spread margin data:', error);
+        console.error("Error fetching spread margin data:", error);
       }
     };
 
@@ -77,12 +84,12 @@ const BannerCreator = () => {
     const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
 
     if (!socketSecret) {
-      console.error('Socket secret is not defined in environment variables');
+      console.error("Socket secret is not defined in environment variables");
       return;
     }
     const socket = io(serverURL, {
       query: { secret: socketSecret },
-      transports: ['websocket'],
+      transports: ["websocket"],
     });
 
     socket.on("connect", () => {
@@ -91,14 +98,17 @@ const BannerCreator = () => {
 
     socket.on("market-data", (data) => {
       if (data && data.symbol) {
-        setMarketData(prevData => ({
+        setMarketData((prevData) => ({
           ...prevData,
           [data.symbol]: {
             ...data,
-            bidChanged: prevData[data.symbol] && data.bid !== prevData[data.symbol].bid 
-              ? (data.bid > prevData[data.symbol].bid ? 'up' : 'down') 
-              : null,
-          }
+            bidChanged:
+              prevData[data.symbol] && data.bid !== prevData[data.symbol].bid
+                ? data.bid > prevData[data.symbol].bid
+                  ? "up"
+                  : "down"
+                : null,
+          },
         }));
       }
     });
@@ -113,20 +123,28 @@ const BannerCreator = () => {
   }, [serverURL, symbols]);
 
   useEffect(() => {
-    if (Object.keys(marketData).length > 0 && Object.keys(spreadMarginData).length > 0) {
+    if (
+      Object.keys(marketData).length > 0 &&
+      Object.keys(spreadMarginData).length > 0
+    ) {
       setLoading(false);
     }
   }, [marketData, spreadMarginData]);
 
-  const getSpreadOrMarginFromDB = useCallback((metal, type) => {
-    const lowerMetal = metal.toLowerCase();
-    const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
-    return spreadMarginData[key] || 0;
-  }, [spreadMarginData]);
+  const getSpreadOrMarginFromDB = useCallback(
+    (metal, type) => {
+      const lowerMetal = metal.toLowerCase();
+      const key = `${lowerMetal}${
+        type.charAt(0).toUpperCase() + type.slice(1)
+      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      return spreadMarginData[key] || 0;
+    },
+    [spreadMarginData]
+  );
 
   useEffect(() => {
     const updateDate = () => {
-      setCurrentDate(format(new Date(), 'MMMM d, yyyy'));
+      setCurrentDate(format(new Date(), "MMMM d, yyyy"));
     };
     updateDate();
     const intervalId = setInterval(updateDate, 1000 * 60);
@@ -152,21 +170,24 @@ const BannerCreator = () => {
   const handleExport = () => {
     if (bannerRef.current) {
       const originalBorderRadius = bannerRef.current.style.borderRadius;
-      bannerRef.current.style.borderRadius = '0';
+      bannerRef.current.style.borderRadius = "0";
       html2canvas(bannerRef.current, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
       }).then((canvas) => {
-        const image = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
         link.href = image;
-        link.download = 'custom_banner.png';
+        link.download = "custom_banner.png";
         link.click();
-        
-        setCreatedBanners(prev => [...prev, { img: image, title: companyName || 'Untitled' }]);
+
+        setCreatedBanners((prev) => [
+          ...prev,
+          { img: image, title: companyName || "Untitled" },
+        ]);
         silentResetFields();
-        toast.success('Banner created and downloaded successfully!');
+        toast.success("Banner created and downloaded successfully!");
         bannerRef.current.style.borderRadius = originalBorderRadius;
       });
     }
@@ -175,32 +196,40 @@ const BannerCreator = () => {
   const resetFields = () => {
     setBackground(null);
     setLogo(null);
-    setCompanyName('');
-    setAddress('');
-    setMobileNumber('');
-    toast.success('Fields reset successfully!');
+    setCompanyName("");
+    setAddress("");
+    setMobileNumber("");
+    toast.success("Fields reset successfully!");
   };
-  
+
   const silentResetFields = () => {
     setBackground(null);
     setLogo(null);
-    setCompanyName('');
-    setAddress('');
-    setMobileNumber('');
+    setCompanyName("");
+    setAddress("");
+    setMobileNumber("");
   };
 
-  const bidRate = marketData['Gold']?.bid ? (parseFloat(marketData['Gold'].bid) + parseFloat(getSpreadOrMarginFromDB('Gold','bid'))).toFixed(4)
-  : 'Loading...';
-  const askRate = bidRate 
-    ? (parseFloat(bidRate) + parseFloat(getSpreadOrMarginFromDB('Gold','ask'))+parseFloat(0.5)).toFixed(4)
-    : 'Loading...';
+  const bidRate = marketData["Gold"]?.bid
+    ? (
+        parseFloat(marketData["Gold"].bid) +
+        parseFloat(getSpreadOrMarginFromDB("Gold", "bid"))
+      ).toFixed(4)
+    : "Loading...";
+  const askRate = bidRate
+    ? (
+        parseFloat(bidRate) +
+        parseFloat(getSpreadOrMarginFromDB("Gold", "ask")) +
+        parseFloat(0.5)
+      ).toFixed(4)
+    : "Loading...";
 
   return (
     <div className="flex flex-col space-y-8 p-6">
       <div className="flex space-x-8">
         <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Create</h2>
-          
+
           <div className="space-y-4">
             <div className="flex space-x-4">
               <div
@@ -209,10 +238,14 @@ const BannerCreator = () => {
                 onDrop={handleDrop(setBackground)}
                 className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
               >
-                {background ? 'Background Added' : (
+                {background ? (
+                  "Background Added"
+                ) : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span className='mx-4'>Drag & Drop or Click to Upload Background</span>
+                    <span className="mx-4">
+                      Drag & Drop or Click to Upload Background
+                    </span>
                   </>
                 )}
                 <input
@@ -228,10 +261,14 @@ const BannerCreator = () => {
                 onDrop={handleDrop(setLogo)}
                 className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
               >
-                {logo ? 'Logo Added' : (
+                {logo ? (
+                  "Logo Added"
+                ) : (
                   <>
                     <FaUpload className="text-2xl mb-2" />
-                    <span className='mx-4'>Drag & Drop or Click to Upload Logo</span>
+                    <span className="mx-4">
+                      Drag & Drop or Click to Upload Logo
+                    </span>
                   </>
                 )}
                 <input
@@ -243,19 +280,34 @@ const BannerCreator = () => {
               </div>
             </div>
 
+            <div className="flex items-center space-x-2">
+              <label htmlFor="textColor" className="text-gray-700">
+                Text Color:
+              </label>
+              <input
+                id="textColor"
+                type="color"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                className="w-10 h-10 cursor-pointer"
+              />
+            </div>
+
             <input
               type="text"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Company Name"
-              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+              className="w-full p-2 bg-gray-100 rounded"
+              style={{ color: textColor }}
             />
 
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Address"
-              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+              className="w-full p-2 bg-gray-100 rounded"
+              style={{ color: textColor }}
               rows="3"
             />
 
@@ -264,7 +316,8 @@ const BannerCreator = () => {
               value={mobileNumber}
               onChange={(e) => setMobileNumber(e.target.value)}
               placeholder="Mobile Number"
-              className="w-full p-2 bg-gray-100 rounded text-gray-700"
+              className="w-full p-2 bg-gray-100 rounded"
+              style={{ color: textColor }}
             />
 
             <div className="flex justify-between">
@@ -286,8 +339,15 @@ const BannerCreator = () => {
               className="w-full h-[400px] rounded-lg relative bg-cover bg-center overflow-hidden"
               style={{ backgroundImage: `url(${background})` }}
             >
-              <img src={logo} alt="Logo" className="w-24 h-24 absolute top-4 left-4" />
-              <div className="absolute inset-0 flex flex-col justify-between p-6 text-white">
+              <img
+                src={logo}
+                alt="Logo"
+                className="w-24 h-24 absolute top-4 left-4"
+              />
+              <div
+                className="absolute inset-0 flex flex-col justify-between p-6 "
+                style={{ color: textColor }}
+              >
                 <div className="text-center">
                   <div className="text-3xl font-bold mb-2">{companyName}</div>
                   <div className="text-xl mb-1">{currentDate}</div>
@@ -298,13 +358,13 @@ const BannerCreator = () => {
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">BID</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                      {bidRate}
+                        {bidRate}
                       </div>
                     </div>
                     <div className="bg-black bg-opacity-30 p-3 rounded-lg">
                       <div className="mb-2">ASK</div>
                       <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                      {askRate}
+                        {askRate}
                       </div>
                     </div>
                   </div>

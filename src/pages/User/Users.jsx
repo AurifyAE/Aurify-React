@@ -138,10 +138,15 @@ const theme = createTheme({
             />
           </Grid>
           <Grid item xs={4}>
-            <TextField
+          <TextField
               label="Spread Value"
               value={spreadValue}
-              onChange={(e) => setSpreadValue(Math.max(0, Number(e.target.value)))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value !== 0) {
+                  setSpreadValue(value);
+                }
+              }}
               type="number"
               required
               fullWidth
@@ -250,6 +255,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
     { id: 'phoneNo', label: 'Phone No', width: '15%' },
     { id: 'spread', label: 'Spread', width: '10%' },
     { id: 'location', label: 'Location', width: '15%' },
+    { id: 'email', label: 'Email', width: '15%' },
     { id: 'ipAddress', label: 'IP Address', width: '15%' },
     { id: 'actions', label: 'Actions', width: '10%' },
   ];
@@ -314,6 +320,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
               <TableCell>{user.spread}</TableCell>
               <TableCell>{user.location}</TableCell>
               <TableCell>{user.email}</TableCell>
+              <TableCell>06:14:02:02:29:95</TableCell>
               <TableCell>
                 <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small">
                   {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
@@ -353,7 +360,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
 
 
 const UserList = ( ) => {
-  const email = localStorage.getItem('userEmail');
+  const userName = localStorage.getItem('userName');
   const [userData, setUserData] = useState([]);
   const [adminId,setAdminId] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
@@ -364,15 +371,15 @@ const UserList = ( ) => {
   //addspread starts
   useEffect(() => {
     const fetchData = async () => {
-      const userEmail = localStorage.getItem('userEmail');
+      const userName = localStorage.getItem('userName');
       
-      if (!userEmail) {
+      if (!userName) {
         return;
       }
   
       try {
         // Include the email directly in the URL
-        const response = await axiosInstance.get(`/data/${userEmail}`);
+        const response = await axiosInstance.get(`/data/${userName}`);
         
         setAdminId(response.data.data._id);
       } catch (err) {
@@ -405,7 +412,7 @@ const UserList = ( ) => {
 
   const fetchSpreadValues = async () => {
     try {
-      const response = await axiosInstance.get(`/admin/${email}/spread-values`);
+      const response = await axiosInstance.get(`/admin/${userName}/spread-values`);
       if (response.data.success) {
         setSpreadValues(response.data.spreadValues);
       }
@@ -418,7 +425,7 @@ const UserList = ( ) => {
 
   const handleAddSpread = async (spreadValue,title) => {
     try {
-      const response = await axiosInstance.post(`/admin/${email}/spread-values`, { spreadValue,title });
+      const response = await axiosInstance.post(`/admin/${userName}/spread-values`, { spreadValue,title });
       if (response.data.success) {
         setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
         setShowNotification(true);
@@ -460,7 +467,7 @@ const UserList = ( ) => {
   const handleDeleteSpread = async (index) => {
     try {
       const spreadToDelete = spreadValues[index]._id;
-      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/${email}`);
+      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/${userName}`);
       if (response.data.success) {
         setSpreadValues(prevValues => prevValues.filter((_, i) => i !== index));
         setShowNotification(true);

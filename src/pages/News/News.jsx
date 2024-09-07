@@ -5,7 +5,7 @@ import axiosInstance from '../../axios/axiosInstance';
 const NewsUpload = () => {
   const [selectedOption, setSelectedOption] = useState('Automated');
   const [newsItems, setNewsItems] = useState([]);
-  const [email, setEmail] = useState('');
+  const [userName, setUserName] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -24,21 +24,21 @@ const NewsUpload = () => {
   };
 
   useEffect(() => {
-    const fetchAdminEmailAndNews = async () => {
-      const userEmail = localStorage.getItem('userEmail');
+    const fetchAdminUserNameAndNews = async () => {
+      const userName = localStorage.getItem('userName');
 
-      if (!userEmail) {
-        console.error('Admin email not found in localStorage');
+      if (!userName) {
+        console.error('userName not found in localStorage');
         return;
       }
 
       try {
-        const adminResponse = await axiosInstance.get(`/data/${userEmail}`);
-        if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.email) {
-          setEmail(adminResponse.data.data.email);
+        const adminResponse = await axiosInstance.get(`/data/${userName}`);
+        if (adminResponse.data && adminResponse.data.data && adminResponse.data.data.userName) {
+          setUserName(adminResponse.data.data.userName);
 
           // Fetch news items for this admin
-          const newsResponse = await axiosInstance.get(`/get-manual-news?email=${adminResponse.data.data.email}`);
+          const newsResponse = await axiosInstance.get(`/get-manual-news?userName=${adminResponse.data.data.userName}`);
           if (newsResponse.data && newsResponse.data.data && newsResponse.data.data.news) {
             setNewsItems(newsResponse.data.data.news);
           }
@@ -50,7 +50,7 @@ const NewsUpload = () => {
       }
     };
 
-    fetchAdminEmailAndNews();
+    fetchAdminUserNameAndNews();
   }, []);
 
   const handleChange = (event) => {
@@ -61,12 +61,12 @@ const NewsUpload = () => {
   };
 
   const handleSubmit = async (event) => {
-    const email = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
     event.preventDefault();
     const newItem = {
       title,
       description: content,
-      email: email
+      userName: userName
     };
 
     try {
@@ -91,12 +91,12 @@ const NewsUpload = () => {
   };
 
   const handleUpdate = async (event) => {
-    const email = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
     event.preventDefault();
     const updatedItem = {
       title,
       description: content,
-      email
+      userName
     };
 
     try {
@@ -120,7 +120,7 @@ const NewsUpload = () => {
 
   const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemToDelete}?email=${email}`);
+      await axiosInstance.delete(`/delete-manual-news/${newsItems[0]._id}/${itemToDelete}?userName=${userName}`);
       setNewsItems(prevItems => prevItems.filter(item => item._id !== itemToDelete));
       toast.success('News item deleted successfully!');
       closeDeleteModal();

@@ -16,7 +16,7 @@ const importAll = (r) => {
 
 const images = importAll(require.context('../../assets/bank', false, /\.(jpg|png)$/));
 
-const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmail, onClose }) => {
+const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userName, onClose }) => {
   const initialBankState = {
     holderName: '',
     bankName: '',
@@ -141,15 +141,15 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
   };
 
   const fetchUserData = async () => {
-    const userEmail = localStorage.getItem('userEmail');
+    const userName = localStorage.getItem('userName');
     
-    if (!userEmail) {
+    if (!userName) {
       setError('User not logged in');
       return;
     }
 
     try {
-      const response = await axiosInstance.get(`/data/${userEmail}`);
+      const response = await axiosInstance.get(`/data/${userName}`);
       
       setUserData(response.data);
     } catch (err) {
@@ -162,11 +162,11 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userEmai
   }, []);
 
   const saveBankDetails = async (bankData) => {
-  const userEmail = localStorage.getItem('userEmail');
+  const userName = localStorage.getItem('userName');
 
   try {
     const response = await axiosInstance.post('/save-bank-details', {
-      email: userEmail,
+      userName: userName,
       bankDetails: bankData
     });    
     

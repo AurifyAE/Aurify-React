@@ -384,74 +384,54 @@ const SpotRate = () => {
     }
   }, []);
 
-  const fetchServerURL = async () => {
-    try {
-      const response = await axiosInstance.get('/server-url');
-      setServerURL(response.data.selectedServerURL);
-    } catch (error) {
-      console.error('Error fetching server URL:', error);
-    }
-  };
+  
 
-  const fetchAdminId = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const email = localStorage.getItem('userEmail');
-      const response = await axiosInstance.get(`/data/${email}`);
-      setAdminId(response.data.data._id);
-      const uniqueSymbols = [...new Set(response.data.data.commodities.map(commodity => commodity.symbol))];
+      setIsLoading(true);
+      const [serverURLResponse, adminDataResponse] = await Promise.all([
+        axiosInstance.get('/server-url'),
+        axiosInstance.get(`/data/${localStorage.getItem('userName')}`)
+      ]);
+
+      setServerURL(serverURLResponse.data.selectedServerURL);
+      setAdminId(adminDataResponse.data.data._id);
+
+      const uniqueSymbols = [...new Set(adminDataResponse.data.data.commodities.map(commodity => commodity.symbol))];
       const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
       setSymbols(uppercaseSymbols);
       setUniqueMetals(uniqueSymbols);
-    } catch (error) {
-      console.error('Error fetching user ID:', error);
-    }
-  };
 
-  const fetchCommodities = async (adminId) => {
-    try {
-      const response = await axiosInstance.get(`/spotrates/${adminId}`);
-      if (response.data) {
-        setSpreadMarginData(response.data);
+      if (adminDataResponse.data.data._id) {
+        const commoditiesResponse = await axiosInstance.get(`/spotrates/${adminDataResponse.data.data._id}`);
+        if (commoditiesResponse.data) {
+          setSpreadMarginData(commoditiesResponse.data);
+        }
+        if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
+          const parsedCommodities = commoditiesResponse.data.commodities.map(commodity => ({
+            ...commodity,
+            purity: parseFloat(commodity.purity),
+            unit: parseFloat(commodity.unit),
+            weight: commodity.weight,
+            sellCharge: parseFloat(commodity.sellCharge),
+            buyCharge: parseFloat(commodity.buyCharge)
+          }));
+          setCommodities(parsedCommodities);
+        }
       }
-      if (response.data && response.data.commodities) {
-        const parsedCommodities = response.data.commodities.map(commodity => ({
-          ...commodity,
-          purity: parseFloat(commodity.purity),
-          unit: parseFloat(commodity.unit),
-          weight: commodity.weight,
-          sellCharge: parseFloat(commodity.sellCharge),
-          buyCharge: parseFloat(commodity.buyCharge)
-        }));
-        setCommodities(parsedCommodities);        }
     } catch (error) {
-      console.error('Error fetching commodities:', error);
+      console.error('Error fetching data:', error);
+      setError("An error occurred while fetching data");
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 100);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        await fetchServerURL();
-        await fetchAdminId();
-        if (adminId) {
-          await fetchCommodities(adminId);
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        setError("An error occurred while fetching data");
-      } finally {
-        // Add a 100ms delay before setting isLoading to false
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 100);
-      }
-    };
-
     fetchData();
-  }, [adminId]);
+  }, [fetchData]);
 
   const renderLoadingSkeleton = () => (
     <div className="p-6 grid gap-8 grid-cols-1 md:grid-cols-2 mx-4 md:mx-8 lg:mx-14">
@@ -593,6 +573,7 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
     const socket = io(serverURL, {
       query: { secret: socketSecret },
       transports: ['websocket'],
+      debug: false
     });
   
     socket.on("connect", () => {
