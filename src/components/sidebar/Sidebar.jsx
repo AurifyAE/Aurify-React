@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   Button,
   Modal,
@@ -128,7 +128,7 @@ const FeatureDropdown = ({ features, isLoading }) => {
   );
 };
 
-const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
+const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [requestStatus, setRequestStatus] = useState(null);
@@ -181,12 +181,11 @@ const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
 
   const confirmRequest = async () => {
     closeRequestModal();
-    const userName = localStorage.getItem("userName");
     setRequestStatus({ type: "loading", message: "Submitting request..." });
 
     try {
       const response = await axiosInstance.post("/request-feature", {
-        userName: userName,
+        email: userEmail,
         feature: selectedFeature,
         reason: "Requested via dropdown",
         requestType: "featureRequest",
@@ -194,6 +193,7 @@ const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
 
       if (response.data.success) {
         showSuccessToast(selectedFeature);
+        setRequestStatus(null);
       } else {
         setRequestStatus({
           type: "error",
@@ -210,7 +210,9 @@ const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
       });
     }
 
-    setTimeout(() => setRequestStatus(null), 5000);
+    if (requestStatus && requestStatus.type === "error") {
+      setTimeout(() => setRequestStatus(null), 5000);
+    }
   };
   if (isLoading) {
     return (
@@ -223,6 +225,9 @@ const AdditionalFeaturesDropdown = ({ features, isLoading }) => {
         ))}
       </div>
     );
+  }
+  if (features.length === 0) {
+    return null;
   }
 
   return (
@@ -342,6 +347,7 @@ const Sidebar = () => {
   const [additionalFeatures, setAdditionalFeatures] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState(null);
 
   const fetchFeatures = async () => {
     const userName = localStorage.getItem("userName");
@@ -356,12 +362,13 @@ const Sidebar = () => {
       const response = await axiosInstance.get("/features", {
         params: { userName: userName },
       });
-
       if (response.data.success) {
-        setFeatures(response.data.data);
+
+        setFeatures(response.data.data.features);
+        setUserEmail(response.data.data.email)
         setAdditionalFeatures(
           allFeatures.filter(
-            (f) => !response.data.data.some((rf) => rf.name === f)
+            (f) => !response.data.data.features.some((rf) => rf.name === f)
           )
         );
       } else {
@@ -380,14 +387,14 @@ const Sidebar = () => {
 
   return (
     <nav className="w-64 bg-gray-100 h-screen flex flex-col">
-      <div className="p-4 flex-shrink-0">
+      <div className="px-4 flex-shrink-0 mt-6">
         <div className="flex items-center mb-8">
           <img src={logo} alt="Logo" className="w-14 h-14 mr-1" />
           <span className="text-xl font-bold text-gray-800">Dashboard</span>
         </div>
       </div>
 
-      <div className="flex-grow overflow-y-auto hide-scrollbar p-4">
+      <div className="flex-grow overflow-y-auto hide-scrollbar px-4">
         <ul className="space-y-1">
           {routes.map((route) => (
             <NavLink
@@ -435,15 +442,22 @@ const Sidebar = () => {
           </ul>
         </div>
 
-        <AdditionalFeaturesDropdown features={additionalFeatures} isLoading={isLoading} />
+        <AdditionalFeaturesDropdown features={additionalFeatures} isLoading={isLoading} userEmail={userEmail} />
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
 
-      <div className="p-4 flex-shrink-0">
+      <div className="p-4 flex-shrink-0 mt-2">
         <SignOutButton />
       </div>
-      <Toaster position="top-center" />
+      <Toaster 
+        position="top-center" 
+        toastOptions={{
+          style: {
+            zIndex: 9999, 
+          },
+        }}
+      />
     </nav>
   );
 };

@@ -247,6 +247,7 @@ const handleSubmit = async () => {
                     onChange={handleChange}
                     error={!!errors[field.name]}
                     helperText={errors[field.name]}
+                    disabled={field.name === 'accountNumber' && editingBank}
                   />
                 )}
               </Grid>

@@ -91,8 +91,8 @@ const LoginPage = ({ onLoginSuccess })=> {
         params: { userName },
       });
       if (response.data.success) {
-        setFeatures(response.data.data);
-        return response.data.data;
+        setFeatures(response.data.data.features);
+        return response.data.data.features;
       } else {
         console.error("Failed to fetch features: Unexpected response format");
         return [];

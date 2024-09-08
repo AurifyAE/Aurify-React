@@ -299,7 +299,6 @@ const BannerCreator = () => {
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Company Name"
               className="w-full p-2 bg-gray-100 rounded"
-              style={{ color: textColor }}
             />
 
             <textarea
@@ -307,7 +306,6 @@ const BannerCreator = () => {
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Address"
               className="w-full p-2 bg-gray-100 rounded"
-              style={{ color: textColor }}
               rows="3"
             />
 
@@ -317,7 +315,6 @@ const BannerCreator = () => {
               onChange={(e) => setMobileNumber(e.target.value)}
               placeholder="Mobile Number"
               className="w-full p-2 bg-gray-100 rounded"
-              style={{ color: textColor }}
             />
 
             <div className="flex justify-between">

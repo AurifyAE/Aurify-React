@@ -123,7 +123,6 @@ useEffect(() => {
             if (response && response.data && typeof response.data === 'object') {
                 setSpotRates(response.data);
             } else {
-                console.error('Invalid spot rates data:', response.data);
                 setSpotRates({}); // Initialize with an empty object if data is invalid
             }
         } catch (error) {

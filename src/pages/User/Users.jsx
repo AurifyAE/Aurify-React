@@ -77,7 +77,9 @@ const theme = createTheme({
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      onAddSpread(spreadValue, spreadTitle);
+      if(spreadValue != '0'){
+        onAddSpread(spreadValue, spreadTitle);
+      }
       setSpreadValue('');
       setSpreadTitle('Rate'); // Reset to default after submission
     };
@@ -142,10 +144,8 @@ const theme = createTheme({
               label="Spread Value"
               value={spreadValue}
               onChange={(e) => {
-                const value = Number(e.target.value);
-                if (value !== 0) {
-                  setSpreadValue(value);
-                }
+                const value = e.target.value;
+                setSpreadValue(value);
               }}
               type="number"
               required
@@ -322,7 +322,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
               <TableCell>{user.email}</TableCell>
               <TableCell>06:14:02:02:29:95</TableCell>
               <TableCell>
-                <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small">
+                <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small" >
                   {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
                 </IconButton>
               </TableCell>

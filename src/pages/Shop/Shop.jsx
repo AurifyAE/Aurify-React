@@ -34,9 +34,16 @@ const Shop = () => {
       const userName = localStorage.getItem("userName");
       const shopResponse = await axiosInstance.get(`/shop-items/${userName}`);
       // Sort items by createdAt date in ascending order (oldest first)
-      const sortedItems = shopResponse.data.shops.sort((a, b) => {
-        return new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id);
-      });
+      let sortedItems = [];
+
+      // Check if the response has data and shops array exists
+      if (shopResponse.data && Array.isArray(shopResponse.data.shops)) {
+        sortedItems = shopResponse.data.shops.sort((a, b) => {
+          return new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id);
+        });
+      }
+
+      // Set sortedItems, either empty or sorted
       setItems(sortedItems);
     } catch (error) {
       console.error("Error fetching shop items:", error);

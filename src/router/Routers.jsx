@@ -60,7 +60,7 @@ function Routers() {
         params: { userName: userName },
       });
       if (response.data.success) {
-        setFeatures(response.data.data);
+        setFeatures(response.data.data.features);
       } else {
         console.error("Failed to fetch features: Unexpected response format");
         setFeatures([]);
