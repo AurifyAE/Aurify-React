@@ -17,7 +17,6 @@ const BannerCreator = () => {
   const [createdBanners, setCreatedBanners] = useState([]);
   const bannerRef = useRef(null);
   const backgroundInputRef = useRef(null);
-  const logoInputRef = useRef(null);
   const [marketData, setMarketData] = useState({});
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [symbols, setSymbols] = useState([]);
@@ -25,6 +24,12 @@ const BannerCreator = () => {
   const [adminId, setAdminId] = useState("");
   const [loading, setLoading] = useState(true);
   const [textColor, setTextColor] = useState("#000000");
+  const [companyNameColor, setCompanyNameColor] = useState("#000000");
+  const [editableBidRate, setEditableBidRate] = useState("");
+  const [editableAskRate, setEditableAskRate] = useState("");
+  const [bidRate, setBidRate] = useState("Loading...");
+  const [askRate, setAskRate] = useState("Loading...");
+  const [ratesLocked, setRatesLocked] = useState(false);
 
   useEffect(() => {
     const fetchAdminId = async () => {
@@ -32,6 +37,7 @@ const BannerCreator = () => {
         const userName = localStorage.getItem("userName");
         const response = await axiosInstance.get(`/data/${userName}`);
         setAdminId(response.data.data._id);
+        setLogo(response.data.data.logo);
         const uniqueSymbols = [
           ...new Set(
             response.data.data.commodities.map((commodity) => commodity.symbol)
@@ -151,6 +157,11 @@ const BannerCreator = () => {
     return () => clearInterval(intervalId);
   }, []);
 
+  const handleBackgroundUpload = (file) => {
+    handleFile(file, setBackground);
+    setRatesLocked(true);  // Lock the rates when background is uploaded
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
   };
@@ -163,7 +174,11 @@ const BannerCreator = () => {
 
   const handleFile = (file, setter) => {
     if (file) {
-      setter(URL.createObjectURL(file));
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setter(e.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -193,50 +208,74 @@ const BannerCreator = () => {
     }
   };
 
+
   const resetFields = () => {
     setBackground(null);
-    setLogo(null);
     setCompanyName("");
     setAddress("");
     setMobileNumber("");
+    setTextColor("#000000");
+    setCompanyNameColor("#000000");
+    setRatesLocked(false);
     toast.success("Fields reset successfully!");
   };
 
   const silentResetFields = () => {
     setBackground(null);
-    setLogo(null);
     setCompanyName("");
     setAddress("");
     setMobileNumber("");
+    setTextColor("#000000");
+    setCompanyNameColor("#000000");
+    setRatesLocked(false);
   };
 
-  const bidRate = marketData["Gold"]?.bid
-    ? (
+  useEffect(() => {
+    if (!ratesLocked && marketData["Gold"]?.bid) {
+      const calculatedBidRate = (
         parseFloat(marketData["Gold"].bid) +
         parseFloat(getSpreadOrMarginFromDB("Gold", "bid"))
-      ).toFixed(4)
-    : "Loading...";
-  const askRate = bidRate
-    ? (
-        parseFloat(bidRate) +
+      ).toFixed(2);
+      setBidRate(calculatedBidRate);
+
+      const calculatedAskRate = (
+        parseFloat(calculatedBidRate) +
         parseFloat(getSpreadOrMarginFromDB("Gold", "ask")) +
         parseFloat(0.5)
-      ).toFixed(4)
-    : "Loading...";
+      ).toFixed(2);
+      setAskRate(calculatedAskRate);
+    }
+  }, [marketData, getSpreadOrMarginFromDB, ratesLocked]);
 
-  return (
-    <div className="flex flex-col space-y-8 p-6">
-      <div className="flex space-x-8">
-        <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold mb-4 text-gray-800">Create</h2>
+  const handleBidRateChange = (e) => {
+    setBidRate(e.target.value);
+  };
 
-          <div className="space-y-4">
-            <div className="flex space-x-4">
+  const handleAskRateChange = (e) => {
+    setAskRate(e.target.value);
+  };
+
+  const formatAddress = (address) => {
+    return address.split('\n').map((line, index) => (
+      <React.Fragment key={index}>
+        {line}
+        {index < address.split('\n').length - 1 && <br />}
+      </React.Fragment>
+    ));
+  };
+
+    return (
+      <div className="flex flex-col space-y-8 p-6">
+        <div className="flex space-x-8">
+          <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Create</h2>
+  
+            <div className="space-y-4">
               <div
                 onClick={() => backgroundInputRef.current.click()}
                 onDragOver={handleDragOver}
-                onDrop={handleDrop(setBackground)}
-                className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
+                onDrop={handleDrop}
+                className="w-full h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
               >
                 {background ? (
                   "Background Added"
@@ -249,125 +288,130 @@ const BannerCreator = () => {
                   </>
                 )}
                 <input
-                  ref={backgroundInputRef}
-                  type="file"
-                  onChange={(e) => handleFile(e.target.files[0], setBackground)}
-                  className="hidden"
-                />
-              </div>
-              <div
-                onClick={() => logoInputRef.current.click()}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop(setLogo)}
-                className="w-1/2 h-32 border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-500 cursor-pointer hover:bg-gray-50 transition-colors duration-300"
-              >
-                {logo ? (
-                  "Logo Added"
-                ) : (
-                  <>
-                    <FaUpload className="text-2xl mb-2" />
-                    <span className="mx-4">
-                      Drag & Drop or Click to Upload Logo
-                    </span>
-                  </>
-                )}
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  onChange={(e) => handleFile(e.target.files[0], setLogo)}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <label htmlFor="textColor" className="text-gray-700">
-                Text Color:
-              </label>
-              <input
-                id="textColor"
-                type="color"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-                className="w-10 h-10 cursor-pointer"
+                ref={backgroundInputRef}
+                type="file"
+                onChange={(e) => handleBackgroundUpload(e.target.files[0])}
+                className="hidden"
               />
-            </div>
-
-            <input
-              type="text"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Company Name"
-              className="w-full p-2 bg-gray-100 rounded"
-            />
-
-            <textarea
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="Address"
-              className="w-full p-2 bg-gray-100 rounded"
-              rows="3"
-            />
-
-            <input
-              type="text"
-              value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
-              placeholder="Mobile Number"
-              className="w-full p-2 bg-gray-100 rounded"
-            />
-
-            <div className="flex justify-between">
-              <Button color="secondary" auto onClick={resetFields}>
-                <FaRedo className="mr-2" /> Reset
-              </Button>
-              <Button color="success" auto onClick={handleExport}>
-                <FaDownload className="mr-2" /> Download
-              </Button>
+              </div>
+  
+              <div className="flex items-center space-x-2">
+                <label htmlFor="textColor" className="text-gray-700">
+                  Text Color:
+                </label>
+                <input
+                  id="textColor"
+                  type="color"
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  className="w-10 h-10 cursor-pointer"
+                />
+              </div>
+  
+              <div className="flex items-center space-x-2">
+                <label htmlFor="companyNameColor" className="text-gray-700">
+                  Company Name Color:
+                </label>
+                <input
+                  id="companyNameColor"
+                  type="color"
+                  value={companyNameColor}
+                  onChange={(e) => setCompanyNameColor(e.target.value)}
+                  className="w-10 h-10 cursor-pointer"
+                />
+              </div>
+  
+              <input
+                type="text"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Company Name"
+                className="w-full p-2 bg-gray-100 rounded"
+              />
+  
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Address"
+                className="w-full p-2 bg-gray-100 rounded"
+                rows="3"
+              />
+  
+              <input
+                type="text"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value)}
+                placeholder="Mobile Number"
+                className="w-full p-2 bg-gray-100 rounded"
+              />
+               {ratesLocked && (
+              <div className="flex space-x-4">
+                <input
+                  type="number"
+                  value={bidRate}
+                  onChange={handleBidRateChange}
+                  placeholder="Bid Rate"
+                  className="w-1/2 p-2 bg-gray-100 rounded"
+                />
+                <input
+                  type="number"
+                  value={askRate}
+                  onChange={handleAskRateChange}
+                  placeholder="Ask Rate"
+                  className="w-1/2 p-2 bg-gray-100 rounded"
+                />
+              </div>
+            )}
+  
+              <div className="flex justify-between">
+                <Button color="secondary" auto onClick={resetFields}>
+                  <FaRedo className="mr-2" /> Reset
+                </Button>
+                <Button color="success" auto onClick={handleExport}>
+                  <FaDownload className="mr-2" /> Download
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800"> Preview</h3>
-          {background && logo && (
+  
+          <div className="w-1/2 bg-white p-6 rounded-lg shadow-lg">
+          <h3 className="text-xl font-semibold mb-4 text-gray-800">Preview</h3>
+          {background && (
             <div
               ref={bannerRef}
-              className="w-full h-[400px] rounded-lg relative bg-cover bg-center overflow-hidden"
+              className="w-full h-[550px] rounded-lg relative bg-cover bg-center overflow-hidden flex flex-col justify-between p-8"
               style={{ backgroundImage: `url(${background})` }}
             >
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-24 h-24 absolute top-4 left-4"
-              />
-              <div
-                className="absolute inset-0 flex flex-col justify-between p-6 "
-                style={{ color: textColor }}
-              >
-                <div className="text-center">
-                  <div className="text-3xl font-bold mb-2">{companyName}</div>
-                  <div className="text-xl mb-1">{currentDate}</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl mb-4">CLOSING RATE</div>
-                  <div className="flex justify-center space-x-8 mb-4">
-                    <div className="bg-black bg-opacity-30 p-3 rounded-lg">
-                      <div className="mb-2">BID</div>
-                      <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                        {bidRate}
-                      </div>
+              <div className="text-center" style={{ color: textColor }}>
+                <div className="text-4xl font-bold mb-4">{format(new Date(), "dd MMM yyyy").toUpperCase()}</div>
+                <div className="text-2xl mb-4">CLOSING RATE</div>
+                <div className="flex justify-center space-x-16 mb-2">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold mb-2">BID</div>
+                    <div className="bg-gray-800 bg-opacity-50 p-2 rounded-lg">
+                      <span className="text-4xl font-bold">{bidRate}</span>
                     </div>
-                    <div className="bg-black bg-opacity-30 p-3 rounded-lg">
-                      <div className="mb-2">ASK</div>
-                      <div className="p-2 rounded-lg bg-black bg-opacity-50 text-2xl">
-                        {askRate}
-                      </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold mb-2">ASK</div>
+                    <div className="bg-gray-800 bg-opacity-50 p-2 rounded-lg">
+                      <span className="text-4xl font-bold">{askRate}</span>
                     </div>
                   </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-lg">{address}</div>
+              </div>
+              
+              <div className="text-center" style={{ color: textColor }}>
+                <div className="flex flex-col items-center">
+                  {logo && (
+                    <img
+                      src={logo}
+                      alt="Logo"
+                      className="w-20 h-20 object-contain mb-2"
+                    />
+                  )}
+                  <div className="text-3xl font-bold mb-2" style={{ color: companyNameColor }}>{companyName}</div>
+                  <div className="text-lg mb-1">{formatAddress(address)}</div>
                   <div className="text-lg">{mobileNumber}</div>
                 </div>
               </div>

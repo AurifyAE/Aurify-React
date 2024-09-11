@@ -4,7 +4,13 @@ import { Search, Paperclip, Send } from 'lucide-react';
 import Avatar from '../../assets/Avatar.jpg';
 import axiosInstance from '../../axios/axiosInstance';
 
-const socket = io(process.env.REACT_APP_API_URL.replace('/api', ''));
+const SOCKET_SERVER_URL = process.env.REACT_APP_API_URL.replace('/api', '');
+const SECRET_KEY = process.env.REACT_APP_SOCKET_SECRET_KEY;
+
+const socket = io(SOCKET_SERVER_URL, {
+  auth: { secret: SECRET_KEY },
+  transports: ["websocket"],
+});
 
 const UserSelectionAndChatInterface = () => {
   const [users, setUsers] = useState([]);
@@ -36,7 +42,6 @@ const UserSelectionAndChatInterface = () => {
       fetchMessages();
       
       socket.emit('login', { userId: selectedUser._id, userType: 'user' });
-
       socket.on("message", (message) => {
         setMessages((prevMessages) => [...prevMessages, message]);
       });
@@ -93,14 +98,14 @@ const UserSelectionAndChatInterface = () => {
       };
 
       try {
-        const response = await axiosInstance.post(`/messages/${adminId}`, messageData);
+        // const response = await axiosInstance.post(`/messages/${adminId}`, messageData);
 
-        if (response.data.success) {
+        // if (response.data.success) {
           const room = `${adminId}-${selectedUser._id}`;
           socket.emit('sendMessage', { ...messageData, room });
           setMessages((prevMessages) => [...prevMessages, messageData]);
           setNewMessage("");
-        }
+        // }
       } catch (error) {
         console.error('Error sending message:', error);
       }

@@ -28,9 +28,10 @@ const ProfilePage = () => {
   const handleLogoSubmit = async () => {
     if (logoFile) {
       try {
+        const userName = localStorage.getItem('userName');
         const formData = new FormData();
         formData.append('logo', logoFile);
-        formData.append('email', profileInfo.email);
+        formData.append('userName', userName);
   
         const response = await axiosInstance.post('/update-logo', formData, {
           headers: {
@@ -64,15 +65,15 @@ const ProfilePage = () => {
   };
 
   const [originalProfileInfo, setOriginalProfileInfo] = useState({
+    companyName: '',
     email: '',
-    fullName: '',
     mobile: '',
     location: ''
   });
 
   const [profileInfo, setProfileInfo] = useState({
+    comapanyName: '',
     email: '',
-    fullName: '',
     mobile: '',
     location: ''
   });
@@ -80,8 +81,8 @@ const ProfilePage = () => {
   useEffect(() => {
     if (userData?.data) {
       const newProfileInfo = {
+        companyName: userData.data.companyName || '',
         email: userData.data.email || '',
-        fullName: userData.data.userName || '',
         mobile: userData.data.contact || '',
         location: userData.data.address || ''
       };
@@ -109,8 +110,8 @@ const ProfilePage = () => {
     }
     try {
       const response = await axiosInstance.put(`/update-profile/${userData.data._id}`, {
+        companyName: profileInfo.companyName,
         email: profileInfo.email,
-        fullName: profileInfo.fullName,
         mobile: profileInfo.mobile,
         location: profileInfo.location
       });
@@ -176,7 +177,7 @@ const ProfilePage = () => {
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-800">{userData?.data?.companyName ? userData.data.companyName : ''}</h2>
-              <p className="text-sm text-gray-600">{userData?.data?.email ? userData.data.email : ''}</p>
+              <p className="text-sm text-gray-600">{userData?.data?.userName ? userData.data.userName : ''}</p>
             </div>
           </div>
           <div className="flex space-x-2">
@@ -211,9 +212,9 @@ const ProfilePage = () => {
       <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
       <div className="space-y-4">
         <InputField 
-          label="UserName" 
-          name="fullName" 
-          value={profileInfo.fullName} 
+          label="Company Name" 
+          name="companyName" 
+          value={profileInfo.companyName} 
           onChange={handleInputChange} 
         />
         <InputField 

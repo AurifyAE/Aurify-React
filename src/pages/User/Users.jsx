@@ -72,16 +72,19 @@ const theme = createTheme({
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
     const [spreadToDelete, setSpreadToDelete] = useState(null);
-    const [spreadTitle, setSpreadTitle] = useState('Rate'); // Default value is 'Rate'
+    const [spreadTitle, setSpreadTitle] = useState('Rate'); 
+    const [showAlert, setShowAlert] = useState(false);
 
 
     const handleSubmit = (e) => {
       e.preventDefault();
-      if(spreadValue != '0'){
+      if (spreadValue === '0') {
+        setShowAlert(true);
+      } else if (spreadValue !== '') {
         onAddSpread(spreadValue, spreadTitle);
       }
       setSpreadValue('');
-      setSpreadTitle('Rate'); // Reset to default after submission
+      setSpreadTitle('Rate');
     };
 
     const handleChangePage = (event, newPage) => {
@@ -111,6 +114,13 @@ const theme = createTheme({
       setSpreadToDelete(null);
     };
     
+
+    const handleCloseAlert = (event, reason) => {
+      if (reason === 'clickaway') {
+        return;
+      }
+      setShowAlert(false);
+    };
 
 
 
@@ -239,7 +249,11 @@ const theme = createTheme({
             </Button>
           </DialogActions>
         </Dialog>
-
+        <Snackbar open={showAlert} autoHideDuration={3000} onClose={handleCloseAlert} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={handleCloseAlert} severity="error" sx={{ width: '100%' }}>
+          Cannot add a spread value of 0.
+        </Alert>
+      </Snackbar>
       </Paper>
     );
   };
@@ -253,6 +267,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
     { id: 'sino', label: '#', width: '5%' },
     { id: 'name', label: 'Name', width: '20%' },
     { id: 'phoneNo', label: 'Phone No', width: '15%' },
+    { id: 'spreadTitle', label: 'Spread Title', width: '15%' },
     { id: 'spread', label: 'Spread', width: '10%' },
     { id: 'location', label: 'Location', width: '15%' },
     { id: 'email', label: 'Email', width: '15%' },
@@ -317,6 +332,7 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
               <TableCell>{page * rowsPerPage + index + 1}</TableCell>
               <TableCell>{user.userName}</TableCell>
               <TableCell>{user.contact}</TableCell>
+              <TableCell>{user.spreadTitle}</TableCell>
               <TableCell>{user.spread}</TableCell>
               <TableCell>{user.location}</TableCell>
               <TableCell>{user.email}</TableCell>
