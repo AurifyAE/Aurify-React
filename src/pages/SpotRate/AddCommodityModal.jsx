@@ -193,9 +193,9 @@ useEffect(() => {
 
     let updatedValue = value;
     if (['purity', 'unit'].includes(name)) {
-      updatedValue = value === '' ? '' : parseFloat(value) || 0;
+      updatedValue = value === '' ? '' : value;
     } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
-      updatedValue = value === '' ? '' : parseFloat(value) || 0;
+      updatedValue = value === '' ? '' : value;
     }
 
     setFormData(prevState => ({
