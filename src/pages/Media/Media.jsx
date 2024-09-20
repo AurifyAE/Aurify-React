@@ -1,20 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axiosInstance from '../../axios/axiosInstance';
 import { 
-  AppBar, 
-  Toolbar, 
   Typography, 
   Button, 
   Card, 
   CardContent, 
   TextField, 
-  IconButton,
   Box,
-  Container
+  Container,
+  CircularProgress,
+  Grid
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/system';
-import '@fontsource/open-sans'; // Import Open Sans font
+import '@fontsource/open-sans';
 
 const GradientButton = styled(Button)({
   background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
@@ -44,44 +43,97 @@ const UploadButton = styled(Button)({
 });
 
 const Media = () => {
-  const [mediaTitle, setMediaTitle] = useState('');
+  const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [userID, setUserID] = useState(null);
+  const [error, setError] = useState(null);
+  const [existingImage, setExistingImage] = useState(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const userName = localStorage.getItem('userName');
+      
+      if (!userName) {
+        setError('User not logged in');
+        return;
+      }
+  
+      try {
+        const response = await axiosInstance.get(`/data/${userName}`);
+        setUserID(response.data.data._id);
+        console.log(response.data.data._id);
+
+        const mediaResponse = await axiosInstance.get(`/backgrounds/${response.data.data._id}`);
+        console.log(mediaResponse);
+        if (mediaResponse.data.data && mediaResponse.data.data.filename) {
+          setExistingImage(`${mediaResponse.data.data.url}`);
+        }
+      } catch (err) {
+        setError('Failed to fetch user data: ' + err.message);
+      }
+    };
+  
+    fetchUserData();
+  }, []);
+
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.type.startsWith('image/')) {
+      setFile(selectedFile);
+      setExistingImage(URL.createObjectURL(selectedFile));
+    } else {
+      setUploadStatus('Please select a valid image file.');
+      event.target.value = null;
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file && !existingImage) {
+      setUploadStatus('Please select a file.');
+      return;
+    }
+
+    if (!userID) {
+      setUploadStatus('User ID not available. Please try again.');
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    if (file) {
+      formData.append('image', file);
+    }
+
+    try {
+      const response = await axiosInstance.post(`/upload/${userID}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setUploadStatus(`File uploaded successfully!`);
+      // setExistingImage(`${response.data.data.filename}`);
+      setFile(null);
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadStatus(`Upload failed: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <Box className="bg-gray-100" sx={{ flexGrow: 1, fontFamily: 'Open Sans, sans-serif' }}>
-      <AppBar position="static" color="default" elevation={0}>
-        <Toolbar className="ml-auto" >
-          <Button color="inherit" sx={{ fontFamily: 'Open Sans, sans-serif' }}>Cancel</Button>
-          <GradientButton variant="contained" sx={{ ml: 2 }}>
-            Post
-          </GradientButton>
-        </Toolbar>
-      </AppBar>
-
       <Container maxWidth="sm" sx={{ mt: 4 }}>
         <GradientTypography variant="h4" gutterBottom align="center">
-          What is your new Media?
+          {existingImage ? 'Update Your Background' : 'Add New Background'}
         </GradientTypography>
         <Typography variant="body1" color="text.secondary" gutterBottom align="center" sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-          Upload your Media.
+          {existingImage ? 'Update your existing background or upload a new one.' : 'Upload your Background.'}
         </Typography>
 
         <Card sx={{ mt: 3 }}>
           <CardContent>
-            <TextField
-              fullWidth
-              label="Media Title"
-              variant="outlined"
-              placeholder="Write the title of this media"
-              value={mediaTitle}
-              onChange={(e) => setMediaTitle(e.target.value)}
-              sx={{ mb: 3, fontFamily: 'Open Sans, sans-serif' }}
-              InputLabelProps={{
-                style: { fontFamily: 'Open Sans, sans-serif' },
-              }}
-              InputProps={{
-                style: { fontFamily: 'Open Sans, sans-serif' },
-              }}
-            />
 
             <Box 
               sx={{ 
@@ -96,27 +148,63 @@ const Media = () => {
                 fontFamily: 'Open Sans, sans-serif'
               }}
             >
-              <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+              {existingImage ? (
+                <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
+                    Current Image
+                  </Typography>
+                  <img src={existingImage} alt="Current media" style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '16px' }} />
+                </Box>
+              ) : (
+                <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+              )}
               <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-                Upload Media
+                {existingImage ? 'Update Background' : 'Upload Background'}
               </Typography>
               <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-                Videos must be less than 30 MB and photos must be less than 2 MB in size.
+                Images must be less than 2 MB in size.
               </Typography>
-              <UploadButton
-                variant="contained"
-                component="label"
-                sx={{ mt: 2 }}
-              >
-                Upload
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*,video/*"
-                  multiple
-                />
-              </UploadButton>
+              <Grid container spacing={2} justifyContent="center" alignItems="center" sx={{ mt: 2 }}>
+                <Grid item>
+                  <UploadButton
+                    variant="contained"
+                    component="label"
+                  >
+                    {existingImage ? 'Change' : 'Select File'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </UploadButton>
+                </Grid>
+                <Grid item>
+                  <GradientButton 
+                    variant="contained" 
+                    onClick={handleUpload} 
+                    disabled={uploading || (!file && !existingImage)}
+                  >
+                    {uploading ? <CircularProgress size={24} color="inherit" /> : 'Post'}
+                  </GradientButton>
+                </Grid>
+              </Grid>
+              {file && (
+                <Typography variant="body2" sx={{ mt: 2, fontFamily: 'Open Sans, sans-serif' }}>
+                  Selected file: {file.name}
+                </Typography>
+              )}
             </Box>
+            {uploadStatus && (
+              <Typography variant="body2" color={uploadStatus.includes('failed') ? 'error' : 'success'} sx={{ mt: 2, textAlign: 'center' }}>
+                {uploadStatus}
+              </Typography>
+            )}
+            {error && (
+              <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: 'center' }}>
+                {error}
+              </Typography>
+            )}
           </CardContent>
         </Card>
       </Container>
