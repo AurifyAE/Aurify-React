@@ -121,7 +121,7 @@ const Navbar = () => {
         updatedNotifications.splice(index, 1);
         setNotifications(updatedNotifications);
       } else {
-        console.log('Failed to delete notification:', response.data.message);
+        console.log('Failed to delete notification:');
       }
     } catch (error) {
       console.error('Error deleting notification:', error);
