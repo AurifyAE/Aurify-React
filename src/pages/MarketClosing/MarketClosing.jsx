@@ -46,9 +46,11 @@ const BannerCreator = () => {
           symbol.toUpperCase()
         );
         setSymbols(uppercaseSymbols);
-        
+
         // Fetch the background
-        const backgroundResponse = await axiosInstance.get(`/backgrounds/${response.data.data._id}`);
+        const backgroundResponse = await axiosInstance.get(
+          `/backgrounds/${response.data.data._id}`
+        );
         console.log(backgroundResponse);
         if (backgroundResponse.data.data) {
           console.log(backgroundResponse.data.data.url);
@@ -183,7 +185,6 @@ const BannerCreator = () => {
     }
   }, [marketData, getSpreadOrMarginFromDB, ratesLocked]);
 
- 
   const handleExport = () => {
     if (bannerRef.current) {
       // Ensure we're using a background for the export
@@ -192,10 +193,10 @@ const BannerCreator = () => {
         toast.error("No background available. Please select a background.");
         return;
       }
-  
+
       // Set the background image explicitly
       bannerRef.current.style.backgroundImage = `url(${backgroundToUse})`;
-      
+
       // Wait for the background image to load
       const img = new Image();
       img.onload = () => {
@@ -210,7 +211,7 @@ const BannerCreator = () => {
           link.href = image;
           link.download = "custom_banner.png";
           link.click();
-  
+
           setCreatedBanners((prev) => [
             ...prev,
             { img: image, title: companyName || "Untitled" },
@@ -221,7 +222,7 @@ const BannerCreator = () => {
       img.src = backgroundToUse;
     }
   };
-  
+
   const resetFields = () => {
     setAddress("");
     setMobileNumber("");
@@ -229,16 +230,15 @@ const BannerCreator = () => {
     setCompanyNameColor("#000000");
     setRatesLocked(false);
     setPreviewBackground(storedBackground);
-    
+
     // Reset the file input
-    const fileInput = document.getElementById('background');
+    const fileInput = document.getElementById("background");
     if (fileInput) {
-      fileInput.value = '';
+      fileInput.value = "";
     }
-  
+
     toast.success("Fields reset successfully!");
   };
-
 
   const silentResetFields = () => {
     setAddress("");
@@ -279,10 +279,10 @@ const BannerCreator = () => {
   };
 
   const formatAddress = (address) => {
-    return address.split('\n').map((line, index) => (
+    return address.split("\n").map((line, index) => (
       <React.Fragment key={index}>
         {line}
-        {index < address.split('\n').length - 1 && <br />}
+        {index < address.split("\n").length - 1 && <br />}
       </React.Fragment>
     ));
   };
@@ -398,10 +398,16 @@ const BannerCreator = () => {
             <div
               ref={bannerRef}
               className="w-full h-[550px] rounded-lg relative bg-cover bg-center overflow-hidden flex flex-col justify-between p-8"
-              style={{ backgroundImage: `url(${previewBackground || storedBackground})` }}
+              style={{
+                backgroundImage: `url(${
+                  previewBackground || storedBackground
+                })`,
+              }}
             >
               <div className="text-center" style={{ color: textColor }}>
-                <div className="text-4xl font-bold mb-4">{format(new Date(), "dd MMM yyyy").toUpperCase()}</div>
+                <div className="text-4xl font-bold mb-4">
+                  {format(new Date(), "dd MMM yyyy").toUpperCase()}
+                </div>
                 <div className="text-2xl mb-4">CLOSING RATE</div>
                 <div className="flex justify-center space-x-16 mb-2">
                   <div className="text-center">
@@ -418,7 +424,7 @@ const BannerCreator = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="text-center" style={{ color: textColor }}>
                 <div className="flex flex-col items-center">
                   {logo && (
@@ -428,7 +434,12 @@ const BannerCreator = () => {
                       className="w-20 h-20 object-contain mb-2"
                     />
                   )}
-                  <div className="text-3xl font-bold mb-2" style={{ color: companyNameColor }}>{companyName}</div>
+                  <div
+                    className="text-3xl font-bold mb-2"
+                    style={{ color: companyNameColor }}
+                  >
+                    {companyName}
+                  </div>
                   <div className="text-lg mb-1">{formatAddress(address)}</div>
                   <div className="text-lg">{mobileNumber}</div>
                 </div>

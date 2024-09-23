@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Spinner } from "@nextui-org/react";
+import React, { useEffect, useState } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import axiosInstance from "../axios/axiosInstance";
 import Login from "../components/login/Login";
 import BankDetailsLayout from "../layout/BankDetailsLayout";
@@ -15,6 +15,7 @@ import NewsLayout from "../layout/NewsLayout";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
+import SubscriptionLayout from "../layout/SubscriptionLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UserChatLayout from "../pages/Chat/UserChat";
 import NotFound from "../pages/Error/NotFound";
@@ -115,10 +116,7 @@ function Routers() {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<Login onLoginSuccess={handleLoginSuccess} />}
-      />
+      <Route path="/" element={<Login onLoginSuccess={handleLoginSuccess} />} />
       <Route element={<Protect />}>
         <Route path="dashboard" element={<DashboardLayout />} />
         <Route path="spot-rate" element={<SpotRateLayout />} />
@@ -169,6 +167,15 @@ function Routers() {
           path="/feature/chatbot"
           element={
             <ProtectedRoute element={ChatBotLayout} path="/feature/chatbot" />
+          }
+        />
+        <Route
+          path="/feature/subscription"
+          element={
+            <ProtectedRoute
+              element={SubscriptionLayout}
+              path="/feature/subscription"
+            />
           }
         />
       </Route>

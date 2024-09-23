@@ -341,7 +341,9 @@ const Sidebar = () => {
     "Shop",
     "Users",
     "Market Closing",
+    "Subscription",
   ];
+
 
   const [features, setFeatures] = useState([]);
   const [additionalFeatures, setAdditionalFeatures] = useState([]);
