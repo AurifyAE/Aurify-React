@@ -51,9 +51,7 @@ const BannerCreator = () => {
         const backgroundResponse = await axiosInstance.get(
           `/backgrounds/${response.data.data._id}`
         );
-        console.log(backgroundResponse);
         if (backgroundResponse.data.data) {
-          console.log(backgroundResponse.data.data.url);
           setStoredBackground(backgroundResponse.data.data.url);
           setPreviewBackground(backgroundResponse.data.data.url);
         }

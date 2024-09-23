@@ -62,10 +62,8 @@ const Media = () => {
       try {
         const response = await axiosInstance.get(`/data/${userName}`);
         setUserID(response.data.data._id);
-        console.log(response.data.data._id);
 
         const mediaResponse = await axiosInstance.get(`/backgrounds/${response.data.data._id}`);
-        console.log(mediaResponse);
         if (mediaResponse.data.data && mediaResponse.data.data.filename) {
           setExistingImage(`${mediaResponse.data.data.url}`);
         }
