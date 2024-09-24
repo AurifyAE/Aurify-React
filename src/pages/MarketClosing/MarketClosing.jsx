@@ -4,7 +4,6 @@ import html2canvas from "html2canvas";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { FaDownload, FaRedo } from "react-icons/fa";
-import io from "socket.io-client";
 import axiosInstance from "../../axios/axiosInstance";
 
 const BannerCreator = () => {
@@ -17,17 +16,15 @@ const BannerCreator = () => {
   const [currentDate, setCurrentDate] = useState("");
   const [createdBanners, setCreatedBanners] = useState([]);
   const bannerRef = useRef(null);
-  const [marketData, setMarketData] = useState({});
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [symbols, setSymbols] = useState([]);
-  const [serverURL, setServerURL] = useState("");
   const [adminId, setAdminId] = useState("");
   const [loading, setLoading] = useState(true);
   const [textColor, setTextColor] = useState("#000000");
   const [companyNameColor, setCompanyNameColor] = useState("#000000");
-  const [bidRate, setBidRate] = useState("Loading...");
-  const [askRate, setAskRate] = useState("Loading...");
-  const [ratesLocked, setRatesLocked] = useState(false);
+  const [bidRate, setBidRate] = useState("");
+  const [askRate, setAskRate] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     const fetchAdminId = async () => {
@@ -65,19 +62,6 @@ const BannerCreator = () => {
   }, []);
 
   useEffect(() => {
-    const fetchServerURL = async () => {
-      try {
-        const response = await axiosInstance.get("/server-url");
-        setServerURL(response.data.selectedServerURL);
-      } catch (error) {
-        console.error("Error fetching server URL:", error);
-      }
-    };
-
-    fetchServerURL();
-  }, []);
-
-  useEffect(() => {
     const fetchSpreadMarginData = async () => {
       try {
         const response = await axiosInstance.get(`/spotrates/${adminId}`);
@@ -95,56 +79,10 @@ const BannerCreator = () => {
   }, [adminId]);
 
   useEffect(() => {
-    if (!serverURL || symbols.length === 0) return;
-    const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
-
-    if (!socketSecret) {
-      console.error("Socket secret is not defined in environment variables");
-      return;
-    }
-    const socket = io(serverURL, {
-      query: { secret: socketSecret },
-      transports: ["websocket"],
-    });
-
-    socket.on("connect", () => {
-      socket.emit("request-data", symbols);
-    });
-
-    socket.on("market-data", (data) => {
-      if (data && data.symbol) {
-        setMarketData((prevData) => ({
-          ...prevData,
-          [data.symbol]: {
-            ...data,
-            bidChanged:
-              prevData[data.symbol] && data.bid !== prevData[data.symbol].bid
-                ? data.bid > prevData[data.symbol].bid
-                  ? "up"
-                  : "down"
-                : null,
-          },
-        }));
-      }
-    });
-
-    socket.on("error", (error) => {
-      console.error("Socket error:", error);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [serverURL, symbols]);
-
-  useEffect(() => {
-    if (
-      Object.keys(marketData).length > 0 &&
-      Object.keys(spreadMarginData).length > 0
-    ) {
+    if (Object.keys(spreadMarginData).length > 0) {
       setLoading(false);
     }
-  }, [marketData, spreadMarginData]);
+  }, [spreadMarginData]);
 
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
@@ -166,58 +104,71 @@ const BannerCreator = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  useEffect(() => {
-    if (!ratesLocked && marketData["Gold"]?.bid) {
-      const calculatedBidRate = (
-        parseFloat(marketData["Gold"].bid) +
-        parseFloat(getSpreadOrMarginFromDB("Gold", "bid"))
-      ).toFixed(2);
-      setBidRate(calculatedBidRate);
+  // Commented out bid and ask rate fetching
+  // useEffect(() => {
+  //   if (marketData["Gold"]?.bid) {
+  //     const calculatedBidRate = (
+  //       parseFloat(marketData["Gold"].bid) +
+  //       parseFloat(getSpreadOrMarginFromDB("Gold", "bid"))
+  //     ).toFixed(2);
+  //     setBidRate(calculatedBidRate);
 
-      const calculatedAskRate = (
-        parseFloat(calculatedBidRate) +
-        parseFloat(getSpreadOrMarginFromDB("Gold", "ask")) +
-        parseFloat(0.5)
-      ).toFixed(2);
-      setAskRate(calculatedAskRate);
-    }
-  }, [marketData, getSpreadOrMarginFromDB, ratesLocked]);
+  //     const calculatedAskRate = (
+  //       parseFloat(calculatedBidRate) +
+  //       parseFloat(getSpreadOrMarginFromDB("Gold", "ask")) +
+  //       parseFloat(0.5)
+  //     ).toFixed(2);
+  //     setAskRate(calculatedAskRate);
+  //   }
+  // }, [marketData, getSpreadOrMarginFromDB]);
+
+  const validateForm = () => {
+    let newErrors = {};
+    if (!bidRate.trim()) newErrors.bidRate = "Bid rate is required";
+    if (!askRate.trim()) newErrors.askRate = "Ask rate is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleExport = () => {
-    if (bannerRef.current) {
-      // Ensure we're using a background for the export
-      const backgroundToUse = previewBackground || storedBackground;
-      if (!backgroundToUse) {
-        toast.error("No background available. Please select a background.");
-        return;
+    if (validateForm()) {
+      if (bannerRef.current) {
+        // Ensure we're using a background for the export
+        const backgroundToUse = previewBackground || storedBackground;
+        if (!backgroundToUse) {
+          toast.error("No background available. Please select a background.");
+          return;
+        }
+
+        // Set the background image explicitly
+        bannerRef.current.style.backgroundImage = `url(${backgroundToUse})`;
+
+        // Wait for the background image to load
+        const img = new Image();
+        img.onload = () => {
+          html2canvas(bannerRef.current, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: null, // Ensure transparent background
+          }).then((canvas) => {
+            const image = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = image;
+            link.download = "custom_banner.png";
+            link.click();
+
+            setCreatedBanners((prev) => [
+              ...prev,
+              { img: image, title: companyName || "Untitled" },
+            ]);
+            toast.success("Banner created and downloaded successfully!");
+          });
+        };
+        img.src = backgroundToUse;
       }
-
-      // Set the background image explicitly
-      bannerRef.current.style.backgroundImage = `url(${backgroundToUse})`;
-
-      // Wait for the background image to load
-      const img = new Image();
-      img.onload = () => {
-        html2canvas(bannerRef.current, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: null, // Ensure transparent background
-        }).then((canvas) => {
-          const image = canvas.toDataURL("image/png");
-          const link = document.createElement("a");
-          link.href = image;
-          link.download = "custom_banner.png";
-          link.click();
-
-          setCreatedBanners((prev) => [
-            ...prev,
-            { img: image, title: companyName || "Untitled" },
-          ]);
-          toast.success("Banner created and downloaded successfully!");
-        });
-      };
-      img.src = backgroundToUse;
+    } else {
+      toast.error("Please fill in both bid and ask rates.");
     }
   };
 
@@ -226,8 +177,10 @@ const BannerCreator = () => {
     setMobileNumber("");
     setTextColor("#000000");
     setCompanyNameColor("#000000");
-    setRatesLocked(false);
+    setBidRate("");
+    setAskRate("");
     setPreviewBackground(storedBackground);
+    setErrors({});
 
     // Reset the file input
     const fileInput = document.getElementById("background");
@@ -236,14 +189,6 @@ const BannerCreator = () => {
     }
 
     toast.success("Fields reset successfully!");
-  };
-
-  const silentResetFields = () => {
-    setAddress("");
-    setMobileNumber("");
-    setTextColor("#000000");
-    setCompanyNameColor("#000000");
-    setRatesLocked(false);
   };
 
   const handleBackgroundChange = (e) => {
@@ -259,21 +204,10 @@ const BannerCreator = () => {
 
   const handleBidRateChange = (e) => {
     setBidRate(e.target.value);
-    setRatesLocked(true);
   };
 
   const handleAskRateChange = (e) => {
     setAskRate(e.target.value);
-    setRatesLocked(true);
-  };
-
-  const toggleRatesLock = () => {
-    setRatesLocked(!ratesLocked);
-    if (!ratesLocked) {
-      toast.success("Rates locked. You can now edit them manually.");
-    } else {
-      toast.success("Rates unlocked. They will update automatically.");
-    }
   };
 
   const formatAddress = (address) => {
@@ -347,36 +281,37 @@ const BannerCreator = () => {
               className="w-full p-2 bg-gray-100 rounded"
             />
 
-            <div className="flex items-center space-x-2">
-              <label htmlFor="lockRates" className="text-gray-700">
-                Lock Rates:
-              </label>
-              <input
-                id="lockRates"
-                type="checkbox"
-                checked={ratesLocked}
-                onChange={toggleRatesLock}
-                className="form-checkbox h-5 w-5 text-blue-600"
-              />
-            </div>
-
             <div className="flex space-x-4">
-              <input
-                type="number"
-                value={bidRate}
-                onChange={handleBidRateChange}
-                placeholder="Bid Rate"
-                className="w-1/2 p-2 bg-gray-100 rounded"
-                disabled={!ratesLocked}
-              />
-              <input
-                type="number"
-                value={askRate}
-                onChange={handleAskRateChange}
-                placeholder="Ask Rate"
-                className="w-1/2 p-2 bg-gray-100 rounded"
-                disabled={!ratesLocked}
-              />
+              <div className="w-1/2">
+                <input
+                  type="number"
+                  value={bidRate}
+                  onChange={handleBidRateChange}
+                  placeholder="Bid Rate *"
+                  className={`w-full p-2 bg-gray-100 rounded ${
+                    errors.bidRate ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {errors.bidRate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.bidRate}</p>
+                )}
+              </div>
+              <div className="w-1/2">
+                <input
+                  type="number"
+                  value={askRate}
+                  onChange={handleAskRateChange}
+                  placeholder="Ask Rate *"
+                  className={`w-full p-2 bg-gray-100 rounded ${
+                    errors.askRate ? "border-red-500" : ""
+                  }`}
+                  required
+                />
+                {errors.askRate && (
+                  <p className="text-red-500 text-sm mt-1">{errors.askRate}</p>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-between">
