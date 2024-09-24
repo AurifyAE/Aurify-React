@@ -24,7 +24,8 @@ import {
   MonetizationOn as MonetizationOnIcon,
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  LocalOffer as LocalOfferIcon,
 } from '@mui/icons-material';
 import toast, { Toaster } from "react-hot-toast";
 import { NavLink, useNavigate } from "react-router-dom";
@@ -85,6 +86,7 @@ const FeatureDropdown = ({ features, isLoading }) => {
       case 'shop': return StorefrontIcon;
       case 'users': return GroupIcon;
       case 'market closing': return MonetizationOnIcon;
+      case 'premium/discount': return LocalOfferIcon;
       default: return PersonIcon;
     }
   };
@@ -341,7 +343,7 @@ const Sidebar = () => {
     "Shop",
     "Users",
     "Market Closing",
-    "Subscription",
+    "Premium/Discount",
   ];
 
 

@@ -72,7 +72,7 @@ const Subscription = () => {
     if (
       !subscriptionValue ||
       isNaN(subscriptionValue) ||
-      parseFloat(subscriptionValue) <= 0
+      parseFloat(subscriptionValue) === 0
     ) {
       setShowAlert(true);
       return;
@@ -130,7 +130,6 @@ const Subscription = () => {
                   fullWidth
                   variant="outlined"
                   size="small"
-                  inputProps={{ step: "0.01" }}
                 />
               </Grid>
               <Grid item xs={4}>
@@ -198,7 +197,7 @@ const Subscription = () => {
             severity="error"
             sx={{ width: "100%" }}
           >
-            Please enter a valid number for the subscription value.
+            Please enter a non-zero number for the subscription value.
           </Alert>
         </Snackbar>
       </Container>
