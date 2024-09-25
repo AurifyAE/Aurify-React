@@ -170,11 +170,11 @@ function Routers() {
           }
         />
         <Route
-          path="/feature/Premium/Discount"
+          path="/feature/premium-discount"
           element={
             <ProtectedRoute
               element={SubscriptionLayout}
-              path="/feature/Premium/Discount"
+              path="/feature/premium-discount"
             />
           }
         />

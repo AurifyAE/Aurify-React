@@ -86,7 +86,7 @@ const FeatureDropdown = ({ features, isLoading }) => {
       case 'shop': return StorefrontIcon;
       case 'users': return GroupIcon;
       case 'market closing': return MonetizationOnIcon;
-      case 'premium/discount': return LocalOfferIcon;
+      case 'premium discount': return LocalOfferIcon;
       default: return PersonIcon;
     }
   };
@@ -343,7 +343,7 @@ const Sidebar = () => {
     "Shop",
     "Users",
     "Market Closing",
-    "Premium/Discount",
+    "Premium Discount",
   ];
 
 
