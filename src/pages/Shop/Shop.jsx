@@ -1,4 +1,3 @@
-import axiosInstance from "../../axios/axiosInstance";
 import {
   Button,
   Image,
@@ -14,9 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from "@nextui-org/react";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { MdAddShoppingCart } from "react-icons/md";
+import axiosInstance from "../../axios/axiosInstance";
 
 const Shop = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +39,9 @@ const Shop = () => {
       // Check if the response has data and shops array exists
       if (shopResponse.data && Array.isArray(shopResponse.data.shops)) {
         sortedItems = shopResponse.data.shops.sort((a, b) => {
-          return new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id);
+          return (
+            new Date(a.createdAt || a._id) - new Date(b.createdAt || b._id)
+          );
         });
       }
 
@@ -92,11 +94,16 @@ const Shop = () => {
           "Content-Type": "multipart/form-data",
         },
       });
+
       toast.success("New item added successfully!");
       await fetchItems(); // Refetch all items to ensure correct order
       setIsModalOpen(false);
     } catch (error) {
-      console.error("Error adding shop item:", error);
+      console.error(
+        "Error adding shop item:",
+        error.response ? error.response.data : error
+      );
+      console.error("Error details:", error);
       toast.error("Failed to add new item. Please try again.");
     }
   };
@@ -115,7 +122,9 @@ const Shop = () => {
     if (!itemToDelete) return;
 
     try {
-      await axiosInstance.delete(`/shop-items/${itemToDelete}?userName=${userName}`);
+      await axiosInstance.delete(
+        `/shop-items/${itemToDelete}?userName=${userName}`
+      );
       setItems((prevItems) =>
         prevItems.filter((item) => item._id !== itemToDelete)
       );
@@ -140,8 +149,8 @@ const Shop = () => {
       const formDataToSend = new FormData();
       formDataToSend.append("name", updatedItem.name);
       formDataToSend.append("type", updatedItem.type);
-      formDataToSend.append("weight", updatedItem.weight);
-      formDataToSend.append("rate", updatedItem.rate);
+      formDataToSend.append("purity", updatedItem.purity);
+      formDataToSend.append("description", updatedItem.description);
       if (updatedItem.image instanceof File) {
         formDataToSend.append("image", updatedItem.image);
       }
@@ -168,7 +177,6 @@ const Shop = () => {
     }
   };
 
-
   const filteredItems =
     filter === "all" ? items : items.filter((item) => item.type === filter);
 
@@ -179,10 +187,9 @@ const Shop = () => {
 
   const getImageUrl = useCallback((imagePath) => {
     const apiUrl = process.env.REACT_APP_API_URL;
-    const trimmedApiUrl = apiUrl.substring(0, apiUrl.lastIndexOf('/'));
+    const trimmedApiUrl = apiUrl.substring(0, apiUrl.lastIndexOf("/"));
     return `${trimmedApiUrl}/${imagePath}`;
   }, []);
-  
 
   return (
     <div className="container mx-auto px-4">
@@ -223,10 +230,10 @@ const Shop = () => {
               TYPE
             </TableColumn>
             <TableColumn className="bg-gray-200 font-bold text-center">
-              WEIGHT
+              PURITY
             </TableColumn>
             <TableColumn className="bg-gray-200 font-bold text-center">
-              RATE
+              DESCRIPTION
             </TableColumn>
             <TableColumn className="bg-gray-200 font-bold text-center">
               ACTIONS
@@ -247,8 +254,10 @@ const Shop = () => {
                 </TableCell>
                 <TableCell className="text-center">{item.name}</TableCell>
                 <TableCell className="text-center">{item.type}</TableCell>
-                <TableCell className="text-center">{item.weight}</TableCell>
-                <TableCell className="text-center">{item.rate}</TableCell>
+                <TableCell className="text-center">{item.purity}</TableCell>
+                <TableCell className="text-center">
+                  {item.description}
+                </TableCell>
                 <TableCell className="text-center">
                   <Button
                     auto
@@ -369,23 +378,23 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
     const errors = {};
     const name = formData.get("name");
     const type = formData.get("type");
-    const weight = parseFloat(formData.get("weight"));
-    const rate = parseFloat(formData.get("rate"));
+    const purity = parseFloat(formData.get("purity"));
+    const description = formData.get("description");
 
     if (!editingItem) {
       // Validate all fields for new items
       if (!name) errors.name = "Name is required";
       if (!type) errors.type = "Type is required";
-      if (isNaN(weight) || weight <= 0) errors.weight = "Weight is required";
-      if (isNaN(rate) || rate <= 0) errors.rate = "Rate is required";
+      if (isNaN(purity) || purity <= 0) errors.purity = "purity is required";
+      if (!description) errors.description = "Description is required";
     } else {
       // Validate only changed fields for editing
       if (name !== editingItem.name && !name) errors.name = "Name is required";
       if (type !== editingItem.type && !type) errors.type = "Type is required";
-      if (weight !== editingItem.weight && (isNaN(weight) || weight <= 0))
-        errors.weight = "Weight must be a positive number";
-      if (rate !== editingItem.rate && (isNaN(rate) || rate <= 0))
-        errors.rate = "Rate must be a positive number";
+      if (purity !== editingItem.purity && (isNaN(purity) || purity <= 0))
+        errors.purity = "purity must be a positive number";
+      if (description !== editingItem.description && !description)
+        errors.description = "description must be a positive number";
     }
 
     return errors;
@@ -417,8 +426,8 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
     const updatedItem = {
       name: formData.get("name"),
       type: formData.get("type"),
-      weight: parseFloat(formData.get("weight")),
-      rate: parseFloat(formData.get("rate")),
+      purity: parseFloat(formData.get("purity")),
+      description: formData.get("description"),
     };
 
     if (imageFile instanceof File && imageFile.size > 0) {
@@ -432,7 +441,14 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} scrollBehavior="inside" size="lg" isDismissable={false} isKeyboardDismissDisabled={true}>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      scrollBehavior="inside"
+      size="lg"
+      isDismissable={false}
+      isKeyboardDismissDisabled={true}
+    >
       <ModalContent className="hide-scrollbar">
         {(onClose) => (
           <>
@@ -472,30 +488,32 @@ const AddItemModal = ({ onClose, onAddItem, editingItem }) => {
                   )}
                 </div>
                 <div className="mb-4">
-                  <label className="block mb-2">Weight:</label>
+                  <label className="block mb-2">purity:</label>
                   <input
                     type="number"
                     step="0.01"
-                    name="weight"
-                    defaultValue={editingItem?.weight}
-                    placeholder="Weight"
+                    name="purity"
+                    defaultValue={editingItem?.purity}
+                    placeholder="purity"
                     className="w-full border rounded px-2 py-1"
                   />
-                  {formErrors.weight && (
-                    <p className="text-red-500 mt-1">{formErrors.weight}</p>
+                  {formErrors.purity && (
+                    <p className="text-red-500 mt-1">{formErrors.purity}</p>
                   )}
                 </div>
                 <div className="mb-4">
-                  <label className="block mb-2">Rate:</label>
+                  <label className="block mb-2">Description:</label>
                   <input
-                    type="number"
-                    name="rate"
-                    defaultValue={editingItem?.rate}
-                    placeholder="Rate"
+                    type="text"
+                    name="description"
+                    defaultValue={editingItem?.description}
+                    placeholder="description"
                     className="w-full border rounded px-2 py-1"
                   />
-                  {formErrors.rate && (
-                    <p className="text-red-500 mt-1">{formErrors.rate}</p>
+                  {formErrors.description && (
+                    <p className="text-red-500 mt-1">
+                      {formErrors.description}
+                    </p>
                   )}
                 </div>
                 <div className="mb-4">
