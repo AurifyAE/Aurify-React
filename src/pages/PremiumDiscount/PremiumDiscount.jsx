@@ -29,11 +29,12 @@ const theme = createTheme({
   typography: { fontFamily: "Open Sans, sans-serif" },
 });
 
-const Subscription = () => {
-  const [subscriptions, setSubscriptions] = useState([]);
-  const [subscriptionType, setSubscriptionType] = useState("Premium");
-  const [subscriptionValue, setSubscriptionValue] = useState("");
+const PremiumDiscount = () => {
+  const [PremiumDiscounts, setPremiumDiscounts] = useState([]);
+  const [PremiumDiscountType, setPremiumDiscountType] = useState("Premium");
+  const [PremiumDiscountValue, setPremiumDiscountValue] = useState("");
   const [showAlert, setShowAlert] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState("");
 
@@ -49,7 +50,7 @@ const Subscription = () => {
       try {
         const response = await axiosInstance.get(`/data/${userName}`);
         setUserId(response.data.data._id);
-        fetchSubscriptions(response.data.data._id);
+        fetchPremiumDiscounts(response.data.data._id);
       } catch (err) {
         setError('Failed to fetch user data: ' + err.message);
       }
@@ -58,36 +59,46 @@ const Subscription = () => {
     fetchUserData();
   }, []);
 
-  const fetchSubscriptions = async (userId) => {
+  const fetchPremiumDiscounts = async (userId) => {
     try {
-      const response = await axiosInstance.get(`/subscriptions/${userId}`);
-      setSubscriptions(response.data.subscriptions);
+      const response = await axiosInstance.get(`/premiumdiscounts/${userId}`);
+      setPremiumDiscounts(response.data.premiumDiscounts || []);
     } catch (error) {
-      setError("Error fetching subscriptions: " + error.message);
+      setError("Error fetching PremiumDiscounts: " + error.message);
     }
   };
 
-  const handleAddSubscription = async (e) => {
+  const handleAddPremiumDiscount = async (e) => {
     e.preventDefault();
     if (
-      !subscriptionValue ||
-      isNaN(subscriptionValue) ||
-      parseFloat(subscriptionValue) === 0
+      !PremiumDiscountValue ||
+      isNaN(PremiumDiscountValue) ||
+      parseFloat(PremiumDiscountValue) === 0
     ) {
+      setAlertMessage("Please enter a non-zero number.");
       setShowAlert(true);
       return;
     }
     const timestamp = new Date().toLocaleString();
     try {
-      const response = await axiosInstance.post(`/subscriptions/${userId}`, {
-        type: subscriptionType,
-        value: parseFloat(subscriptionValue),
+      const newPremiumDiscount = {
+        type: PremiumDiscountType,
+        value: parseFloat(PremiumDiscountValue),
         time: timestamp,
-      });
-      setSubscriptions(prevSubscriptions => [...prevSubscriptions, response.data.subscription]);
-      setSubscriptionValue("");
+      };
+      const response = await axiosInstance.post(`/premiumdiscounts/${userId}`, newPremiumDiscount);
+      if (response.data && response.data.premiumDiscounts) {
+        setPremiumDiscounts(prevPremiumDiscounts => [...prevPremiumDiscounts, response.data.premiumDiscounts]);
+        setPremiumDiscountValue("");
+        setAlertMessage("Premium/Discount added successfully!");
+        setShowAlert(true);
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error) {
-      console.error("Error adding subscription:", error);
+      console.error("Error adding PremiumDiscount:", error);
+      setAlertMessage("Error adding Premium/Discount: " + error.message);
+      setShowAlert(true);
     }
   };
 
@@ -96,23 +107,30 @@ const Subscription = () => {
     setShowAlert(false);
   };
 
-  const latestFilteredSubscription = subscriptions
-    .filter(sub => sub.type === subscriptionType)
-    .sort((a, b) => new Date(b.time) - new Date(a.time))[0];
+  const latestFilteredPremiumDiscount = PremiumDiscounts.length > 0
+    ? PremiumDiscounts
+        .filter(sub => sub.type === PremiumDiscountType)
+        .sort((a, b) => new Date(b.time) - new Date(a.time))[0]
+    : null;
 
   return (
     <ThemeProvider theme={theme}>
       <Container>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
         <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
           <Typography variant="h6" gutterBottom>
-            Manage Subscriptions
+            Manage Premium/Discount
           </Typography>
-          <form onSubmit={handleAddSubscription}>
+          <form onSubmit={handleAddPremiumDiscount}>
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={4}>
                 <Select
-                  value={subscriptionType}
-                  onChange={(e) => setSubscriptionType(e.target.value)}
+                  value={PremiumDiscountType}
+                  onChange={(e) => setPremiumDiscountType(e.target.value)}
                   fullWidth
                   variant="outlined"
                   size="small"
@@ -125,8 +143,8 @@ const Subscription = () => {
                 <TextField
                   label="Value"
                   type="number"
-                  value={subscriptionValue}
-                  onChange={(e) => setSubscriptionValue(e.target.value)}
+                  value={PremiumDiscountValue}
+                  onChange={(e) => setPremiumDiscountValue(e.target.value)}
                   fullWidth
                   variant="outlined"
                   size="small"
@@ -155,9 +173,9 @@ const Subscription = () => {
             </Grid>
           </form>
 
-          {!latestFilteredSubscription ? (
+          {!latestFilteredPremiumDiscount ? (
             <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-              No {subscriptionType.toLowerCase()} subscriptions added yet. Please add a subscription.
+              No {PremiumDiscountType.toLowerCase()} added yet. Please add.
             </Typography>
           ) : (
             <TableContainer sx={{ maxHeight: 440, mt: 2 }}>
@@ -177,9 +195,9 @@ const Subscription = () => {
                 </TableHead>
                 <TableBody>
                   <TableRow hover>
-                    <TableCell align="center">{latestFilteredSubscription.type}</TableCell>
-                    <TableCell align="center">{latestFilteredSubscription.value}</TableCell>
-                    <TableCell align="center">{latestFilteredSubscription.time}</TableCell>
+                    <TableCell align="center">{latestFilteredPremiumDiscount.type}</TableCell>
+                    <TableCell align="center">{latestFilteredPremiumDiscount.value}</TableCell>
+                    <TableCell align="center">{latestFilteredPremiumDiscount.time}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -194,10 +212,10 @@ const Subscription = () => {
         >
           <Alert
             onClose={handleCloseAlert}
-            severity="error"
+            severity={alertMessage.includes("Error") ? "error" : "success"}
             sx={{ width: "100%" }}
           >
-            Please enter a non-zero number for the subscription value.
+            {alertMessage}
           </Alert>
         </Snackbar>
       </Container>
@@ -205,4 +223,4 @@ const Subscription = () => {
   );
 };
 
-export default Subscription;
+export default PremiumDiscount;

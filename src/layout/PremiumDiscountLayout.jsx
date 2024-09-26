@@ -2,9 +2,9 @@ import React from "react";
 import Footer from "../components/footer/Footer";
 import Navbar from "../components/navbar/Navbar";
 import Sidebar from "../components/sidebar/Sidebar";
-import Subscription from "../pages/Subscription/Subscription";
+import PremiumDiscount from "../pages/PremiumDiscount/PremiumDiscount";
 
-const SubscriptionLayout = () => {
+const PremiumDiscountLayout = () => {
   return (
     <div className="flex min-h-screen">
       <div className="fixed h-full">
@@ -13,7 +13,7 @@ const SubscriptionLayout = () => {
       <div className="flex-1 flex flex-col ml-64">
         <Navbar />
         <div className="flex-grow">
-          <Subscription />
+          <PremiumDiscount />
         </div>
         <Footer />
       </div>
@@ -21,4 +21,4 @@ const SubscriptionLayout = () => {
   );
 };
 
-export default SubscriptionLayout;
+export default PremiumDiscountLayout;

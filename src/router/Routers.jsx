@@ -15,7 +15,7 @@ import NewsLayout from "../layout/NewsLayout";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
-import SubscriptionLayout from "../layout/SubscriptionLayout";
+import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UserChatLayout from "../pages/Chat/UserChat";
 import NotFound from "../pages/Error/NotFound";
@@ -173,7 +173,7 @@ function Routers() {
           path="/feature/premium-discount"
           element={
             <ProtectedRoute
-              element={SubscriptionLayout}
+              element={PremiumDiscountLayout}
               path="/feature/premium-discount"
             />
           }
