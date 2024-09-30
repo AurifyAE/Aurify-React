@@ -1,6 +1,22 @@
-import React, { useState, useEffect } from 'react';
 import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+} from "@mui/icons-material";
+import {
+  Alert,
   Box,
+  Button,
+  Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Grid,
+  IconButton,
+  Paper,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -8,49 +24,37 @@ import {
   TableHead,
   TablePagination,
   TableRow,
-  Button,
-  TextField,
-  IconButton,
   Typography,
-  Container,
-  Grid,
-  Snackbar,
-  Alert,
-  Paper,  
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-} from '@mui/material';
-import { Add as AddIcon, Search as SearchIcon, Lock as LockIcon, LockOpen as UnlockIcon, Delete as DeleteIcon } from '@mui/icons-material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import axiosInstance from '../../axios/axiosInstance';
-
-
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import React, { useEffect, useState } from "react";
+import axiosInstance from "../../axios/axiosInstance";
+import CategoryModal from "./CategoryModal";
+import DeleteCategoryModal from "./DeleteCategoryModal";
+import UserModal from "./UserModal";
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#8a3dd1',
+      main: "#8a3dd1",
     },
     secondary: {
-      main: '#ff339a',
+      main: "#ff339a",
     },
     background: {
-      default: '#f3f4f6',
+      default: "#f3f4f6",
     },
   },
   typography: {
-    fontFamily: 'Open Sans, sans-serif',
+    fontFamily: "Open Sans, sans-serif",
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
-          color: 'white',
-          '&:hover': {
-            background: 'linear-gradient(310deg, #7a2dc1 0%, #ef238a 100%)',
+          background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+          color: "white",
+          "&:hover": {
+            background: "linear-gradient(310deg, #7a2dc1 0%, #ef238a 100%)",
           },
         },
       },
@@ -58,222 +62,26 @@ const theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: '16px',
+          borderRadius: "16px",
         },
       },
     },
   },
 });
 
-  //Edit functionalities are commanded for Future use
-  const CustomSpreadSection = ({ onAddSpread, spreads, onDeleteSpread }) => {
-    const [spreadValue, setSpreadValue] = useState('');
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(5);
-    const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
-    const [spreadToDelete, setSpreadToDelete] = useState(null);
-    const [spreadTitle, setSpreadTitle] = useState('Rate'); 
-    const [showAlert, setShowAlert] = useState(false);
-
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (spreadValue === '0') {
-        setShowAlert(true);
-      } else if (spreadValue !== '') {
-        onAddSpread(spreadValue, spreadTitle);
-      }
-      setSpreadValue('');
-      setSpreadTitle('Rate');
-    };
-
-    const handleChangePage = (event, newPage) => {
-      setPage(newPage);
-    };
-
-    const handleChangeRowsPerPage = (event) => {
-      setRowsPerPage(+event.target.value);
-      setPage(0);
-    };
-
-    const handleDeleteClick = (index) => {
-      setSpreadToDelete(index);
-      setOpenConfirmDialog(true);
-    };
-  
-    const handleConfirmDelete = () => {
-      if (spreadToDelete !== null && typeof onDeleteSpread === 'function') {
-        onDeleteSpread(spreadToDelete);
-        setOpenConfirmDialog(false);
-        setSpreadToDelete(null);
-      }
-    }
-
-    const handleCancelDelete = () => {
-      setOpenConfirmDialog(false);
-      setSpreadToDelete(null);
-    };
-    
-
-    const handleCloseAlert = (event, reason) => {
-      if (reason === 'clickaway') {
-        return;
-      }
-      setShowAlert(false);
-    };
-
-
-
-    const columns = [
-      { id: 'sino', label: '#', },
-      { id: 'title', label: 'Title', },
-      { id: 'value', label: 'Spread', },
-      { id: 'actions', label: 'Actions', },
-    ];
-
-    return (
-      <Paper elevation={3} sx={{ p: 3, width: '100%' }}>
-        <Typography variant="h6" gutterBottom>
-          ADD SPREAD VALUE
-        </Typography>
-        <form onSubmit={handleSubmit}>
-        <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Grid item xs={4}>
-            <TextField
-              label="Title"
-              value={spreadTitle}
-              onChange={(e) => setSpreadTitle(e.target.value)}
-              required
-              fullWidth
-              variant="outlined"
-              size="small"
-            />
-          </Grid>
-          <Grid item xs={4}>
-          <TextField
-              label="Spread Value"
-              value={spreadValue}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSpreadValue(value);
-              }}
-              type="number"
-              required
-              fullWidth
-              variant="outlined"
-              size="small"
-            />
-          </Grid>
-          <Grid item xs={4}>
-            <Button
-              type="submit"
-              variant="contained"
-              startIcon={<AddIcon />}
-              fullWidth
-            >
-              Add
-            </Button>
-          </Grid>
-        </Grid>
-      </form>
-
-        <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-          SPREADS
-        </Typography>
-        <TableContainer sx={{ maxHeight: 300 }}>
-          <Table stickyHeader size="small">
-            <TableHead>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    align="center"
-                    style={{ width: column.width, fontWeight: 'bold' }}
-                  >
-                    {column.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {spreads
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((spread, index) => (
-                  <TableRow hover key={index}>
-                    <TableCell align="center">{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell align="center">{spread.title}</TableCell>
-                    <TableCell align="center">{spread.spreadValue}</TableCell>
-                    <TableCell align="center">
-                      <IconButton onClick={() => handleDeleteClick(index)} color="error" size="small">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={spreads.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-
-        <Dialog
-          open={openConfirmDialog}
-          onClose={(event, reason) => {
-            if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
-              handleCancelDelete();
-            }
-          }}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-        >
-
-          <DialogTitle id="alert-dialog-title">
-            {"Confirm Deletion"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              Are you sure you want to delete this spread value?
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCancelDelete}>Cancel</Button>
-            <Button onClick={handleConfirmDelete} color="error" autoFocus>
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-        <Snackbar open={showAlert} autoHideDuration={3000} onClose={handleCloseAlert} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-        <Alert onClose={handleCloseAlert} severity="error" sx={{ width: '100%' }}>
-          Cannot add a spread value of 0.
-        </Alert>
-      </Snackbar>
-      </Paper>
-    );
-  };
-
-const UserDataTable = ({ userData, onToggleUserBlock }) => {
+//Edit functionalities are commanded for Future use
+const CategoryManagement = ({
+  categories,
+  onAddCategory,
+  onEditCategory,
+  onDeleteCategory,
+}) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const columns = [
-    { id: 'sino', label: '#', width: '5%' },
-    { id: 'name', label: 'Name', width: '20%' },
-    { id: 'phoneNo', label: 'Phone No', width: '15%' },
-    { id: 'spreadTitle', label: 'Spread Title', width: '15%' },
-    { id: 'spread', label: 'Spread', width: '10%' },
-    { id: 'location', label: 'Location', width: '15%' },
-    { id: 'email', label: 'Email', width: '15%' },
-    { id: 'ipAddress', label: 'IP Address', width: '15%' },
-    { id: 'actions', label: 'Actions', width: '10%' },
-  ];
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [openModal, setOpenModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -284,40 +92,74 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
     setPage(0);
   };
 
-  const filteredData = userData.filter(user =>
-    user.userName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleOpenModal = (category = null) => {
+    setEditingCategory(category);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setEditingCategory(null);
+  };
+
+  const handleOpenDeleteModal = (category) => {
+    setCategoryToDelete(category);
+    setOpenDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setOpenDeleteModal(false);
+    setCategoryToDelete(null);
+  };
+
+  const handleAddOrEditCategory = (categoryData) => {
+    if (editingCategory) {
+      onEditCategory(editingCategory._id, categoryData);
+    } else {
+      onAddCategory(categoryData);
+    }
+    handleCloseModal();
+  };
+
+  const handleDeleteCategory = () => {
+    if (categoryToDelete) {
+      onDeleteCategory(categoryToDelete._id);
+    }
+    handleCloseDeleteModal();
+  };
+
+  const columns = [
+    { id: "name", label: "Name", minWidth: 170 },
+    { id: "sellPremium", label: "Sell Premium", minWidth: 100 },
+    { id: "sellCharge", label: "Sell Charge", minWidth: 100 },
+    { id: "spread", label: "Spread", minWidth: 100 },
+    { id: "buyPremium", label: "Buy Premium", minWidth: 100 },
+    { id: "buyCharge", label: "Buy Charge", minWidth: 100 },
+    { id: "actions", label: "Actions", minWidth: 100 },
+  ];
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
+    <Paper elevation={3} sx={{ p: 3, width: "100%" }}>
       <Typography variant="h6" gutterBottom>
-        User Data
+        Category Management
       </Typography>
-      <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
-        <Grid item xs={6}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            size="small"
-            placeholder="Search by name"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon />,
-            }}
-          />
-        </Grid>
-      </Grid>
-      {filteredData.length > 0 ? (
-        <TableContainer sx={{ maxHeight: 440 }}>
-        <Table stickyHeader>
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
+        onClick={() => handleOpenModal()}
+        sx={{ mb: 2 }}
+      >
+        Add Category
+      </Button>
+      <TableContainer sx={{ maxHeight: 440 }}>
+        <Table stickyHeader size="small">
           <TableHead>
             <TableRow>
               {columns.map((column) => (
                 <TableCell
                   key={column.id}
                   align="left"
-                  style={{ width: column.width, fontWeight: 'bold' }}
+                  style={{ minWidth: column.minWidth, fontWeight: "bold" }}
                 >
                   {column.label}
                 </TableCell>
@@ -325,95 +167,214 @@ const UserDataTable = ({ userData, onToggleUserBlock }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-          {filteredData
-          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-          .map((user, index) => (
-            <TableRow hover key={user._id} style={{ opacity: user.blocked ? 0.5 : 1 }}>
-              <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-              <TableCell>{user.userName}</TableCell>
-              <TableCell>{user.contact}</TableCell>
-              <TableCell>{user.spreadTitle}</TableCell>
-              <TableCell>{user.spread}</TableCell>
-              <TableCell>{user.location}</TableCell>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>06:14:02:02:29:95</TableCell>
-              <TableCell>
-                <IconButton onClick={() => onToggleUserBlock(user._id)} color="primary" size="small" >
-                  {user.blocked ? <UnlockIcon fontSize="small" /> : <LockIcon fontSize="small" />}
-                </IconButton>
-              </TableCell>
-            </TableRow>
-          ))}        
-      </TableBody>
+            {categories
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((category) => (
+                <TableRow hover key={category._id}>
+                  <TableCell>{category.name}</TableCell>
+                  <TableCell>{category.sellPremium}</TableCell>
+                  <TableCell>{category.sellCharge}</TableCell>
+                  <TableCell>{category.spread}</TableCell>
+                  <TableCell>{category.buyPremium}</TableCell>
+                  <TableCell>{category.buyCharge}</TableCell>
+                  <TableCell>
+                    <IconButton
+                      onClick={() => handleOpenModal(category)}
+                      size="small"
+                    >
+                      <EditIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => handleOpenDeleteModal(category)}
+                      size="small"
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+          </TableBody>
         </Table>
       </TableContainer>
-        ) : (
-          <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: 300,
-          }}
-        >
-          <Typography variant="h6" color="textSecondary">
-            No user data available
-          </Typography>
-        </Box>
-      )}
       <TablePagination
-        rowsPerPageOptions={[10, 25, 100]}
+        rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={filteredData.length}
+        count={categories.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+      <CategoryModal
+        open={openModal}
+        onClose={handleCloseModal}
+        onSubmit={handleAddOrEditCategory}
+        category={editingCategory}
+      />
+      <DeleteCategoryModal
+        open={openDeleteModal}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteCategory}
+        categoryName={categoryToDelete?.name}
+      />
+    </Paper>
+  );
+};
+const UserDataTable = ({
+  userData,
+  categories,
+  onAddUser,
+  onEditUser,
+  onDeleteUser,
+}) => {
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [openModal, setOpenModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(+event.target.value);
+    setPage(0);
+  };
+
+  const handleOpenModal = (user = null) => {
+    setEditingUser(user);
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    setEditingUser(null);
+  };
+
+  const handleAddOrEditUser = (userData) => {
+    if (editingUser) {
+      onEditUser(editingUser._id, userData);
+    } else {
+      onAddUser(userData);
+    }
+    handleCloseModal();
+  };
+
+  const columns = [
+    { id: "name", label: "Name", minWidth: 170 },
+    { id: "contact", label: "Contact", minWidth: 130 },
+    { id: "category", label: "Category", minWidth: 130 },
+    { id: "location", label: "Location", minWidth: 170 },
+    { id: "actions", label: "Actions", minWidth: 130 },
+  ];
+
+  return (
+    <Paper elevation={3} sx={{ p: 3, width: "100%", overflow: "hidden" }}>
+      <Typography variant="h6" gutterBottom sx={{ p: 2 }}>
+        User Management
+      </Typography>
+      <Button
+        variant="contained"
+        startIcon={<AddIcon />}
+        onClick={() => handleOpenModal()}
+        sx={{ ml: 2, mb: 2 }}
+      >
+        Add User
+      </Button>
+      <TableContainer sx={{ maxHeight: 440 }}>
+        <Table stickyHeader aria-label="sticky table">
+          <TableHead>
+            <TableRow>
+              {columns.map((column) => (
+                <TableCell
+                  key={column.id}
+                  align="left"
+                  style={{ minWidth: column.minWidth, fontWeight: "bold" }}
+                >
+                  {column.label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {userData
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((user) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={user._id}>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.contact}</TableCell>
+                    <TableCell>{user.category}</TableCell>
+                    <TableCell>{user.location}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        onClick={() => handleOpenModal(user)}
+                        size="small"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      <IconButton
+                        onClick={() => onDeleteUser(user._id)}
+                        size="small"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={[10, 25, 100]}
+        component="div"
+        count={userData.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
+      <UserModal
+        open={openModal}
+        onClose={handleCloseModal}
+        onSubmit={handleAddOrEditUser}
+        user={editingUser}
+        categories={categories}
+      />
     </Paper>
   );
 };
 
-
-const UserList = ( ) => {
-  const userName = localStorage.getItem('userName');
+const UserList = () => {
+  const userName = localStorage.getItem("userName");
   const [userData, setUserData] = useState([]);
-  const [adminId,setAdminId] = useState(null);
+  const [adminId, setAdminId] = useState(null);
   const [showNotification, setShowNotification] = useState(false);
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', content: '', onConfirm: null });
-  const [spreadValues, setSpreadValues] = useState([]);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
 
-  //addspread starts
   useEffect(() => {
     const fetchData = async () => {
-      const userName = localStorage.getItem('userName');
-      
-      if (!userName) {
-        return;
-      }
-  
+      if (!userName) return;
       try {
-        // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userName}`);
-        
         setAdminId(response.data.data._id);
       } catch (err) {
-        console.error('Failed to fetch user data: ' + err);
+        console.error("Failed to fetch user data: " + err);
       }
     };
-  
     fetchData();
   }, []);
-  
 
   useEffect(() => {
-    if (adminId) {  // Only fetch data if adminId is available
+    if (adminId) {
       fetchUserData();
-      fetchSpreadValues();
+      fetchCategories();
     }
-  }, [adminId]);  // Add adminId as a dependency
-
+  }, [adminId]);
 
   const fetchUserData = async () => {
     try {
@@ -422,132 +383,224 @@ const UserList = ( ) => {
         setUserData(response.data.users);
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
     }
   };
 
-  const fetchSpreadValues = async () => {
+  const fetchCategories = async () => {
     try {
-      const response = await axiosInstance.get(`/admin/${userName}/spread-values`);
+      const response = await axiosInstance.get(`/getCategories/${adminId}`);
       if (response.data.success) {
-        setSpreadValues(response.data.spreadValues);
+        setCategories(response.data.categories);
       }
     } catch (error) {
-      console.error('Error fetching spread values:', error);
+      console.error("Error fetching categories:", error);
     }
   };
 
-  //spreadfetchEnd
-
-  const handleAddSpread = async (spreadValue,title) => {
+  const handleAddCategory = async (categoryData) => {
     try {
-      const response = await axiosInstance.post(`/admin/${userName}/spread-values`, { spreadValue,title });
+      const response = await axiosInstance.post(
+        `/addCategory/${adminId}`,
+        categoryData
+      );
       if (response.data.success) {
-        setSpreadValues([...spreadValues, response.data.spreadDoc.spreadValues.at(-1)]);
+        setCategories([...categories, response.data.category]);
         setShowNotification(true);
-        setNotificationMessage('Spread added successfully');
+        setNotificationMessage("Category added successfully");
       }
     } catch (error) {
-      console.error('Error adding spread value:', error);
+      console.error("Error adding category:", error);
     }
   };
 
-
-  const handleToggleUserBlock = (adminId) => {
-    const user = userData.find(u => u._id === adminId);
-    if (!user) return; // Return early if user is not found
-  
-    const action = user.blocked !== undefined ? (user.blocked ? 'unblock' : 'block') : 'block'; // Check if blocked property exists
-  
-    setConfirmDialog({
-      isOpen: true,
-      title: `Confirm ${action}`,
-      content: `Are you sure you want to ${action} ${user.userName}?`,
-      onConfirm: () => {
-        setUserData(prevData =>
-          prevData.map(u =>
-            u._id === adminId ? { ...u, blocked: u.blocked !== undefined ? !u.blocked : true } : u
+  const handleEditCategory = async (categoryId, categoryData) => {
+    try {
+      const response = await axiosInstance.put(
+        `/editCategory/${categoryId}/${adminId}`,
+        categoryData
+      );
+      if (response.data.success) {
+        setCategories(
+          categories.map((cat) =>
+            cat._id === categoryId ? response.data.category : cat
           )
         );
         setShowNotification(true);
-        setNotificationMessage(`User ${user.userName} has been ${action}ed`);
-        setConfirmDialog({ ...confirmDialog, isOpen: false });
+        setNotificationMessage("Category updated successfully");
       }
-    });
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/deleteCategory/${categoryId}/${adminId}`
+      );
+      if (response.data.success) {
+        setCategories(categories.filter((cat) => cat._id !== categoryId));
+        setShowNotification(true);
+        setNotificationMessage("Category deleted successfully");
+      }
+    } catch (error) {
+      console.error("Error deleting category:", error);
+    }
+  };
+
+  const handleAddUser = async (userData) => {
+    try {
+      const newUser = {
+        name: userData.name,
+        contact: userData.contact,
+        location: userData.location,
+        category: userData.category,
+        password: userData.password,
+      };
+
+      console.log("Sending user data:", newUser);
+
+      const response = await axiosInstance.post(
+        `/admin/${adminId}/users`,
+        newUser
+      );
+      if (response.data.success) {
+        setUserData([...userData, response.data.user]);
+        setShowNotification(true);
+        setNotificationMessage("User added successfully");
+        fetchUserData(); // Refresh the user list after adding
+      }
+    } catch (error) {
+      console.error(
+        "Error adding user:",
+        error.response?.data || error.message
+      );
+      setShowNotification(true);
+      setNotificationMessage(
+        "Error adding user: " + (error.response?.data?.message || error.message)
+      );
+    }
+  };
+
+  const handleEditUser = async (userId, userData) => {
+    try {
+      const response = await axiosInstance.put(
+        `/admin/users/${userId}/${adminId}`,
+        userData
+      );
+      if (response.data.success) {
+        setUserData(
+          userData.map((user) =>
+            user._id === userId ? response.data.user : user
+          )
+        );
+        setShowNotification(true);
+        setNotificationMessage("User updated successfully");
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  };
+
+  const handleOpenDeleteModal = (userId) => {
+    setUserToDelete(userId);
+    setOpenDeleteModal(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setOpenDeleteModal(false);
+    setUserToDelete(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (userToDelete) {
+      try {
+        const response = await axiosInstance.delete(
+          `/admin/users/${userToDelete}/${adminId}`
+        );
+        if (response.data.success) {
+          setUserData(userData.filter((user) => user._id !== userToDelete));
+          setShowNotification(true);
+          setNotificationMessage("User deleted successfully");
+        }
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
+    }
+    handleCloseDeleteModal();
   };
 
   const handleCloseNotification = () => {
     setShowNotification(false);
   };
-  
-  const handleDeleteSpread = async (index) => {
-    try {
-      const spreadToDelete = spreadValues[index]._id;
-      const response = await axiosInstance.delete(`/admin/spread-values/${spreadToDelete}/${userName}`);
-      if (response.data.success) {
-        setSpreadValues(prevValues => prevValues.filter((_, i) => i !== index));
-        setShowNotification(true);
-        setNotificationMessage('Spread deleted successfully');
-      }
-    } catch (error) {
-      console.error('Error deleting spread value:', error);
-    }
-  };
-
-  const handleCloseConfirmDialog = () => {
-    setConfirmDialog({ ...confirmDialog, isOpen: false });
-  };
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ backgroundColor: '#f3f4f6', minHeight: '100vh', py: 4 }}>
+      <Box sx={{ backgroundColor: "#f3f4f6", minHeight: "100vh", py: 4 }}>
         <Container>
           <Grid container spacing={4}>
             <Grid item xs={12}>
-            <CustomSpreadSection
-              spreads={spreadValues}
-              onAddSpread={handleAddSpread}
-              onDeleteSpread={handleDeleteSpread}
-            />
+              <CategoryManagement
+                categories={categories}
+                onAddCategory={handleAddCategory}
+                onEditCategory={handleEditCategory}
+                onDeleteCategory={handleDeleteCategory}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <UserDataTable
+                userData={userData}
+                categories={categories}
+                onAddUser={handleAddUser}
+                onEditUser={handleEditUser}
+                onDeleteUser={handleOpenDeleteModal}
+              />
             </Grid>
           </Grid>
-
-          <Box sx={{ mt: 4 }}>
-            <UserDataTable
-              userData={userData}
-              onToggleUserBlock={handleToggleUserBlock}
-            />
-          </Box>
         </Container>
 
         <Snackbar
           open={showNotification}
           autoHideDuration={5000}
           onClose={handleCloseNotification}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
         >
-          <Alert onClose={handleCloseNotification} severity="success" sx={{ width: '100%' }}>
+          <Alert
+            onClose={handleCloseNotification}
+            severity="success"
+            sx={{ width: "100%" }}
+          >
             {notificationMessage}
           </Alert>
         </Snackbar>
+
         <Dialog
-          open={confirmDialog.isOpen}
-          onClose={handleCloseConfirmDialog}
-          maxWidth="sm" 
+          open={openDeleteModal}
+          onClose={(event, reason) => {
+            if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+              handleCloseDeleteModal();
+            }
+          }}
+          maxWidth="xs"
           fullWidth
-          disableBackdropClick={true}
-          disableEscapeKeyDown={true}
+          disableEscapeKeyDown
         >
-          <DialogTitle>{confirmDialog.title}</DialogTitle>
+          <DialogTitle>Confirm Delete</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              {confirmDialog.content}
+              Are you sure you want to delete this user? This action cannot be
+              undone.
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}>Cancel</Button>
-            <Button onClick={confirmDialog.onConfirm} autoFocus>
-              Confirm
+            <Button onClick={handleCloseDeleteModal}>Cancel</Button>
+            <Button
+              onClick={handleDeleteUser}
+              color="error"
+              variant="contained"
+            >
+              Delete
             </Button>
           </DialogActions>
         </Dialog>
