@@ -269,7 +269,7 @@ const UserDataTable = ({
   ];
 
   return (
-    <Paper elevation={3} sx={{ p: 3, width: "100%", overflow: "hidden" }}>
+    <Paper elevation={3} sx={{ width: "100%", overflow: "hidden" }}>
       <Typography variant="h6" gutterBottom sx={{ p: 2 }}>
         User Management
       </Typography>
@@ -459,14 +459,12 @@ const UserList = () => {
         password: userData.password,
       };
 
-      console.log("Sending user data:", newUser);
-
       const response = await axiosInstance.post(
         `/admin/${adminId}/users`,
         newUser
       );
       if (response.data.success) {
-        setUserData([...userData, response.data.user]);
+        setUserData((prevUserData) => [...prevUserData, response.data.user]);
         setShowNotification(true);
         setNotificationMessage("User added successfully");
         fetchUserData(); // Refresh the user list after adding
@@ -483,16 +481,16 @@ const UserList = () => {
     }
   };
 
-  const handleEditUser = async (userId, userData) => {
+  const handleEditUser = async (userId, updatedUserData) => {
     try {
       const response = await axiosInstance.put(
         `/admin/users/${userId}/${adminId}`,
-        userData
+        updatedUserData
       );
       if (response.data.success) {
-        setUserData(
-          userData.map((user) =>
-            user._id === userId ? response.data.user : user
+        setUserData((prevUserData) =>
+          prevUserData.map((user) =>
+            user._id === userId ? { ...user, ...response.data.user } : user
           )
         );
         setShowNotification(true);
@@ -500,6 +498,11 @@ const UserList = () => {
       }
     } catch (error) {
       console.error("Error updating user:", error);
+      setShowNotification(true);
+      setNotificationMessage(
+        "Error updating user: " +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
