@@ -15,6 +15,7 @@ import NewsLayout from "../layout/NewsLayout";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
+import UsersSpotRateLayout from "../layout/UsersSpotRateLayout";
 import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UserChatLayout from "../pages/Chat/UserChat";
@@ -126,7 +127,7 @@ function Routers() {
         <Route path="profile" element={<ProfileLayout />} />
         <Route path="bank-details" element={<BankDetailsLayout />} />
         <Route path="userchat" element={<UserChatLayout />} />
-
+        <Route path="users-spotrate/:categoryId" element={<UsersSpotRateLayout />} />
         {/* Protected Routes */}
 
         <Route
