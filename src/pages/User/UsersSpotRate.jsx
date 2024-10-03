@@ -6,6 +6,7 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddCommodityModal from './AddCommodityModal';
 import { useCurrency } from '../../context/CurrencyContext';
 import io from 'socket.io-client';
 import axiosInstance from '../../axios/axiosInstance';
@@ -357,7 +358,7 @@ const SpotRate = () => {
   const [symbols, setSymbols] = useState([]);
   const [serverURL, setServerURL] = useState('');
   const [adminId, setAdminId] = useState('');
-  const [commodities, setCommodities] = useState([]);
+  const [commodities, setCommodities] = useState([]);   
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -367,14 +368,23 @@ const SpotRate = () => {
   const [commodityToDelete, setCommodityToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
-
   const getSpreadOrMarginFromDB = useCallback((metal, type) => {
     const lowerMetal = metal.toLowerCase();
     const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)}${type === 'low' || type === 'high' ? 'Margin' : 'Spread'}`;
     return spreadMarginData[key] || 0;
   }, [spreadMarginData]);
 
+  const getUnitMultiplier = useCallback((unit) => {
+    const lowerCaseUnit = String(unit).toLowerCase();
+    switch (lowerCaseUnit) {
+      case 'gram': return 1;
+      case 'kg': return 1000;
+      case 'oz': return 31.1034768;
+      case 'tola': return 11.664;
+      case 'ttb': return 116.6400;
+      default: return 1;
+    }
+  }, []);
 
   
 
@@ -385,28 +395,23 @@ const SpotRate = () => {
         axiosInstance.get('/server-url'),
         axiosInstance.get(`/data/${localStorage.getItem('userName')}`)
       ]);
-
       setServerURL(serverURLResponse.data.selectedServerURL);
       setAdminId(adminDataResponse.data.data._id);
 
-      const response = await axiosInstance.get(`/getCategories/${adminDataResponse.data.data._id}`);
-      const categoriesArray = response.data.categories;
-
-      const desiredCategory = categoriesArray.find(
-      (category) => category._id === categoryId
-      );
-      const uniqueSymbols = desiredCategory.commodities;
+      const uniqueSymbols = [...new Set(adminDataResponse.data.data.commodities.map(commodity => commodity.symbol))];
       const uppercaseSymbols = uniqueSymbols.map(symbol => symbol.toUpperCase());
       setSymbols(uppercaseSymbols);
       setUniqueMetals(uniqueSymbols);
 
       if (adminDataResponse.data.data._id) {
-        const commoditiesResponse = await axiosInstance.get(`/spotrates/${adminDataResponse.data.data._id}`);
+        const commoditiesResponse = await axiosInstance.get(`/spotrates/${adminDataResponse.data.data._id}/${categoryId}`);
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
         }
         if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
-          const parsedCommodities = commoditiesResponse.data.commodities.map(commodity => ({
+          const parsedCommodities = commoditiesResponse.data.commodities
+          .filter(commodity => commodity && commodity.metal)
+          .map(commodity => ({
             ...commodity,
             purity: parseFloat(commodity.purity),
             unit: parseFloat(commodity.unit),
@@ -425,11 +430,11 @@ const SpotRate = () => {
         setIsLoading(false);
       }, 100);
     }
-  }, [categoryId]);
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, categoryId]);
+  }, [fetchData]);
 
   const renderLoadingSkeleton = () => (
     <div className="p-6 grid gap-8 grid-cols-1 md:grid-cols-2 mx-4 md:mx-8 lg:mx-14">
@@ -446,16 +451,72 @@ const SpotRate = () => {
     </div>
   );
 
+
+
+
+  useEffect(() => {
+  setCommodities(prevCommodities => 
+    prevCommodities.map(commodity => {
+      const updatedCommodity = { ...commodity };
+      const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
+      if (marketData[metal]) {
+        const metalBiddingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'));
+        const metalAskingPrice = parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))+ parseFloat(getSpreadOrMarginFromDB(metal, 'ask')) + (metal === 'Gold' ? 0.5 : 0.05);
+        
+        updatedCommodity.sellAED = calculatePrice(metalBiddingPrice, commodity, 'sell');
+        updatedCommodity.buyAED = calculatePrice(metalAskingPrice, commodity, 'buy');
+        updatedCommodity.sellUSD = (updatedCommodity.sellAED / exchangeRate).toFixed(4);
+        updatedCommodity.buyUSD = (updatedCommodity.buyAED / exchangeRate).toFixed(4);
+      }
+      
+      return updatedCommodity;
+    })
+  );
+}, [marketData, getSpreadOrMarginFromDB, exchangeRate]);
+
+const handleOpenAddModal = useCallback(() => {
+  setSelectedCommodity(null);  // Clear any previously selected commodity
+  setIsEditing(false);  // Ensure we're not in edit mode
+  setOpenModal(true);
+}, []);
+
+const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
+  // Check if value is defined and not null
+  if (value === undefined || value === null) {
+    return 0; // or return a default value based on your requirements
+  }
+
+  const valueStr = value.toString();
+  const [integerPart] = valueStr.split('.');
+  return integerPart.length;
+}, []);
+
+const calculatePrice = useCallback((metalPrice, commodity, type) => {
+  const unitMultiplier = getUnitMultiplier(commodity.weight);
+  const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(commodity.purity);
+  const premium = type === 'sell' ? commodity.sellPremium : commodity.buyPremium;
+  const charge = type === 'sell' ? commodity.sellCharge : commodity.buyCharge;
+  const metal = commodity.metal.toLowerCase().includes('gold') ? 'Gold' : commodity.metal;
+  const spread = parseFloat(getSpreadOrMarginFromDB(metal, type === 'sell' ? 'ask' : 'bid'));
+  
+  return (
+    (((metalPrice + spread + premium) / 31.103) * exchangeRate * commodity.unit * unitMultiplier *
+    (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal))) + parseFloat(charge)
+  ).toFixed(4);
+}, [getUnitMultiplier, getNumberOfDigitsBeforeDecimal, getSpreadOrMarginFromDB, exchangeRate]);
+
+
   
 
   const handleSpreadOrMarginUpdate = useCallback(async (metal, type, newValue) => {
     try {
-      const response = await axiosInstance.post('/update-spread', {
-        adminId,
-        metal,
-        type,
-        value: parseFloat(newValue)
-      });
+        const response = await axiosInstance.post('/update-user-spread', {
+            adminId,
+            metal,
+            categoryId,
+            type,
+            value: parseFloat(newValue)
+          });
   
       if (response.status === 200 && response.data.data) {
         setSpreadMarginData(prevData => ({
@@ -466,8 +527,42 @@ const SpotRate = () => {
     } catch (error) {
       console.error('Error updating spread:', error);
     }
-  }, [adminId]);
+  }, [adminId,categoryId]);
 
+
+  
+
+  
+
+  const handleDeleteClick = useCallback((commodity) => {
+    setCommodityToDelete(commodity);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (commodityToDelete) {
+      try {
+        await axiosInstance.delete(`/commodities/${adminId}/${categoryId}/${commodityToDelete._id}`);
+        setCommodities(prevCommodities => prevCommodities.filter(commodity => commodity._id !== commodityToDelete._id));
+        setDeleteDialogOpen(false);
+        toast.success('Commodity deleted successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } catch (error) {
+        console.error('Error deleting commodity:', error);
+      }
+    }
+  }, [adminId, categoryId, commodityToDelete, setCommodities]);
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteDialogOpen(false);
+    setCommodityToDelete(null);
+  }, []);
 
 
 
@@ -513,8 +608,153 @@ const SpotRate = () => {
     };
   }, [symbols, serverURL]);
   
+  const handleSaveCommodity = useCallback(async (commodityData, isEditMode) => {
+    if (isEditMode) {
+      setCommodities(prevCommodities => 
+        prevCommodities.map(commodity => 
+          commodity._id === commodityData._id ? { ...commodity, ...commodityData } : commodity
+        )
+      );
+      toast.success('Commodity updated successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } else {
+      setCommodities(prevCommodities => [...prevCommodities, commodityData]);
+      toast.success('Commodity added successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+    setIsEditing(false);
+    setOpenModal(false);
+    const fetchUpdatedCommodities = async () => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${adminId}/${categoryId}`);
+        if (response.data && response.data.commodities) {
+          setCommodities(response.data.commodities);
+        }
+      } catch (error) {
+        console.error('Error fetching updated commodities:', error);
+      }
+    };
+  
+    fetchUpdatedCommodities();
+  }, [adminId]);
+
+  const handleCloseModal = useCallback(() => {
+    setOpenModal(false);
+    setSelectedCommodity(null);
+    setIsEditing(false);
+  }, []);
+ 
+
+  const handleEditCommodity = useCallback((commodity) => {
+    setSelectedCommodity({
+      ...commodity
+    });
+    setIsEditing(true);
+    setOpenModal(true);
+  }, []);
 
 
+  const handleCurrencyChange = useCallback((newCurrency, newExchangeRate) => {
+    setCurrency(newCurrency);
+    setExchangeRate(parseFloat(newExchangeRate));
+  }, [setCurrency]);
+
+
+  
+
+  const renderCommodityRows = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          {Array.from({ length: 10 }).map((_, cellIndex) => (
+            <TableCell key={cellIndex}>
+              <Skeleton variant="text" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return commodities.map((row) => {
+      if (!row || !row.metal) {
+        console.error('Invalid commodity data:', row);
+        return null; 
+      }
+
+      const isGoldRelated = row.metal && (row.metal.toLowerCase().includes('gold') || 
+                            row.metal.toLowerCase().includes('minted bar'));
+      const metal = isGoldRelated ? 'Gold' : (row.metal || 'Unknown');
+      const metalBiddingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid)
+        : 0;
+      const metalAskingPrice = marketData[metal] && marketData[metal].bid
+        ? parseFloat(marketData[metal].bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid')) + (isGoldRelated ? 0.5 : 0.05)
+        : 0;
+  
+      const sellPrice = calculatePrice(metalAskingPrice, row, 'sell');
+      const buyPrice = calculatePrice(metalBiddingPrice, row, 'buy');
+  
+      return (
+        <TableRow key={row._id} sx={{ borderTop: '2px double #e0e0e0', borderBottom: '2px double #e0e0e0' }}>
+          <TableCell>{row.metal}</TableCell>
+          <TableCell>{row.purity}</TableCell>
+          <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
+          <TableCell>{sellPrice}</TableCell>
+          <TableCell>{buyPrice}</TableCell>
+          <TableCell>{row.sellPremium}</TableCell>
+          <TableCell>{row.buyPremium}</TableCell>
+          <TableCell>{row.sellCharge}</TableCell>
+          <TableCell>{row.buyCharge}</TableCell>
+          <TableCell>
+            <IconButton
+              onClick={() => handleEditCommodity(row)}
+              sx={{
+                background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+                color: 'white',
+                padding: '8px',
+                marginRight: '8px',
+                borderRadius: '8px',
+                minWidth: '60px',
+                height: '40px',
+                '&:hover': {
+                  background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+                },
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() => handleDeleteClick(row)}
+              sx={{
+                background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+                color: 'white',
+                padding: '8px',
+                borderRadius: '8px',
+                minWidth: '60px',
+                height: '40px',
+                '&:hover': {
+                  background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+                },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      );
+    }).filter(Boolean); 
+  };
   const symbolMap = {
     copper: "COMEX:HG1!",
     gold: "TVC:GOLD",
@@ -522,10 +762,17 @@ const SpotRate = () => {
     platinum: "TVC:PLATINUM",
   };
 
- 
+  const handleCloseDialog = (event, reason) => {
+    if (reason && reason === "backdropClick") 
+      return;
+    handleDeleteCancel();
+  };
 
   return (
     <Box className="min-h-screen flex flex-col bg-gray-100">
+      <Box className="p-2">
+        <CurrencySelector onCurrencyChange={handleCurrencyChange} />
+      </Box>
       {isLoading ? (
         renderLoadingSkeleton()
       ) : (
@@ -568,6 +815,132 @@ const SpotRate = () => {
       </div>
       )}
 
+      <Box sx={{ p: 10 }} className="-mt-10">
+        <div className="flex justify-between items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200 text-gray-500">
+          <div className="grid grid-cols-2 gap-x-8 gap-y-2 ml-12">
+          {uniqueMetals.map(metal => (
+        <React.Fragment key={metal}>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              {`${metal} 1GM (in USD)`}
+            </Typography>
+            <Typography className="font-black text-xl ml-12">
+              {isLoading ? (
+              <Skeleton variant="text" width={80} />
+              ) : (
+              ((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103).toFixed(4)
+              )}
+            </Typography>
+          </div>
+          <div className="flex justify-between items-center text-lg">
+            <Typography className='font-black text-xl tracking-wide' color="text.primary">
+              {`${metal} 1GM (in ${currency})`}
+            </Typography>
+            <Typography className="font-black text-xl ml-12">
+              {isLoading ? (
+              <Skeleton variant="text" width={80} />
+               ) : (
+             ((((parseFloat(marketData[metal]?.bid) + parseFloat(getSpreadOrMarginFromDB(metal, 'bid'))) / 31.103)) * exchangeRate).toFixed(4)
+              )}
+            </Typography>
+          </div>
+        </React.Fragment>
+      ))}
+    </div>
+          <Button
+            variant="contained"
+            onClick={handleOpenAddModal}
+            sx={{
+              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+              color: 'white',
+              textTransform: 'none',
+              fontWeight: 'bold',
+              borderRadius: '0.375rem',
+              '&:hover': {
+                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+              },
+            }}
+          >
+            ADD COMMODITY
+          </Button>
+        </div>
+        <TableContainer component={Paper} className="shadow-lg">
+          <Table sx={{ minWidth: 650 }} aria-label="commodity table">
+            <TableHead>
+              <TableRow className="bg-gray-50">
+                <TableCell>Metal</TableCell>
+                <TableCell>Purity</TableCell>
+                <TableCell>Unit</TableCell>
+                <TableCell>Sell ({currency})</TableCell>
+                <TableCell>Buy ({currency})</TableCell>
+                <TableCell>Sell Premium</TableCell>
+                <TableCell>Buy Premium</TableCell>
+                <TableCell>Sell Charges</TableCell>
+                <TableCell>Buy Charges</TableCell>
+                <TableCell>Action</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {renderCommodityRows()}
+            </TableBody>
+          </Table>
+        </TableContainer>
+        <AddCommodityModal
+          open={openModal}
+          onClose={handleCloseModal}
+          onSave={handleSaveCommodity}
+          initialData={selectedCommodity}
+          marketData={marketData}
+          isEditing={isEditing}
+          getSpreadOrMarginFromDB={getSpreadOrMarginFromDB}
+          exchangeRate={exchangeRate}
+          currency={currency}
+          spreadMarginData={spreadMarginData}
+          categoryId={categoryId}
+        />
+        <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCloseDialog}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        disableEscapeKeyDown={true}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description" sx={{ marginTop: 2 }}>
+            Are you sure you want to delete this commodity? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: 1 }}>
+          <Button 
+            onClick={handleDeleteCancel}
+            sx={{
+              color: '#7928CA',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: 'rgba(121, 40, 202, 0.1)',
+              },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            sx={{
+              background: 'linear-gradient(310deg, #7928CA 0%, #FF0080 100%)',
+              color: 'white',
+              fontWeight: 'bold',
+              '&:hover': {
+                background: 'linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)',
+              },
+            }}
+            autoFocus
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      </Box>
       <ToastContainer />
     </Box>
   );
