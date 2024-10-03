@@ -2,6 +2,7 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon,
   Edit as EditIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
 import {
   Alert,
@@ -28,6 +29,7 @@ import {
 } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../axios/axiosInstance";
 import CategoryModal from "./CategoryModal";
 import DeleteCategoryModal from "./DeleteCategoryModal";
@@ -70,6 +72,8 @@ const theme = createTheme({
 });
 
 //Edit functionalities are commanded for Future use
+//category manegement section
+
 const CategoryManagement = ({
   categories,
   onAddCategory,
@@ -82,6 +86,7 @@ const CategoryManagement = ({
   const [editingCategory, setEditingCategory] = useState(null);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const navigate = useNavigate();
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -128,13 +133,13 @@ const CategoryManagement = ({
     handleCloseDeleteModal();
   };
 
+  const handleViewCategory = (categoryId) => {
+    navigate(`/users-spotrate/${categoryId}`);
+  };
+
   const columns = [
     { id: "name", label: "Name", minWidth: 170 },
-    { id: "sellPremium", label: "Sell Premium", minWidth: 100 },
-    { id: "sellCharge", label: "Sell Charge", minWidth: 100 },
-    { id: "spread", label: "Spread", minWidth: 100 },
-    { id: "buyPremium", label: "Buy Premium", minWidth: 100 },
-    { id: "buyCharge", label: "Buy Charge", minWidth: 100 },
+    { id: "view", label: "View", minWidth: 100 },
     { id: "actions", label: "Actions", minWidth: 100 },
   ];
 
@@ -172,11 +177,16 @@ const CategoryManagement = ({
               .map((category) => (
                 <TableRow hover key={category._id}>
                   <TableCell>{category.name}</TableCell>
-                  <TableCell>{category.sellPremium}</TableCell>
-                  <TableCell>{category.sellCharge}</TableCell>
-                  <TableCell>{category.spread}</TableCell>
-                  <TableCell>{category.buyPremium}</TableCell>
-                  <TableCell>{category.buyCharge}</TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outlined"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() => handleViewCategory(category._id)}
+                      size="small"
+                    >
+                      User SpotRate
+                    </Button>
+                  </TableCell>
                   <TableCell>
                     <IconButton
                       onClick={() => handleOpenModal(category)}
@@ -220,6 +230,7 @@ const CategoryManagement = ({
     </Paper>
   );
 };
+
 const UserDataTable = ({
   userData,
   categories,
@@ -265,6 +276,7 @@ const UserDataTable = ({
     { id: "contact", label: "Contact", minWidth: 130 },
     { id: "category", label: "Category", minWidth: 130 },
     { id: "location", label: "Location", minWidth: 170 },
+    { id: "password", label: "Password", minWidth: 170 },
     { id: "actions", label: "Actions", minWidth: 130 },
   ];
 
@@ -306,6 +318,7 @@ const UserDataTable = ({
                     <TableCell>{user.contact}</TableCell>
                     <TableCell>{user.category}</TableCell>
                     <TableCell>{user.location}</TableCell>
+                    <TableCell>{user.decryptedPassword}</TableCell>
                     <TableCell>
                       <IconButton
                         onClick={() => handleOpenModal(user)}
@@ -379,6 +392,7 @@ const UserList = () => {
   const fetchUserData = async () => {
     try {
       const response = await axiosInstance.get(`/admin/${adminId}/users`);
+      console.log(response);
       if (response.data.success) {
         setUserData(response.data.users);
       }
@@ -390,6 +404,7 @@ const UserList = () => {
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`/getCategories/${adminId}`);
+      console.log("--->", response);
       if (response.data.success) {
         setCategories(response.data.categories);
       }

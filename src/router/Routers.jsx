@@ -12,11 +12,13 @@ import MarketClosingLayout from "../layout/MarketClosingLayout";
 import MediaLayout from "../layout/MediaLayout";
 import MessagesLayout from "../layout/MessagesLayout";
 import NewsLayout from "../layout/NewsLayout";
+import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
-import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
+import TVViewLayout from "../layout/TVViewLayout";
 import UsersLayout from "../layout/UsersLayout";
+import UsersSpotRateLayout from "../layout/UsersSpotRateLayout";
 import UserChatLayout from "../pages/Chat/UserChat";
 import NotFound from "../pages/Error/NotFound";
 import ServerError from "../pages/Error/ServerError";
@@ -126,7 +128,11 @@ function Routers() {
         <Route path="profile" element={<ProfileLayout />} />
         <Route path="bank-details" element={<BankDetailsLayout />} />
         <Route path="userchat" element={<UserChatLayout />} />
-
+        <Route
+          path="users-spotrate/:categoryId"
+          element={<UsersSpotRateLayout />}
+        />
+        <Route path="tv-view" element={<TVViewLayout />} />
         {/* Protected Routes */}
 
         <Route
