@@ -1,22 +1,16 @@
 import {
   Button,
-  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
   Grid,
   TextField,
-  Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
-const commodities = ["Gold", "Silver", "Copper", "Platinum"];
-
 const initialFormState = {
   name: "",
-  commodities: [],
 };
 
 const CategoryModal = ({ open, onClose, onSubmit, category }) => {
@@ -40,25 +34,10 @@ const CategoryModal = ({ open, onClose, onSubmit, category }) => {
     setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
   };
 
-  const handleCommodityChange = (commodity) => {
-    if (!category) {
-      setFormData((prevData) => ({
-        ...prevData,
-        commodities: prevData.commodities.includes(commodity)
-          ? prevData.commodities.filter((c) => c !== commodity)
-          : [...prevData.commodities, commodity],
-      }));
-      setErrors((prevErrors) => ({ ...prevErrors, commodities: "" }));
-    }
-  };
-
   const validateForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
-    }
-    if (formData.commodities.length === 0 && !category) {
-      newErrors.commodities = "At least one commodity must be selected";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -69,6 +48,7 @@ const CategoryModal = ({ open, onClose, onSubmit, category }) => {
     if (validateForm()) {
       onSubmit(formData);
       if (!category) {
+        // Reset form only when adding a new category
         setFormData(initialFormState);
         setErrors({});
       }
@@ -102,35 +82,6 @@ const CategoryModal = ({ open, onClose, onSubmit, category }) => {
                 helperText={errors.name}
                 required
               />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Commodities
-              </Typography>
-              {commodities.map((commodity) => (
-                <FormControlLabel
-                  key={commodity}
-                  control={
-                    <Checkbox
-                      checked={formData.commodities.includes(commodity)}
-                      onChange={() => handleCommodityChange(commodity)}
-                      name={commodity}
-                      disabled={!!category}
-                    />
-                  }
-                  label={commodity}
-                />
-              ))}
-              {errors.commodities && (
-                <Typography
-                  color="error"
-                  variant="caption"
-                  display="block"
-                  gutterBottom
-                >
-                  {errors.commodities}
-                </Typography>
-              )}
             </Grid>
           </Grid>
         </DialogContent>

@@ -393,7 +393,6 @@ const SpotRate = () => {
         axiosInstance.get('/server-url'),
         axiosInstance.get(`/data/${localStorage.getItem('userName')}`)
       ]);
-
       setServerURL(serverURLResponse.data.selectedServerURL);
       setAdminId(adminDataResponse.data.data._id);
 

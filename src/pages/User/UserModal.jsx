@@ -94,7 +94,6 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
     });
 
     if (Object.keys(newErrors).length === 0) {
-      console.log("Submitting user data:", userData);
       onSubmit(userData);
       setUserData({
         name: "",
