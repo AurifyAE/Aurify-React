@@ -667,8 +667,6 @@ const calculatePrice = useCallback((metalPrice, commodity, type) => {
   }, [setCurrency]);
 
 
-  
-
   const renderCommodityRows = () => {
     if (isLoading) {
       return Array.from({ length: 5 }).map((_, index) => (

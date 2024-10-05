@@ -263,7 +263,7 @@ const handleSave = useCallback(async () => {
 
     let response;
     if (isEditMode) {
-      response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
+      response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${categoryId}/${initialData._id}`, commodityData);
     } else {
       response = await axiosInstance.post(`/commodities/${adminId}/${categoryId}`, { adminId, commodity: commodityData });
     }

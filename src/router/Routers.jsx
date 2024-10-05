@@ -19,6 +19,7 @@ import UsersSpotRateLayout from "../layout/UsersSpotRateLayout";
 import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UserChatLayout from "../pages/Chat/UserChat";
+import TVViewLayout from '../layout/TVViewLayout';
 import NotFound from "../pages/Error/NotFound";
 import ServerError from "../pages/Error/ServerError";
 import Protect from "../protectorRouter/adminProtect";
@@ -128,6 +129,7 @@ function Routers() {
         <Route path="bank-details" element={<BankDetailsLayout />} />
         <Route path="userchat" element={<UserChatLayout />} />
         <Route path="users-spotrate/:categoryId" element={<UsersSpotRateLayout />} />
+        <Route path="tv-view" element={<TVViewLayout />} />
         {/* Protected Routes */}
 
         <Route
