@@ -133,10 +133,6 @@ function Routers() {
           element={<UsersSpotRateLayout />}
         />
         <Route path="tv-view" element={<TVViewLayout />} />
-        <Route
-          path="users-spotrate/:categoryId"
-          element={<UsersSpotRateLayout />}
-        />
         {/* Protected Routes */}
         <Route
           path="/feature/shop"
