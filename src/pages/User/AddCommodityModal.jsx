@@ -1,75 +1,109 @@
-import React, { useState ,useEffect, useCallback, useMemo } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Select, MenuItem, Grid, Typography } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import axiosInstance from '../../axios/axiosInstance';
-import { Snackbar, Alert } from '@mui/material';
+import CloseIcon from "@mui/icons-material/Close";
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  MenuItem,
+  Select,
+  Snackbar,
+  TextField,
+  Typography,
+} from "@mui/material";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import axiosInstance from "../../axios/axiosInstance";
 
-
-const AddCommodityModal = ({ open, onClose, onSave,initialData, marketData, isEditing, exchangeRate, currency, spreadMarginData, categoryId }) => {
+const AddCommodityModal = ({
+  open,
+  onClose,
+  onSave,
+  initialData,
+  marketData,
+  isEditing,
+  exchangeRate,
+  currency,
+  spreadMarginData,
+  categoryId,
+}) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [error, setError] = useState({});
   const [commodityId, setCommodityId] = useState(null);
   const [toastOpen, setToastOpen] = useState(false);
-const [toastMessage, setToastMessage] = useState('');
+  const [toastMessage, setToastMessage] = useState("");
   const [formData, setFormData] = useState({
-    metal: 'Gold',
+    metal: "Gold",
     purity: 999,
     unit: 1,
-    weight: 'GM',
-    sellPremiumUSD: '',
-    sellCharges: '',
-    buyPremiumUSD: '',
-    buyCharges: '',
-    buyAED: '',
-    buyUSD: '',
-    sellAED: '',
-    sellUSD: '',
+    weight: "GM",
+    sellPremiumUSD: "",
+    sellCharges: "",
+    buyPremiumUSD: "",
+    buyCharges: "",
+    buyAED: "",
+    buyUSD: "",
+    sellAED: "",
+    sellUSD: "",
   });
   const [commodities, setCommodities] = useState([]);
   const [spotRates, setSpotRates] = useState(null);
-  const [adminId, setAdminId] = useState('');
+  const [adminId, setAdminId] = useState("");
   const [errors, setErrors] = useState(null);
 
-  const exchangeRates = useMemo(() => ({
-    AED: 3.674,
-    USD: 1,
-    EUR: 0.92,
-    GBP: 0.79
-  }), []);
-  
-  const convertCurrency = useCallback((amount, fromCurrency, toCurrency) => {
-    if (!amount) return '';
-    const parsed = parseFloat(amount);
-    if (isNaN(parsed)) return '';
-    const inUSD = parsed / exchangeRates[fromCurrency];
-    return (inUSD * exchangeRates[toCurrency]).toFixed(4);
-  }, [exchangeRates]);
+  const exchangeRates = useMemo(
+    () => ({
+      AED: 3.674,
+      USD: 1,
+      EUR: 0.92,
+      GBP: 0.79,
+    }),
+    []
+  );
+
+  const convertCurrency = useCallback(
+    (amount, fromCurrency, toCurrency) => {
+      if (!amount) return "";
+      const parsed = parseFloat(amount);
+      if (isNaN(parsed)) return "";
+      const inUSD = parsed / exchangeRates[fromCurrency];
+      return (inUSD * exchangeRates[toCurrency]).toFixed(4);
+    },
+    [exchangeRates]
+  );
 
   const getUnitMultiplier = useCallback((weight) => {
     switch (weight) {
-      case 'GM': return 1;
-      case 'KG': return 1000;
-      case 'TTB': return 116.6400;
-      case 'TOLA': return 11.664;
-      case 'OZ': return 31.1034768;
-      default: return 1;
+      case "GM":
+        return 1;
+      case "KG":
+        return 1000;
+      case "TTB":
+        return 116.64;
+      case "TOLA":
+        return 11.664;
+      case "OZ":
+        return 31.1034768;
+      default:
+        return 1;
     }
   }, []);
 
   const resetForm = useCallback(() => {
     setFormData({
-      metal: 'Gold',
+      metal: "Gold",
       purity: 999,
       unit: 1,
-      weight: 'GM',
-      sellPremiumUSD: '',
-      sellCharges: '',
-      buyPremiumUSD: '',
-      buyCharges: '',
-      buyAED: '',
-      buyUSD: '',
-      sellAED: '',
-      sellUSD: '',
+      weight: "GM",
+      sellPremiumUSD: "",
+      sellCharges: "",
+      buyPremiumUSD: "",
+      buyCharges: "",
+      buyAED: "",
+      buyUSD: "",
+      sellAED: "",
+      sellUSD: "",
     });
     setIsEditMode(false);
     setCommodityId(null);
@@ -77,252 +111,344 @@ const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     const fetchAdminId = async () => {
-        try {
-            const userName = localStorage.getItem('userName');
-            if (!userName) {
-                console.error('userName not found in localStorage.');
-                return;
-            }
-            const response = await axiosInstance.get(`/data/${userName}`);
-            if (response && response.data && response.data.data) {
-                setAdminId(response.data.data._id);
-            } else {
-                console.error('Invalid response or missing data:', response);
-            }
-        } catch (error) {
-            console.error('Error fetching user ID:', error);
+      try {
+        const userName = localStorage.getItem("userName");
+        if (!userName) {
+          console.error("userName not found in localStorage.");
+          return;
         }
+        const response = await axiosInstance.get(`/data/${userName}`);
+        if (response && response.data && response.data.data) {
+          setAdminId(response.data.data._id);
+        } else {
+          console.error("Invalid response or missing data:", response);
+        }
+      } catch (error) {
+        console.error("Error fetching user ID:", error);
+      }
     };
 
     fetchAdminId();
-}, []);
+  }, []);
 
+  useEffect(() => {
+    if (initialData && (isEditing || open)) {
+      setFormData((prevState) => ({
+        ...prevState,
+        ...initialData,
+        sellCharges: initialData.sellCharge || initialData.sellCharges || "",
+        buyCharges: initialData.buyCharge || initialData.buyCharges || "",
+        sellPremiumUSD:
+          initialData.sellPremium || initialData.sellPremiumUSD || "",
+        buyPremiumUSD:
+          initialData.buyPremium || initialData.buyPremiumUSD || "",
+      }));
+      setCommodityId(initialData.id || initialData._id);
+      setIsEditMode(true);
+    } else if (open) {
+      resetForm();
+    }
+  }, [initialData, isEditing, open]);
 
-useEffect(() => {
-  if (initialData && (isEditing || open)) {
-    setFormData(prevState => ({
-      ...prevState,
-      ...initialData,
-      sellCharges: initialData.sellCharge || initialData.sellCharges || '',
-      buyCharges: initialData.buyCharge || initialData.buyCharges || '',
-      sellPremiumUSD: initialData.sellPremium || initialData.sellPremiumUSD || '',
-      buyPremiumUSD: initialData.buyPremium || initialData.buyPremiumUSD || '',
-    }));
-    setCommodityId(initialData.id || initialData._id);
-    setIsEditMode(true);
-  } else if (open) {
-    resetForm();
-  }
-}, [initialData, isEditing, open]);
-  
   useEffect(() => {
     const fetchSpotRates = async () => {
-        if (!adminId) return;
-        try {
-            const response = await axiosInstance.get(`/spotrates/${adminId}/${categoryId}`);
-            if (response && response.data && typeof response.data === 'object') {
-                setSpotRates(response.data);
-            } else {
-                setSpotRates({}); // Initialize with an empty object if data is invalid
-            }
-        } catch (error) {
-            console.error('Error fetching spot rates:', error);
-            setErrors('Failed to fetch spot rates');
-            setSpotRates({}); // Initialize with an empty object on error
+      if (!adminId) return;
+      try {
+        const response = await axiosInstance.get(
+          `/spotrates/${adminId}/${categoryId}`
+        );
+        if (response && response.data && typeof response.data === "object") {
+          setSpotRates(response.data);
+        } else {
+          setSpotRates({}); // Initialize with an empty object if data is invalid
         }
+      } catch (error) {
+        console.error("Error fetching spot rates:", error);
+        setErrors("Failed to fetch spot rates");
+        setSpotRates({}); // Initialize with an empty object on error
+      }
     };
 
     if (adminId) {
-        fetchSpotRates();
+      fetchSpotRates();
     }
-}, [adminId]);
+  }, [adminId]);
 
+  const calculatePrices = useCallback(() => {
+    setFormData((prevState) => {
+      if (
+        prevState.metal &&
+        prevState.purity &&
+        prevState.unit &&
+        prevState.weight
+      ) {
+        const metal = prevState.metal;
+        const isGoldRelated = [
+          "Gold",
+          "Gold Kilobar",
+          "Gold TOLA",
+          "Gold Ten TOLA",
+          "Gold Coin",
+          "Minted Bar",
+        ].includes(metal);
+        const metalBid = isGoldRelated
+          ? marketData["Gold"]?.bid
+          : marketData[metal]?.bid || 0;
+        const bidSpread =
+          spreadMarginData[`${metal.toLowerCase()}BidSpread`] || 0;
+        const askSpread =
+          spreadMarginData[`${metal.toLowerCase()}AskSpread`] || 0;
+        const additionalPrice = isGoldRelated ? 0.5 : 0.05;
 
-const calculatePrices = useCallback(() => {
-  setFormData(prevState => {
-    if (prevState.metal && prevState.purity && prevState.unit && prevState.weight) {
-      const metal = prevState.metal;
-      const isGoldRelated = ['Gold', 'Gold Kilobar', 'Gold TOLA', 'Gold Ten TOLA', 'Gold Coin', 'Minted Bar'].includes(metal);
-      const metalBid = isGoldRelated ? marketData['Gold']?.bid : (marketData[metal]?.bid || 0);
-      const bidSpread = spreadMarginData[`${metal.toLowerCase()}BidSpread`] || 0;
-      const askSpread = spreadMarginData[`${metal.toLowerCase()}AskSpread`] || 0;
-      const additionalPrice = isGoldRelated ? 0.5 : 0.05;
+        const unitMultiplier = getUnitMultiplier(prevState.weight);
+        const purityValue = parseFloat(prevState.purity);
+        const purityLength = String(prevState.purity).split(".")[0].length;
 
-      const unitMultiplier = getUnitMultiplier(prevState.weight);
-      const purityValue = parseFloat(prevState.purity);
-      const purityLength = String(prevState.purity).split('.')[0].length;
-      
-      const sellPremiumUSD = parseFloat(prevState.sellPremiumUSD) || 0;
-      const buyPremiumUSD = parseFloat(prevState.buyPremiumUSD) || 0;
-      const sellCharge = parseFloat(prevState.sellCharges) || 0;
-      const buyCharge = parseFloat(prevState.buyCharges) || 0;
+        const sellPremiumUSD = parseFloat(prevState.sellPremiumUSD) || 0;
+        const buyPremiumUSD = parseFloat(prevState.buyPremiumUSD) || 0;
+        const sellCharge = parseFloat(prevState.sellCharges) || 0;
+        const buyCharge = parseFloat(prevState.buyCharges) || 0;
 
-      const baseBuyPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(buyPremiumUSD)) / 31.103) * exchangeRate * prevState.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
-      const baseSellPrice = (((parseFloat(metalBid) + parseFloat(bidSpread) + parseFloat(askSpread) + additionalPrice + parseFloat(sellPremiumUSD)) / 31.103) * exchangeRate * prevState.unit * unitMultiplier) * (purityValue / Math.pow(10, purityLength));
+        const baseBuyPrice =
+          ((parseFloat(metalBid) +
+            parseFloat(bidSpread) +
+            parseFloat(buyPremiumUSD)) /
+            31.103) *
+          exchangeRate *
+          prevState.unit *
+          unitMultiplier *
+          (purityValue / Math.pow(10, purityLength));
+        const baseSellPrice =
+          ((parseFloat(metalBid) +
+            parseFloat(bidSpread) +
+            parseFloat(askSpread) +
+            additionalPrice +
+            parseFloat(sellPremiumUSD)) /
+            31.103) *
+          exchangeRate *
+          prevState.unit *
+          unitMultiplier *
+          (purityValue / Math.pow(10, purityLength));
 
-      const sellPrice = baseSellPrice + sellCharge;
-      const buyPrice = baseBuyPrice + buyCharge;
+        const sellPrice = baseSellPrice + sellCharge;
+        const buyPrice = baseBuyPrice + buyCharge;
 
-      if (isNaN(sellPrice) || isNaN(buyPrice)) {
-        return prevState;
+        if (isNaN(sellPrice) || isNaN(buyPrice)) {
+          return prevState;
+        }
+
+        return {
+          ...prevState,
+          sellAED: sellPrice.toFixed(4),
+          buyAED: buyPrice.toFixed(4),
+          sellUSD: convertCurrency(sellPrice.toFixed(4), currency, "USD"),
+          buyUSD: convertCurrency(buyPrice.toFixed(4), currency, "USD"),
+        };
       }
+      return prevState;
+    });
+  }, [
+    marketData,
+    spreadMarginData,
+    exchangeRate,
+    currency,
+    getUnitMultiplier,
+    convertCurrency,
+  ]);
 
-      return {
-        ...prevState,
-        sellAED: sellPrice.toFixed(4),
-        buyAED: buyPrice.toFixed(4),
-        sellUSD: convertCurrency(sellPrice.toFixed(4), currency, 'USD'),
-        buyUSD: convertCurrency(buyPrice.toFixed(4), currency, 'USD')
-      };
-    }
-    return prevState;
-  });
-}, [marketData, spreadMarginData, exchangeRate, currency, getUnitMultiplier, convertCurrency]);
-
-
-useEffect(() => {
-  calculatePrices();
-}, [formData.metal, formData.purity, formData.unit, formData.weight, formData.buyCharges, formData.sellCharges, formData.buyPremiumUSD, formData.sellPremiumUSD, calculatePrices]);
-
-  
-
+  useEffect(() => {
+    calculatePrices();
+  }, [
+    formData.metal,
+    formData.purity,
+    formData.unit,
+    formData.weight,
+    formData.buyCharges,
+    formData.sellCharges,
+    formData.buyPremiumUSD,
+    formData.sellPremiumUSD,
+    calculatePrices,
+  ]);
 
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     if (!name) return;
 
     let updatedValue = value;
-    if (['purity', 'unit'].includes(name)) {
-      updatedValue = value === '' ? '' : value;
-    } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
-      updatedValue = value === '' ? '' : value;
+    if (["purity", "unit"].includes(name)) {
+      updatedValue = value === "" ? "" : value;
+    } else if (
+      [
+        "sellPremiumUSD",
+        "sellCharges",
+        "buyPremiumUSD",
+        "buyCharges",
+        "buyAED",
+        "buyUSD",
+        "sellAED",
+        "sellUSD",
+      ].includes(name)
+    ) {
+      updatedValue = value === "" ? "" : value;
     }
 
-    setFormData(prevState => ({
+    setFormData((prevState) => ({
       ...prevState,
-      [name]: updatedValue
+      [name]: updatedValue,
     }));
   }, []);
 
-useEffect(() => {
-  const fetchCommodities = async () => {
-      const userName = localStorage.getItem('userName');
+  useEffect(() => {
+    const fetchCommodities = async () => {
+      const userName = localStorage.getItem("userName");
       if (!userName) {
-          setError('User not logged in');
-          return;
+        setError("User not logged in");
+        return;
       }
       try {
-          const response = await axiosInstance.get(`/data/${userName}`);
-          if (response && response.data && response.data.data && Array.isArray(response.data.data.commodities)) {
-              const fetchedCommodities = response.data.data.commodities;
-              const goldItems = [
-                  { _id: 'gold', symbol: 'Gold' },
-                  { _id: 'gold-kilobar', symbol: 'Gold Kilobar' },
-                  { _id: 'gold-tola', symbol: 'Gold TOLA' },
-                  { _id: 'gold-ten-tola', symbol: 'Gold Ten TOLA' },
-                  { _id: 'gold-coin', symbol: 'Gold Coin' },
-                  { _id: 'minted-bar', symbol: 'Minted Bar' }
-              ];
-              const nonGoldItems = fetchedCommodities.filter(item => !goldItems.find(goldItem => goldItem.symbol === item.symbol));
-              const combinedCommodities = [...goldItems, ...nonGoldItems];
-              setCommodities(combinedCommodities);
-          } else {
-              console.error('Invalid commodities data:', response.data);
-          }
+        const response = await axiosInstance.get(`/data/${userName}`);
+        if (
+          response &&
+          response.data &&
+          response.data.data &&
+          Array.isArray(response.data.data.commodities)
+        ) {
+          const fetchedCommodities = response.data.data.commodities;
+          const goldItems = [
+            { _id: "gold", symbol: "Gold" },
+            { _id: "gold-kilobar", symbol: "Gold Kilobar" },
+            { _id: "gold-tola", symbol: "Gold TOLA" },
+            { _id: "gold-ten-tola", symbol: "Gold Ten TOLA" },
+            { _id: "gold-coin", symbol: "Gold Coin" },
+            { _id: "minted-bar", symbol: "Minted Bar" },
+          ];
+          const nonGoldItems = fetchedCommodities.filter(
+            (item) =>
+              !goldItems.find((goldItem) => goldItem.symbol === item.symbol)
+          );
+          const combinedCommodities = [...goldItems, ...nonGoldItems];
+          setCommodities(combinedCommodities);
+        } else {
+          console.error("Invalid commodities data:", response.data);
+        }
       } catch (error) {
-          console.error('Error fetching commodities:', error);
+        console.error("Error fetching commodities:", error);
       }
-  };
-
-  fetchCommodities();
-}, []);
-
-  
-const handleSave = useCallback(async () => {
-  const requiredFields = ['metal', 'purity', 'unit', 'weight'];
-  const emptyFields = requiredFields.filter(field => !formData[field]);
-
-  if (emptyFields.length > 0) {
-    setToastMessage(`${emptyFields.join(', ')} ${emptyFields.length > 1 ? 'are' : 'is'} required`);
-    setToastOpen(true);
-    return;
-  }
-
-  try {
-    const commodityData = {
-      metal: formData.metal,
-      purity: parseFloat(formData.purity),
-      unit: parseFloat(formData.unit),
-      weight: formData.weight,
     };
-    
-    if (formData.sellCharges !== '') commodityData.sellCharge = parseFloat(formData.sellCharges) || 0;
-    if (formData.buyCharges !== '') commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
-    if (formData.sellPremiumUSD !== '') commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
-    if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
 
-    let response;
-    if (isEditMode) {
-      response = await axiosInstance.patch(`/spotrate-commodity/${adminId}/${initialData._id}`, commodityData);
-    } else {
-      response = await axiosInstance.post(`/commodities/${adminId}/${categoryId}`, { adminId, commodity: commodityData });
+    fetchCommodities();
+  }, []);
+
+  const handleSave = useCallback(async () => {
+    const requiredFields = ["metal", "purity", "unit", "weight"];
+    const emptyFields = requiredFields.filter((field) => !formData[field]);
+
+    if (emptyFields.length > 0) {
+      setToastMessage(
+        `${emptyFields.join(", ")} ${
+          emptyFields.length > 1 ? "are" : "is"
+        } required`
+      );
+      setToastOpen(true);
+      return;
     }
 
-    if (response.status === 200) {
-      onSave(commodityData, isEditMode);
-      resetForm(); 
-      onClose();
-    } else {
-      console.error('Failed to update/add commodity');
-    }
-  } catch (error) {
-    console.error('Error saving commodity:', error);
-  }
-}, [formData, isEditMode, adminId, initialData, onSave, onClose, resetForm]);
+    try {
+      const commodityData = {
+        metal: formData.metal,
+        purity: parseFloat(formData.purity),
+        unit: parseFloat(formData.unit),
+        weight: formData.weight,
+      };
 
-  
+      if (formData.sellCharges !== "")
+        commodityData.sellCharge = parseFloat(formData.sellCharges) || 0;
+      if (formData.buyCharges !== "")
+        commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
+      if (formData.sellPremiumUSD !== "")
+        commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
+      if (formData.buyPremiumUSD !== "")
+        commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
+
+      let response;
+      if (isEditMode) {
+        response = await axiosInstance.patch(
+          `/spotrate-commodity/${adminId}/${categoryId}/${initialData._id}`,
+          commodityData
+        );
+      } else {
+        response = await axiosInstance.post(
+          `/commodities/${adminId}/${categoryId}`,
+          { adminId, commodity: commodityData }
+        );
+      }
+
+      if (response.status === 200) {
+        onSave(commodityData, isEditMode);
+        resetForm();
+        onClose();
+      } else {
+        console.error("Failed to update/add commodity");
+      }
+    } catch (error) {
+      console.error("Error saving commodity:", error);
+    }
+  }, [formData, isEditMode, adminId, initialData, onSave, onClose, resetForm]);
 
   const handleToastClose = (event, reason) => {
-    if (reason === 'clickaway') {
+    if (reason === "clickaway") {
       return;
     }
     setToastOpen(false);
   };
 
   const inputStyle = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: '8px',
+    "& .MuiOutlinedInput-root": {
+      borderRadius: "8px",
     },
-    '& .Mui-disabled': {
-    backgroundColor: 'transparent',
-    color: 'inherit',
-  },
+    "& .Mui-disabled": {
+      backgroundColor: "transparent",
+      color: "inherit",
+    },
   };
 
- 
-
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={(event, reason) => {
-        if (reason !== 'backdropClick' && reason !== 'escapeKeyDown') {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
           resetForm();
           onClose();
         }
-      }} 
-      maxWidth="sm" 
+      }}
+      maxWidth="sm"
       fullWidth
       disableBackdropClick={true}
       disableEscapeKeyDown={true}
     >
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#f8f9fa', borderBottom: '1px solid #dee2e6', p: 2 }}>
-        <Typography variant="h6">{isEditMode ? 'Edit Commodity' : 'Add New Commodity'}</Typography>
-        <Button onClick={onClose}><CloseIcon /></Button>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          bgcolor: "#f8f9fa",
+          borderBottom: "1px solid #dee2e6",
+          p: 2,
+        }}
+      >
+        <Typography variant="h6">
+          {isEditMode ? "Edit Commodity" : "Add New Commodity"}
+        </Typography>
+        <Button onClick={onClose}>
+          <CloseIcon />
+        </Button>
       </DialogTitle>
       <DialogContent sx={{ p: 3 }}>
         <Grid container spacing={2}>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Metal</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Metal
+            </Typography>
             <Select
               name="metal"
               value={formData.metal}
@@ -344,7 +470,9 @@ const handleSave = useCallback(async () => {
             </Select>
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Purity</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Purity
+            </Typography>
             <Select
               name="purity"
               value={formData.purity}
@@ -365,7 +493,9 @@ const handleSave = useCallback(async () => {
             </Select>
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Sell Premium</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Sell Premium
+            </Typography>
             <TextField
               name="sellPremiumUSD"
               placeholder="USD"
@@ -377,7 +507,9 @@ const handleSave = useCallback(async () => {
             />
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Sell Charges</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Sell Charges
+            </Typography>
             <TextField
               name="sellCharges"
               placeholder={currency}
@@ -389,7 +521,9 @@ const handleSave = useCallback(async () => {
             />
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Unit</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Unit
+            </Typography>
             <TextField
               name="unit"
               type="number"
@@ -403,7 +537,9 @@ const handleSave = useCallback(async () => {
             />
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Weight</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Weight
+            </Typography>
             <Select
               name="weight"
               value={formData.weight}
@@ -421,7 +557,9 @@ const handleSave = useCallback(async () => {
             </Select>
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Buy Premium</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Buy Premium
+            </Typography>
             <TextField
               name="buyPremiumUSD"
               placeholder="USD"
@@ -433,7 +571,9 @@ const handleSave = useCallback(async () => {
             />
           </Grid>
           <Grid item xs={3}>
-            <Typography variant="body2" fontWeight="medium" mb={1}>Buy Charges</Typography>
+            <Typography variant="body2" fontWeight="medium" mb={1}>
+              Buy Charges
+            </Typography>
             <TextField
               name="buyCharges"
               placeholder={currency}
@@ -445,12 +585,18 @@ const handleSave = useCallback(async () => {
             />
           </Grid>
           <Grid item xs={12}>
-            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>
+            <table
+              style={{
+                width: "100%",
+                borderCollapse: "separate",
+                borderSpacing: "0 8px",
+              }}
+            >
               <thead>
                 <tr>
-                  <th style={{ width: '20%' }}></th>
-                  <th style={{ width: '40%' }}>{currency}</th>
-                  <th style={{ width: '40%' }}>USD</th>
+                  <th style={{ width: "20%" }}></th>
+                  <th style={{ width: "40%" }}>{currency}</th>
+                  <th style={{ width: "40%" }}>USD</th>
                 </tr>
               </thead>
               <tbody>
@@ -466,7 +612,7 @@ const handleSave = useCallback(async () => {
                       sx={inputStyle}
                       disabled={true}
                       inputProps={{
-                        style: { textAlign: 'center' }
+                        style: { textAlign: "center" },
                       }}
                     />
                   </td>
@@ -480,7 +626,7 @@ const handleSave = useCallback(async () => {
                       sx={inputStyle}
                       disabled={true}
                       inputProps={{
-                        style: { textAlign: 'center' }
+                        style: { textAlign: "center" },
                       }}
                     />
                   </td>
@@ -497,7 +643,7 @@ const handleSave = useCallback(async () => {
                       sx={inputStyle}
                       disabled={true}
                       inputProps={{
-                        style: { textAlign: 'center' }
+                        style: { textAlign: "center" },
                       }}
                     />
                   </td>
@@ -511,7 +657,7 @@ const handleSave = useCallback(async () => {
                       sx={inputStyle}
                       disabled={true}
                       inputProps={{
-                        style: { textAlign: 'center' }
+                        style: { textAlign: "center" },
                       }}
                     />
                   </td>
@@ -521,16 +667,36 @@ const handleSave = useCallback(async () => {
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ bgcolor: '#f8f9fa', borderTop: '1px solid #dee2e6', p: 2, justifyContent: 'flex-end' }}>
-        <Button onClick={onClose} variant="contained" color="inherit" sx={{ mr: 1 }}>
+      <DialogActions
+        sx={{
+          bgcolor: "#f8f9fa",
+          borderTop: "1px solid #dee2e6",
+          p: 2,
+          justifyContent: "flex-end",
+        }}
+      >
+        <Button
+          onClick={onClose}
+          variant="contained"
+          color="inherit"
+          sx={{ mr: 1 }}
+        >
           Close
         </Button>
         <Button onClick={handleSave} variant="contained" color="primary">
-          {isEditMode ? 'Save Changes' : 'Save'}
+          {isEditMode ? "Save Changes" : "Save"}
         </Button>
       </DialogActions>
-      <Snackbar open={toastOpen} autoHideDuration={6000} onClose={handleToastClose}>
-        <Alert onClose={handleToastClose} severity="error" sx={{ width: '100%' }}>
+      <Snackbar
+        open={toastOpen}
+        autoHideDuration={6000}
+        onClose={handleToastClose}
+      >
+        <Alert
+          onClose={handleToastClose}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
           {toastMessage}
         </Alert>
       </Snackbar>

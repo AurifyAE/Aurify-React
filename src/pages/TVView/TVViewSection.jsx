@@ -65,13 +65,24 @@ const ClockCircle = styled(Box)({
   alignItems: "center",
   margin: "8px auto",
 });
-
 const TVView = () => {
-  const { goldData, silverData } = useSpotRate();
+  const {
+    marketData,
+    commodities,
+    categoryId,
+    setCategoryId,
+    isLoading,
+    fetchData,
+    adminId,
+    setAdminId,
+    calculateUserSpotRatePrice,
+    getSpreadOrMarginFromDB,
+    exchangeRate,
+    currency,
+  } = useSpotRate();
+
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [adminId, setAdminId] = useState(null);
-  const [commodityData, setCommodityData] = useState([]);
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -94,10 +105,12 @@ const TVView = () => {
       const fetchCategories = async () => {
         try {
           const response = await axiosInstance.get(`/getCategories/${adminId}`);
+
           if (response.data.success) {
             setCategories(response.data.categories);
-            if (response.data.categories.length > 0) {
-              setSelectedCategory(response.data.categories[0].name);
+            if (response.data.categories.length > 0 && !selectedCategory) {
+              setSelectedCategory(response.data.categories[0]);
+              setCategoryId(response.data.categories[0]._id);
             }
           }
         } catch (error) {
@@ -106,19 +119,15 @@ const TVView = () => {
       };
       fetchCategories();
     }
-  }, [adminId]);
+  }, [adminId, setCategoryId]);
 
   useEffect(() => {
-    const fetchCommodityData = async () => {
-      try {
-        const response = await axiosInstance.get("/getCommodityData");
-        setCommodityData(response.data);
-      } catch (error) {
-        console.error("Error fetching commodity data:", error);
-      }
-    };
-    fetchCommodityData();
+    if (categoryId) {
+      fetchData();
+    }
+  }, [categoryId, fetchData]);
 
+  useEffect(() => {
     const intervalId = setInterval(() => {
       setTime(new Date());
     }, 1000);
@@ -126,41 +135,53 @@ const TVView = () => {
     return () => clearInterval(intervalId);
   }, []);
 
-  const renderSpotRate = (metal, data) => (
-    <Grid item xs={6}>
-      <SpotRateCard>
-        <CardContent>
-          <Typography variant="h6" color="white">
-            {metal}
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1" color="white">
-                BID
-              </Typography>
-              <Typography variant="h5" color="white">
-                ${data.bid}
-              </Typography>
-              <Typography variant="body2" color="white">
-                LOW: ${data.low}
-              </Typography>
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    setCategoryId(category._id);
+  };
+
+  const renderSpotRate = (metal, data) => {
+    const bidSpread = getSpreadOrMarginFromDB(metal, "bid");
+    const askSpread = getSpreadOrMarginFromDB(metal, "ask");
+    const bidPrice = parseFloat(data.bid) + bidSpread;
+    const askPrice = bidPrice + askSpread + (metal === "Gold" ? 0.5 : 0.05);
+
+    return (
+      <Grid item xs={6}>
+        <SpotRateCard>
+          <CardContent>
+            <Typography variant="h6" color="white">
+              {metal}
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" color="white">
+                  BID
+                </Typography>
+                <Typography variant="h5" color="white">
+                  ${bidPrice.toFixed(2)}
+                </Typography>
+                <Typography variant="body2" color="white">
+                  LOW: ${data.low}
+                </Typography>
+              </Grid>
+              <Grid item xs={6}>
+                <Typography variant="subtitle1" color="white">
+                  ASK
+                </Typography>
+                <Typography variant="h5" color="white">
+                  ${askPrice.toFixed(2)}
+                </Typography>
+                <Typography variant="body2" color="white">
+                  HIGH: ${data.high}
+                </Typography>
+              </Grid>
             </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1" color="white">
-                ASK
-              </Typography>
-              <Typography variant="h5" color="white">
-                ${data.ask}
-              </Typography>
-              <Typography variant="body2" color="white">
-                HIGH: ${data.high}
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </SpotRateCard>
-    </Grid>
-  );
+          </CardContent>
+        </SpotRateCard>
+      </Grid>
+    );
+  };
 
   return (
     <Box display="flex" bgcolor="#2F1B12" height="100vh" overflow="hidden">
@@ -175,12 +196,14 @@ const TVView = () => {
               <Card
                 sx={{
                   bgcolor:
-                    selectedCategory === category.name ? "#1976d2" : "#333",
+                    selectedCategory && selectedCategory._id === category._id
+                      ? "#1976d2"
+                      : "#333",
                   color: "white",
                   cursor: "pointer",
                   "&:hover": { bgcolor: "#444" },
                 }}
-                onClick={() => setSelectedCategory(category.name)}
+                onClick={() => handleCategoryClick(category)}
               >
                 <CardContent>
                   <Typography variant="h6" align="center">
@@ -221,69 +244,79 @@ const TVView = () => {
           </Box>
         </Box>
 
-        <ClockContainer>
-          {["INDIA", "LONDON", "NEW YORK"].map((city) => (
-            <Clock key={city}>
-              <Typography variant="h6" color="white">
-                {city}
-              </Typography>
-              <ClockCircle>
-                <Typography variant="body1" color="black">
-                  {time.toLocaleTimeString("en-US", {
-                    timeZone:
-                      city === "INDIA"
-                        ? "Asia/Kolkata"
-                        : city === "LONDON"
-                        ? "Europe/London"
-                        : "America/New_York",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })}
-                </Typography>
-              </ClockCircle>
-            </Clock>
-          ))}
-        </ClockContainer>
-
         <Typography variant="h5" color="white" gutterBottom mt={2}>
           SPOT RATE
         </Typography>
         <Grid container spacing={2}>
-          {renderSpotRate("GOLD Oz", goldData)}
-          {renderSpotRate("SILVER Oz", silverData)}
+          {renderSpotRate("Gold", marketData.Gold || {})}
+          {renderSpotRate("Silver", marketData.Silver || {})}
         </Grid>
         <TableContainer>
           <TableRow>
             <TableCell>
-              <Typography variant="h6">COMMODITY</Typography>
+              <Typography variant="h6" color="white">
+                COMMODITY
+              </Typography>
             </TableCell>
             <TableCell>
-              <Typography variant="h6">WEIGHT</Typography>
+              <Typography variant="h6" color="white">
+                WEIGHT
+              </Typography>
             </TableCell>
             <TableCell>
-              <Typography variant="h6">BUY AED</Typography>
+              <Typography variant="h6" color="white">
+                BUY {currency}
+              </Typography>
             </TableCell>
             <TableCell>
-              <Typography variant="h6">SELL AED</Typography>
+              <Typography variant="h6" color="white">
+                SELL {currency}
+              </Typography>
             </TableCell>
           </TableRow>
-          {commodityData.map((item, index) => (
-            <TableRow key={index}>
-              <TableCell>
-                <Typography>{item.commodity}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{item.weight}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{item.buy}</Typography>
-              </TableCell>
-              <TableCell>
-                <Typography>{item.sell}</Typography>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={4}>
+                <Typography align="center" color="white">
+                  Loading...
+                </Typography>
               </TableCell>
             </TableRow>
-          ))}
+          ) : commodities.length > 0 ? (
+            commodities.map((commodity, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <Typography color="white">
+                    {commodity.metal} {commodity.purity}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography color="white">
+                    {commodity.unit}
+                    {commodity.weight}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography color="white">
+                    {calculateUserSpotRatePrice(commodity, "buy")}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography color="white">
+                    {calculateUserSpotRatePrice(commodity, "sell")}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={4}>
+                <Typography align="center" color="white">
+                  No data available
+                </Typography>
+              </TableCell>
+            </TableRow>
+          )}
         </TableContainer>
         <Box position="absolute" bottom={10} left="50%" right={10}>
           <Typography variant="h6" color="white" align="center">
