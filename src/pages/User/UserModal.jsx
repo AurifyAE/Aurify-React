@@ -30,7 +30,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
         contact: user.contact || "",
         location: user.location || "",
         category: user.category || "",
-        password: "",
+        password: user.decryptedPassword || "",
       });
     } else {
       setUserData({
@@ -45,10 +45,35 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
   }, [user]);
 
   useEffect(() => {
-    if (userData.name && userData.contact) {
+    const generatePassword = () => {
+      const nameParts = userData.name.split(" ").filter(Boolean); // Split name into parts and remove empty spaces
+      let nameLetters = "";
+
+      // Collect letters from each name part until we get 4 letters
+      for (let i = 0; i < nameParts.length; i++) {
+        nameLetters += nameParts[i].substring(0, 4 - nameLetters.length);
+        if (nameLetters.length >= 4) break;
+      }
+
+      // If the name doesn't have 4 letters, pad with letters from the middle or last name part
+      if (nameLetters.length < 4 && nameParts.length > 1) {
+        const middleOrLastName = nameParts[1];
+        nameLetters += middleOrLastName.substring(0, 4 - nameLetters.length);
+      }
+
+      // Get the last 4 digits of the contact number
+      const contactDigits = userData.contact.slice(-4);
+
+      // Concatenate the name letters and contact digits for the password
+      const password = (nameLetters + contactDigits).replace(/\s+/g, ""); // Remove any spaces
+
+      return password;
+    };
+
+    if (userData.name && userData.contact.length >= 4) {
       setUserData((prevData) => ({
         ...prevData,
-        password: `${prevData.name}${prevData.contact}`,
+        password: generatePassword(),
       }));
     }
   }, [userData.name, userData.contact]);
@@ -66,9 +91,9 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
       case "category":
         return value ? "" : "Category is required";
       case "password":
-        return value.length >= 6
+        return value.length >= 8
           ? ""
-          : "Password must be at least 6 characters long";
+          : "Password must be at least 8 characters long";
       default:
         return "";
     }
