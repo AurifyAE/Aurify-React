@@ -316,7 +316,7 @@ const UserDataTable = ({
                   <TableRow hover role="checkbox" tabIndex={-1} key={user._id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.contact}</TableCell>
-                    <TableCell>{user.category}</TableCell>
+                    <TableCell>{user.categoryName}</TableCell>
                     <TableCell>{user.location}</TableCell>
                     <TableCell>{user.decryptedPassword}</TableCell>
                     <TableCell>
@@ -468,7 +468,7 @@ const UserList = () => {
         name: userData.name,
         contact: userData.contact, 
         location: userData.location,
-        category: userData.category,
+        categoryId: userData.categoryId,
         password: userData.password
       };
   
@@ -577,7 +577,7 @@ const UserList = () => {
         >
           <Alert
             onClose={handleCloseNotification}
-            severity="success"
+            severity={notificationMessage.toLowerCase().includes('error') ? "error" : "success"}
             sx={{ width: "100%" }}
           >
             {notificationMessage}
