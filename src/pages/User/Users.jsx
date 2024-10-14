@@ -316,7 +316,7 @@ const UserDataTable = ({
                   <TableRow hover role="checkbox" tabIndex={-1} key={user._id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.contact}</TableCell>
-                    <TableCell>{user.category}</TableCell>
+                    <TableCell>{user.categoryName}</TableCell>
                     <TableCell>{user.location}</TableCell>
                     <TableCell>{user.decryptedPassword}</TableCell>
                     <TableCell>
@@ -470,8 +470,13 @@ const UserList = () => {
         name: userData.name,
         contact: userData.contact,
         location: userData.location,
+<<<<<<< HEAD
         category: userData.category,
         password: userData.password,
+=======
+        categoryId: userData.categoryId,
+        password: userData.password
+>>>>>>> 7936dfe3c67bfa6ef4dcd8d6eda64ad5f2baad6a
       };
 
       const response = await axiosInstance.post(
@@ -586,7 +591,7 @@ const UserList = () => {
         >
           <Alert
             onClose={handleCloseNotification}
-            severity="success"
+            severity={notificationMessage.toLowerCase().includes('error') ? "error" : "success"}
             sx={{ width: "100%" }}
           >
             {notificationMessage}

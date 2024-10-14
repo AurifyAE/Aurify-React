@@ -17,7 +17,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
     name: "",
     contact: "",
     location: "",
-    category: "",
+    categoryId: "",
     password: "",
   });
   const [errors, setErrors] = useState({});
@@ -29,7 +29,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
         name: user.name || "",
         contact: user.contact || "",
         location: user.location || "",
-        category: user.category || "",
+        categoryId: user.categoryId || "",
         password: user.decryptedPassword || "",
       });
     } else {
@@ -37,7 +37,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
         name: "",
         contact: "",
         location: "",
-        category: "",
+        categoryId: "",
         password: "",
       });
     }
@@ -124,7 +124,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
         name: "",
         contact: "",
         location: "",
-        category: "",
+        categoryId: "",
         password: "",
       });
       setErrors({});
@@ -141,6 +141,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
+
 
   return (
     <Dialog
@@ -198,19 +199,19 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
           <TextField
             select
             margin="dense"
-            name="category"
+            name="categoryId"
             label="Category"
             fullWidth
-            value={userData.category}
+            value={userData.categoryId}
             onChange={handleChange}
             required
-            error={!!errors.category}
-            helperText={errors.category}
+            error={!!errors.categoryId}
+            helperText={errors.categoryId}
           >
             {categories.map((category) => (
-              <MenuItem key={category._id} value={category.name}>
-                {category.name}
-              </MenuItem>
+               <MenuItem key={category._id} value={category._id}>
+               {category.name}
+             </MenuItem>
             ))}
           </TextField>
           <TextField
