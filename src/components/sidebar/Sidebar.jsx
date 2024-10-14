@@ -1,4 +1,21 @@
-import React, { useEffect, useState, useCallback } from "react";
+import {
+  AccountBalance as AccountBalanceIcon,
+  Campaign as CampaignIcon,
+  Chat as ChatIcon,
+  Dataset as DatasetIcon,
+  ExpandLess as ExpandLessIcon,
+  ExpandMore as ExpandMoreIcon,
+  Group as GroupIcon,
+  Home as HomeIcon,
+  Image as ImageIcon,
+  LocalOffer as LocalOfferIcon,
+  MonetizationOn as MonetizationOnIcon,
+  Newspaper as NewspaperIcon,
+  Person as PersonIcon,
+  Settings as SettingsIcon,
+  ShowChart as ShowChartIcon,
+  Storefront as StorefrontIcon,
+} from "@mui/icons-material";
 import {
   Button,
   Modal,
@@ -8,27 +25,11 @@ import {
   ModalHeader,
   Skeleton,
 } from "@nextui-org/react";
-import logo from "../../assets/logo.png";
-import axiosInstance from "../../axios/axiosInstance";
-import {
-  Home as HomeIcon,
-  ShowChart as ShowChartIcon,
-  Image as ImageIcon,
-  Newspaper as NewspaperIcon,
-  Person as PersonIcon,
-  AccountBalance as AccountBalanceIcon,
-  Chat as ChatIcon,
-  Campaign as CampaignIcon,
-  Storefront as StorefrontIcon,
-  Group as GroupIcon,
-  MonetizationOn as MonetizationOnIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-  Settings as SettingsIcon,
-  LocalOffer as LocalOfferIcon,
-} from '@mui/icons-material';
+import React, { useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { NavLink, useNavigate } from "react-router-dom";
+import logo from "../../assets/logo.png";
+import axiosInstance from "../../axios/axiosInstance";
 
 const SidenavItem = ({ icon: Icon, name, isActive }) => (
   <li
@@ -63,7 +64,7 @@ const SignOutButton = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
     localStorage.removeItem("reminderModalClosedDate");
-    localStorage.removeItem("rememberMe"); 
+    localStorage.removeItem("rememberMe");
     navigate("/");
     // window.location.reload();
   };
@@ -80,14 +81,24 @@ const SignOutButton = () => {
 const FeatureDropdown = ({ features, isLoading }) => {
   const getFeatureIcon = (featureName) => {
     switch (featureName.toLowerCase()) {
-      case 'chatbot': return ChatIcon;
-      case 'digital marketing': return CampaignIcon;
-      case '24x7 chat': return ChatIcon;
-      case 'shop': return StorefrontIcon;
-      case 'users': return GroupIcon;
-      case 'market closing': return MonetizationOnIcon;
-      case 'premium discount': return LocalOfferIcon;
-      default: return PersonIcon;
+      case "chatbot":
+        return ChatIcon;
+      case "digital marketing":
+        return CampaignIcon;
+      case "24x7 chat":
+        return ChatIcon;
+      case "shop":
+        return StorefrontIcon;
+      case "users":
+        return GroupIcon;
+      case "market closing":
+        return MonetizationOnIcon;
+      case "premium discount":
+        return LocalOfferIcon;
+      case "users db":
+        return DatasetIcon;
+      default:
+        return PersonIcon;
     }
   };
   if (isLoading) {
@@ -137,16 +148,22 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
   const [selectedFeature, setSelectedFeature] = useState(null);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
-
   const getFeatureIcon = (featureName) => {
     switch (featureName.toLowerCase()) {
-      case 'chatbot': return ChatIcon;
-      case 'digital marketing': return CampaignIcon;
-      case '24x7 chat': return ChatIcon;
-      case 'shop': return StorefrontIcon;
-      case 'users': return GroupIcon;
-      case 'market closing': return MonetizationOnIcon;
-      default: return PersonIcon;
+      case "chatbot":
+        return ChatIcon;
+      case "digital marketing":
+        return CampaignIcon;
+      case "24x7 chat":
+        return ChatIcon;
+      case "shop":
+        return StorefrontIcon;
+      case "users":
+        return GroupIcon;
+      case "market closing":
+        return MonetizationOnIcon;
+      default:
+        return PersonIcon;
     }
   };
 
@@ -259,7 +276,8 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
                 </div>
                 <span className="text-sm font-medium text-gray-600 mr-20">
                   {feature}
-                </span>
+                        
+                </span>
                 {hoveredFeature === feature && (
                   <div className="absolute right-0 top-0 bottom-0 flex items-center">
                     <Button
@@ -297,7 +315,7 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
       >
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1">
-             Feature Request
+            Feature Request
           </ModalHeader>
           <ModalBody>
             <p>
@@ -344,8 +362,8 @@ const Sidebar = () => {
     "Users",
     "Market Closing",
     "Premium Discount",
+    "Users DB",
   ];
-
 
   const [features, setFeatures] = useState([]);
   const [additionalFeatures, setAdditionalFeatures] = useState([]);
@@ -367,9 +385,8 @@ const Sidebar = () => {
         params: { userName: userName },
       });
       if (response.data.success) {
-
         setFeatures(response.data.data.features);
-        setUserEmail(response.data.data.email)
+        setUserEmail(response.data.data.email);
         setAdditionalFeatures(
           allFeatures.filter(
             (f) => !response.data.data.features.some((rf) => rf.name === f)
@@ -446,7 +463,11 @@ const Sidebar = () => {
           </ul>
         </div>
 
-        <AdditionalFeaturesDropdown features={additionalFeatures} isLoading={isLoading} userEmail={userEmail} />
+        <AdditionalFeaturesDropdown
+          features={additionalFeatures}
+          isLoading={isLoading}
+          userEmail={userEmail}
+        />
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
@@ -454,11 +475,11 @@ const Sidebar = () => {
       <div className="p-4 flex-shrink-0 mt-2">
         <SignOutButton />
       </div>
-      <Toaster 
-        position="top-center" 
+      <Toaster
+        position="top-center"
         toastOptions={{
           style: {
-            zIndex: 9999, 
+            zIndex: 9999,
           },
         }}
       />
