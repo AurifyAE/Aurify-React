@@ -392,7 +392,6 @@ const UserList = () => {
   const fetchUserData = async () => {
     try {
       const response = await axiosInstance.get(`/admin/${adminId}/users`);
-      console.log(response);
       if (response.data.success) {
         setUserData(response.data.users);
       }
@@ -404,7 +403,6 @@ const UserList = () => {
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(`/getCategories/${adminId}`);
-      console.log("--->", response);
       if (response.data.success) {
         setCategories(response.data.categories);
       }
@@ -470,13 +468,8 @@ const UserList = () => {
         name: userData.name,
         contact: userData.contact,
         location: userData.location,
-<<<<<<< HEAD
-        category: userData.category,
-        password: userData.password,
-=======
         categoryId: userData.categoryId,
-        password: userData.password
->>>>>>> 7936dfe3c67bfa6ef4dcd8d6eda64ad5f2baad6a
+        password: userData.password,
       };
 
       const response = await axiosInstance.post(
@@ -591,7 +584,11 @@ const UserList = () => {
         >
           <Alert
             onClose={handleCloseNotification}
-            severity={notificationMessage.toLowerCase().includes('error') ? "error" : "success"}
+            severity={
+              notificationMessage.toLowerCase().includes("error")
+                ? "error"
+                : "success"
+            }
             sx={{ width: "100%" }}
           >
             {notificationMessage}
