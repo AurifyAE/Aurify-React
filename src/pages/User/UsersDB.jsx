@@ -231,24 +231,31 @@ const CategoryManagement = ({
     </Paper>
   );
 };
+
 const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
   const [contactNumber, setContactNumber] = useState("");
   const [margin, setMargin] = useState("");
-  const [password, setPassword] = useState("");
+  const [generatedPassword, setGeneratedPassword] = useState("");
 
   useEffect(() => {
     if (open && user) {
       setContactNumber("");
       setMargin("");
-      setPassword("");
+      setGeneratedPassword("");
     }
   }, [open, user]);
+
+  useEffect(() => {
+    if (shiftTo === "Deptor" && user && contactNumber) {
+      const firstName = user.name.split(" ")[0];
+      const newPassword = firstName.slice(0, 4) + contactNumber.slice(-4);
+      setGeneratedPassword(newPassword);
+    }
+  }, [shiftTo, user, contactNumber]);
 
   const handleSubmit = () => {
     let shiftedUser = { ...user };
     if (shiftTo === "Deptor") {
-      const firstName = user.name.split(" ")[0];
-      const generatedPassword = firstName.slice(0, 4) + contactNumber.slice(-4);
       shiftedUser = {
         ...shiftedUser,
         margin,
@@ -303,8 +310,10 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
             margin="dense"
             label="Generated Password"
             fullWidth
-            value={password}
-            disabled
+            value={generatedPassword}
+            InputProps={{
+              readOnly: true,
+            }}
           />
         )}
       </DialogContent>
