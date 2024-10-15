@@ -632,7 +632,7 @@ const UsersDB = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axiosInstance.get(`/getCategories/${adminId}`);
+      const response = await axiosInstance.get(`/getUserDBCategories/${adminId}`);
       if (response.data.success) {
         setCategories(response.data.categories);
       }
@@ -644,10 +644,10 @@ const UsersDB = () => {
   const handleAddCategory = async (categoryData) => {
     try {
       const response = await axiosInstance.post(
-        `/addCategory/${adminId}`,
+        `/addUserDBCategory/${adminId}`,
         categoryData
       );
-      if (response.data.success) {
+      if (response.data.success) {  
         setCategories([...categories, response.data.category]);
         setShowNotification(true);
         setNotificationMessage("Category added successfully");
@@ -660,7 +660,7 @@ const UsersDB = () => {
   const handleEditCategory = async (categoryId, categoryData) => {
     try {
       const response = await axiosInstance.put(
-        `/editCategory/${categoryId}/${adminId}`,
+        `/editUserDBCategory/${categoryId}/${adminId}`,
         categoryData
       );
       if (response.data.success) {
@@ -680,7 +680,7 @@ const UsersDB = () => {
   const handleDeleteCategory = async (categoryId) => {
     try {
       const response = await axiosInstance.delete(
-        `/deleteCategory/${categoryId}/${adminId}`
+        `/deleteUserDBCategory/${categoryId}/${adminId}`
       );
       if (response.data.success) {
         setCategories(categories.filter((cat) => cat._id !== categoryId));
