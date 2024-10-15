@@ -232,16 +232,18 @@ const CategoryManagement = ({
   );
 };
 
-const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
+const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
   const [contactNumber, setContactNumber] = useState("");
   const [margin, setMargin] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   useEffect(() => {
     if (open && user) {
       setContactNumber("");
       setMargin("");
       setGeneratedPassword("");
+      setSelectedCategory("");
     }
   }, [open, user]);
 
@@ -261,6 +263,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
         margin,
         contactNumber,
         password: generatedPassword,
+        category: selectedCategory,
       };
     } else if (shiftTo === "LP") {
       shiftedUser = { ...shiftedUser, margin, contactNumber };
@@ -306,15 +309,30 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
           </>
         )}
         {shiftTo === "Deptor" && (
-          <TextField
-            margin="dense"
-            label="Generated Password"
-            fullWidth
-            value={generatedPassword}
-            InputProps={{
-              readOnly: true,
-            }}
-          />
+          <>
+            <TextField
+              margin="dense"
+              label="Generated Password"
+              fullWidth
+              value={generatedPassword}
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+            <Select
+              margin="dense"
+              label="Category"
+              fullWidth
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+            >
+              {categories.map((category) => (
+                <MenuItem key={category._id} value={category.name}>
+                  {category.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </>
         )}
       </DialogContent>
       <DialogActions>
@@ -325,7 +343,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit }) => {
   );
 };
 
-const UserDBTable = ({ users, onShiftUser }) => {
+const UserDBTable = ({ users, onShiftUser, categories }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [shiftModalOpen, setShiftModalOpen] = useState(false);
@@ -376,114 +394,83 @@ const UserDBTable = ({ users, onShiftUser }) => {
       minWidth: 130,
       format: (value) => value.toFixed(2),
     },
-    {
-      id: "metalBalanceAED",
-      label: "Value of Metal Balance in AED",
-      minWidth: 200,
-      format: (value) => value.toLocaleString(),
-    },
-    {
-      id: "marginPercentage",
-      label: "Margin %",
-      minWidth: 80,
-      format: (value) => `${value}%`,
-    },
-    {
-      id: "netEquity",
-      label: "Net Equity",
-      minWidth: 100,
-      format: (value) => value.toLocaleString(),
-    },
-    {
-      id: "marginAmount",
-      label: "Margin Amount",
-      minWidth: 120,
-      format: (value) => value.toLocaleString(),
-    },
-    {
-      id: "totalNeededAmount",
-      label: "Total Needed Amount",
-      minWidth: 170,
-      format: (value) => value.toLocaleString(),
-    },
     { id: "action", label: "Action", minWidth: 100 },
   ];
 
   return (
     <>
-      <Paper elevation={3} sx={{ width: "100%", overflow: "hidden" }}>
-        <TableContainer sx={{ maxHeight: 440 }}>
-          <Table stickyHeader aria-label="sticky table">
-            <TableHead>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    align="left"
-                    style={{ minWidth: column.minWidth, fontWeight: "bold" }}
-                  >
-                    {column.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {users
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row) => {
-                  return (
-                    <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
-                      {columns.map((column) => {
-                        const value = row[column.id];
-                        return (
-                          <TableCell key={column.id} align="left">
-                            {column.id === "action" ? (
-                              <Select
-                                defaultValue=""
-                                displayEmpty
-                                size="small"
-                                sx={{ minWidth: 100 }}
-                                onChange={(e) =>
-                                  handleShiftClick(row, e.target.value)
-                                }
-                              >
-                                <MenuItem value="" disabled>
-                                  Shift
-                                </MenuItem>
-                                <MenuItem value="Deptor">Deptor</MenuItem>
-                                <MenuItem value="LP">LP</MenuItem>
-                                <MenuItem value="Bank">Bank</MenuItem>
-                              </Select>
-                            ) : column.format && typeof value === "number" ? (
-                              column.format(value)
-                            ) : (
-                              value
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                    </TableRow>
-                  );
-                })}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={users.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
-      </Paper>
+      <TableContainer component={Paper}>
+        <Table stickyHeader aria-label="sticky table">
+          <TableHead>
+            <TableRow>
+              {columns.map((column) => (
+                <TableCell
+                  key={column.id}
+                  align="left"
+                  style={{ minWidth: column.minWidth, fontWeight: "bold" }}
+                >
+                  {column.label}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {users
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((row) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
+                    {columns.map((column) => {
+                      const value = row[column.id];
+                      return (
+                        <TableCell key={column.id} align="left">
+                          {column.id === "action" ? (
+                            <Select
+                              defaultValue=""
+                              displayEmpty
+                              size="small"
+                              sx={{ minWidth: 100 }}
+                              onChange={(e) =>
+                                handleShiftClick(row, e.target.value)
+                              }
+                            >
+                              <MenuItem value="" disabled>
+                                Shift
+                              </MenuItem>
+                              <MenuItem value="Deptor">Deptor</MenuItem>
+                              <MenuItem value="LP">LP</MenuItem>
+                              <MenuItem value="Bank">Bank</MenuItem>
+                            </Select>
+                          ) : column.format && typeof value === "number" ? (
+                            column.format(value)
+                          ) : (
+                            value
+                          )}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
+          </TableBody>
+        </Table>
+      </TableContainer>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={users.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+      />
       <ShiftModal
         open={shiftModalOpen}
         onClose={handleShiftModalClose}
         user={selectedUser}
         shiftTo={shiftTo}
         onSubmit={handleShiftModalSubmit}
+        categories={categories}
       />
     </>
   );
@@ -696,19 +683,33 @@ const UsersDB = () => {
     setTabValue(newValue);
   };
 
+  const calculateAdditionalFields = (user) => {
+    // This is a placeholder calculation. Replace with your actual calculation logic.
+    const metalBalanceAED = user.metalWeightGM * 200; // Assuming 1 GM = 200 AED
+    const netEquity = user.accBalance + metalBalanceAED;
+    const marginAmount = netEquity * (parseFloat(user.margin) / 100);
+    const totalNeededAmount = netEquity - marginAmount;
+
+    return {
+      metalBalanceAED,
+      netEquity,
+      marginAmount,
+      totalNeededAmount,
+    };
+  };
+
   const handleShiftUser = (user, shiftTo) => {
     setUsers(users.filter((u) => u.id !== user.id));
+
+    const additionalFields = calculateAdditionalFields(user);
 
     switch (shiftTo) {
       case "Deptor":
         setDeptors([
           ...deptors,
           {
-            id: user.id,
-            name: user.name,
-            marginAmount: user.margin,
-            contactNumber: user.contactNumber,
-            password: user.password,
+            ...user,
+            ...additionalFields,
           },
         ]);
         break;
@@ -716,15 +717,21 @@ const UsersDB = () => {
         setLps([
           ...lps,
           {
-            id: user.id,
-            name: user.name,
-            marginAmount: user.margin,
-            contactNumber: user.contactNumber,
+            ...user,
+            ...additionalFields,
           },
         ]);
         break;
       case "Bank":
-        setBanks([...banks, { id: user.id, name: user.name }]);
+        setBanks([
+          ...banks,
+          {
+            id: user.id,
+            name: user.name,
+            accBalance: user.accBalance,
+            metalWeightGM: user.metalWeightGM,
+          },
+        ]);
         break;
       default:
         break;
@@ -765,7 +772,11 @@ const UsersDB = () => {
                   <Tab label="Bank" />
                 </Tabs>
                 <TabPanel value={tabValue} index={0}>
-                  <UserDBTable users={users} onShiftUser={handleShiftUser} />
+                  <UserDBTable
+                    users={users}
+                    onShiftUser={handleShiftUser}
+                    categories={categories}
+                  />
                 </TabPanel>
                 <TabPanel value={tabValue} index={1}>
                   <ShiftedTable
@@ -774,17 +785,37 @@ const UsersDB = () => {
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
                       {
+                        id: "contactNumber",
+                        label: "Contact Number",
+                        minWidth: 120,
+                      },
+                      { id: "margin", label: "Margin", minWidth: 80 },
+                      { id: "password", label: "Password", minWidth: 120 },
+                      { id: "category", label: "Category", minWidth: 120 },
+                      {
+                        id: "metalBalanceAED",
+                        label: "Value of Metal Balance in AED",
+                        minWidth: 200,
+                        format: (value) => value.toLocaleString(),
+                      },
+                      {
+                        id: "netEquity",
+                        label: "Net Equity",
+                        minWidth: 120,
+                        format: (value) => value.toLocaleString(),
+                      },
+                      {
                         id: "marginAmount",
                         label: "Margin Amount",
                         minWidth: 120,
                         format: (value) => value.toLocaleString(),
                       },
                       {
-                        id: "contactNumber",
-                        label: "Contact Number",
-                        minWidth: 120,
+                        id: "totalNeededAmount",
+                        label: "Total Needed Amount",
+                        minWidth: 170,
+                        format: (value) => value.toLocaleString(),
                       },
-                      { id: "password", label: "Password", minWidth: 120 },
                     ]}
                   />
                 </TabPanel>
@@ -794,6 +825,24 @@ const UsersDB = () => {
                     columns={[
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
+                      { id: "margin", label: "Margin", minWidth: 80 },
+                      {
+                        id: "contactNumber",
+                        label: "Contact Number",
+                        minWidth: 120,
+                      },
+                      {
+                        id: "metalBalanceAED",
+                        label: "Value of Metal Balance in AED",
+                        minWidth: 200,
+                        format: (value) => value.toLocaleString(),
+                      },
+                      {
+                        id: "netEquity",
+                        label: "Net Equity",
+                        minWidth: 120,
+                        format: (value) => value.toLocaleString(),
+                      },
                       {
                         id: "marginAmount",
                         label: "Margin Amount",
@@ -801,9 +850,10 @@ const UsersDB = () => {
                         format: (value) => value.toLocaleString(),
                       },
                       {
-                        id: "contactNumber",
-                        label: "Contact Number",
-                        minWidth: 120,
+                        id: "totalNeededAmount",
+                        label: "Total Needed Amount",
+                        minWidth: 170,
+                        format: (value) => value.toLocaleString(),
                       },
                     ]}
                   />
@@ -814,6 +864,18 @@ const UsersDB = () => {
                     columns={[
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
+                      {
+                        id: "accBalance",
+                        label: "Acc Balance",
+                        minWidth: 120,
+                        format: (value) => value.toLocaleString(),
+                      },
+                      {
+                        id: "metalWeightGM",
+                        label: "Metal Weight GM",
+                        minWidth: 150,
+                        format: (value) => value.toFixed(2),
+                      },
                     ]}
                   />
                 </TabPanel>
