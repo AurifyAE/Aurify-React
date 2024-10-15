@@ -32,8 +32,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import io from "socket.io-client";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../axios/axiosInstance";
 import CategoryModal from "./CategoryModal";
@@ -242,7 +243,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
 
   useEffect(() => {
     if (open && user) {
-      setContactNumber("");
+      setContactNumber(user.contactNumber);
       setMargin("");
       setGeneratedPassword("");
       setSelectedCategory("");
@@ -251,23 +252,17 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
   }, [open, user]);
 
   useEffect(() => {
-    if (shiftTo === "Deptor" && user && contactNumber) {
+    if (shiftTo === "Debtor" && user && user.contactNumber) {
       const firstName = user.name.split(" ")[0];
-      const newPassword = firstName.slice(0, 4) + contactNumber.slice(-4);
+      const newPassword = firstName.slice(0, 4) + user.contactNumber.slice(-4);
       setGeneratedPassword(newPassword);
     }
-  }, [shiftTo, user, contactNumber]);
+  }, [shiftTo, user]);
 
   const validateFields = () => {
     const newErrors = {};
 
-    if (shiftTo === "Deptor" || shiftTo === "LP") {
-      if (!contactNumber) {
-        newErrors.contactNumber = "Contact number is required";
-      } else if (!/^\d{10}$/.test(contactNumber)) {
-        newErrors.contactNumber = "Contact number must be 10 digits";
-      }
-
+    if (shiftTo === "Debtor" || shiftTo === "LP") {
       if (!margin) {
         newErrors.margin = "Margin is required";
       } else if (isNaN(margin) || parseFloat(margin) <= 0) {
@@ -275,7 +270,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
       }
     }
 
-    if (shiftTo === "Deptor") {
+    if (shiftTo === "Debtor") {
       if (!selectedCategory) {
         newErrors.category = "Category is required";
       }
@@ -292,16 +287,15 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
   const handleSubmit = () => {
     if (validateFields()) {
       let shiftedUser = { ...user };
-      if (shiftTo === "Deptor") {
+      if (shiftTo === "Debtor") {
         shiftedUser = {
           ...shiftedUser,
           margin,
-          contactNumber,
           password: generatedPassword,
           category: selectedCategory,
         };
       } else if (shiftTo === "LP") {
-        shiftedUser = { ...shiftedUser, margin, contactNumber };
+        shiftedUser = { ...shiftedUser, margin };
       }
       onSubmit(shiftedUser, shiftTo);
       onClose();
@@ -336,29 +330,25 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
           value={user?.id || ""}
           disabled
         />
-        {(shiftTo === "Deptor" || shiftTo === "LP") && (
-          <>
-            <TextField
-              margin="dense"
-              label="Contact Number"
-              fullWidth
-              value={contactNumber}
-              onChange={(e) => setContactNumber(e.target.value)}
-              error={!!errors.contactNumber}
-              helperText={errors.contactNumber}
-            />
-            <TextField
-              margin="dense"
-              label="Margin"
-              fullWidth
-              value={margin}
-              onChange={(e) => setMargin(e.target.value)}
-              error={!!errors.margin}
-              helperText={errors.margin}
-            />
-          </>
+        <TextField
+          margin="dense"
+          label="Contact Number"
+          fullWidth
+          value={contactNumber}
+          disabled
+        />
+        {(shiftTo === "Debtor" || shiftTo === "LP") && (
+          <TextField
+            margin="dense"
+            label="Margin"
+            fullWidth
+            value={margin}
+            onChange={(e) => setMargin(e.target.value)}
+            error={!!errors.margin}
+            helperText={errors.margin}
+          />
         )}
-        {shiftTo === "Deptor" && (
+        {shiftTo === "Debtor" && (
           <>
             <TextField
               margin="dense"
@@ -442,6 +432,7 @@ const UserDBTable = ({ users, onShiftUser, categories }) => {
   const columns = [
     { id: "name", label: "Name", minWidth: 120 },
     { id: "id", label: "ID", minWidth: 50 },
+    { id: "contactNumber", label: "Contact Number", minWidth: 120 },
     {
       id: "accBalance",
       label: "Acc Balance",
@@ -496,7 +487,6 @@ const UserDBTable = ({ users, onShiftUser, categories }) => {
                                 }
                               }}
                               onClose={() => {
-                                // Reset the select value when closed
                                 const selectElement = document.querySelector(
                                   `select[name="shift-${row.id}"]`
                                 );
@@ -509,7 +499,7 @@ const UserDBTable = ({ users, onShiftUser, categories }) => {
                               <MenuItem value="" disabled>
                                 Shift
                               </MenuItem>
-                              <MenuItem value="Deptor">Deptor</MenuItem>
+                              <MenuItem value="Debtor">Debtor</MenuItem>
                               <MenuItem value="LP">LP</MenuItem>
                               <MenuItem value="Bank">Bank</MenuItem>
                             </Select>
@@ -615,60 +605,138 @@ const UsersDB = () => {
       name: "John Doe",
       accBalance: 10000,
       metalWeightGM: 500,
-      metalBalanceAED: 95000,
-      marginPercentage: 5,
-      netEquity: 105000,
-      marginAmount: 5250,
-      totalNeededAmount: 99750,
+      contactNumber: "1234567890",
     },
     {
       id: 2,
       name: "Jane Smith",
       accBalance: 15000,
       metalWeightGM: 750,
-      metalBalanceAED: 142500,
-      marginPercentage: 7,
-      netEquity: 157500,
-      marginAmount: 11025,
-      totalNeededAmount: 146475,
+      contactNumber: "2345678901",
     },
     {
       id: 3,
       name: "Bob Johnson",
       accBalance: 8000,
       metalWeightGM: 400,
-      metalBalanceAED: 76000,
-      marginPercentage: 4,
-      netEquity: 84000,
-      marginAmount: 3360,
-      totalNeededAmount: 80640,
+      contactNumber: "3456789012",
     },
     {
       id: 4,
       name: "Alice Brown",
       accBalance: 12000,
       metalWeightGM: 600,
-      metalBalanceAED: 114000,
-      marginPercentage: 6,
-      netEquity: 126000,
-      marginAmount: 7560,
-      totalNeededAmount: 118440,
+      contactNumber: "4567890123",
     },
     {
       id: 5,
       name: "Charlie Davis",
       accBalance: 20000,
       metalWeightGM: 1000,
-      metalBalanceAED: 190000,
-      marginPercentage: 8,
-      netEquity: 210000,
-      marginAmount: 16800,
-      totalNeededAmount: 193200,
+      contactNumber: "5678901234",
     },
   ]);
-  const [deptors, setDeptors] = useState([]);
+  const [debtors, setDebtors] = useState([]);
   const [lps, setLps] = useState([]);
   const [banks, setBanks] = useState([]);
+  const [serverURL, setServerURL] = useState("");
+  const [symbols, setSymbols] = useState(["GOLD"]);
+  const [spreadMarginData, setSpreadMarginData] = useState({});
+  const [marketData, setMarketData] = useState({});
+  const [goldAskingPrice, setGoldAskingPrice] = useState(0);
+
+
+  const getSpreadOrMarginFromDB = useCallback(
+    (metal, type) => {
+      const lowerMetal = metal.toLowerCase();
+      const key = `${lowerMetal}${
+        type.charAt(0).toUpperCase() + type.slice(1)
+      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      return spreadMarginData[key] || 0;
+    },
+    [spreadMarginData]
+  );
+
+  const calculateGoldAskingPrice = useCallback(() => {
+    const goldData = marketData["Gold"];
+    if (goldData && goldData.bid) {
+      const bidSpread = getSpreadOrMarginFromDB("Gold", "bid");
+      const calculatedPrice = parseFloat(goldData.bid) + parseFloat(bidSpread) + 0.5 + parseFloat(getSpreadOrMarginFromDB("Gold", "ask"));
+      setGoldAskingPrice(calculatedPrice);
+    }
+  }, [marketData, getSpreadOrMarginFromDB]);
+
+  useEffect(() => {
+    calculateGoldAskingPrice();
+  }, [calculateGoldAskingPrice]);
+
+  useEffect(() => {
+    const fetchServerURL = async () => {
+      try {
+        const response = await axiosInstance.get("/server-url");
+        if (response.data && response.data.selectedServerURL) {
+          setServerURL(response.data.selectedServerURL);
+        } else {
+          console.error("selectedServerURL not found in response");
+        }
+      } catch (error) {
+        console.error("Error fetching serverURL:", error);
+      }
+    };
+
+    fetchServerURL();
+  }, []);
+
+  useEffect(() => {
+    if (!serverURL) return;
+
+    const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
+    if (!socketSecret) {
+      console.error("Socket secret is not defined in environment variables");
+      return;
+    }
+
+    const socket = io(serverURL, {
+      query: { secret: socketSecret },
+      transports: ["websocket"],
+      debug: true,
+    });
+
+    socket.on("connect", () => {
+      socket.emit("request-data", symbols);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error);
+    });
+
+    socket.on("market-data", (data) => {
+      if (data && data.symbol) {
+        setMarketData((prevData) => ({
+          ...prevData,
+          [data.symbol]: {
+            ...data,
+            bidChanged:
+              prevData[data.symbol] && data.bid !== prevData[data.symbol].bid
+                ? data.bid > prevData[data.symbol].bid
+                  ? "up"
+                  : "down"
+                : null,
+          },
+        }));
+      } else {
+        console.error("Received invalid market data:");
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [symbols, serverURL]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -681,13 +749,43 @@ const UsersDB = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [userName]);
+
+  useEffect(() => {
+    const fetchSpreadMarginData = async () => {
+      try {
+        const response = await axiosInstance.get(`/spotrates/${adminId}`);
+        if (response.data) {
+          setSpreadMarginData(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching spread margin data:", error);
+      }
+    };
+
+    if (adminId) {
+      fetchSpreadMarginData();
+    }
+  }, [adminId]);
 
   useEffect(() => {
     if (adminId) {
       fetchCategories();
     }
   }, [adminId]);
+
+  useEffect(() => {
+    const updateShiftedUsers = (users, setter) => {
+      const updatedUsers = users.map(user => ({
+        ...user,
+        ...calculateAdditionalFields(user)
+      }));
+      setter(updatedUsers);
+    };
+  
+    updateShiftedUsers(debtors, setDebtors);
+    updateShiftedUsers(lps, setLps);  
+  }, [marketData]);
 
   const fetchCategories = async () => {
     try {
@@ -758,11 +856,14 @@ const UsersDB = () => {
   };
 
   const calculateAdditionalFields = (user) => {
-    const metalBalanceAED = user.metalWeightGM * 307.1214995;
+    const goldData = marketData["Gold"];
+    const goldBidPrice = goldData && goldData.bid ? parseFloat(goldData.bid) : 0;
+    
+    const metalBalanceAED = user.metalWeightGM * goldBidPrice;
     const netEquity = metalBalanceAED + user.accBalance;
     const marginAmount = netEquity * (parseFloat(user.margin) / 100);
     const totalNeededAmount = netEquity + marginAmount;
-
+  
     return {
       metalBalanceAED,
       netEquity,
@@ -773,13 +874,13 @@ const UsersDB = () => {
 
   const handleShiftUser = (user, shiftTo) => {
     setUsers(users.filter((u) => u.id !== user.id));
-
+  
     const additionalFields = calculateAdditionalFields(user);
-
+  
     switch (shiftTo) {
-      case "Deptor":
-        setDeptors([
-          ...deptors,
+      case "Debtor":
+        setDebtors([
+          ...debtors,
           {
             ...user,
             ...additionalFields,
@@ -803,13 +904,14 @@ const UsersDB = () => {
             name: user.name,
             accBalance: user.accBalance,
             metalWeightGM: user.metalWeightGM,
+            contactNumber: user.contactNumber,
           },
         ]);
         break;
       default:
         break;
     }
-
+  
     setShowNotification(true);
     setNotificationMessage(
       `User ${user.name} shifted to ${shiftTo} successfully`
@@ -840,7 +942,7 @@ const UsersDB = () => {
                   aria-label="user database tabs"
                 >
                   <Tab label="Main DB" />
-                  <Tab label="Deptor" />
+                  <Tab label="Debtor" />
                   <Tab label="LP" />
                   <Tab label="Bank" />
                 </Tabs>
@@ -853,7 +955,7 @@ const UsersDB = () => {
                 </TabPanel>
                 <TabPanel value={tabValue} index={1}>
                   <ShiftedTable
-                    data={deptors}
+                    data={debtors}
                     columns={[
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
@@ -898,12 +1000,12 @@ const UsersDB = () => {
                     columns={[
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
-                      { id: "margin", label: "Margin", minWidth: 80 },
                       {
                         id: "contactNumber",
                         label: "Contact Number",
                         minWidth: 120,
                       },
+                      { id: "margin", label: "Margin", minWidth: 80 },
                       {
                         id: "metalBalanceAED",
                         label: "Value of Metal Balance in AED",
@@ -937,6 +1039,11 @@ const UsersDB = () => {
                     columns={[
                       { id: "name", label: "Name", minWidth: 120 },
                       { id: "id", label: "ID", minWidth: 50 },
+                      {
+                        id: "contactNumber",
+                        label: "Contact Number",
+                        minWidth: 120,
+                      },
                       {
                         id: "accBalance",
                         label: "Acc Balance",
