@@ -13,6 +13,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormHelperText,
   Grid,
   IconButton,
   MenuItem,
@@ -237,6 +238,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
   const [margin, setMargin] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (open && user) {
@@ -244,6 +246,7 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
       setMargin("");
       setGeneratedPassword("");
       setSelectedCategory("");
+      setErrors({});
     }
   }, [open, user]);
 
@@ -255,25 +258,68 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
     }
   }, [shiftTo, user, contactNumber]);
 
-  const handleSubmit = () => {
-    let shiftedUser = { ...user };
-    if (shiftTo === "Deptor") {
-      shiftedUser = {
-        ...shiftedUser,
-        margin,
-        contactNumber,
-        password: generatedPassword,
-        category: selectedCategory,
-      };
-    } else if (shiftTo === "LP") {
-      shiftedUser = { ...shiftedUser, margin, contactNumber };
+  const validateFields = () => {
+    const newErrors = {};
+
+    if (shiftTo === "Deptor" || shiftTo === "LP") {
+      if (!contactNumber) {
+        newErrors.contactNumber = "Contact number is required";
+      } else if (!/^\d{10}$/.test(contactNumber)) {
+        newErrors.contactNumber = "Contact number must be 10 digits";
+      }
+
+      if (!margin) {
+        newErrors.margin = "Margin is required";
+      } else if (isNaN(margin) || parseFloat(margin) <= 0) {
+        newErrors.margin = "Margin must be a positive number";
+      }
     }
-    onSubmit(shiftedUser, shiftTo);
-    onClose();
+
+    if (shiftTo === "Deptor") {
+      if (!selectedCategory) {
+        newErrors.category = "Category is required";
+      }
+
+      if (!generatedPassword) {
+        newErrors.password = "Password could not be generated";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (validateFields()) {
+      let shiftedUser = { ...user };
+      if (shiftTo === "Deptor") {
+        shiftedUser = {
+          ...shiftedUser,
+          margin,
+          contactNumber,
+          password: generatedPassword,
+          category: selectedCategory,
+        };
+      } else if (shiftTo === "LP") {
+        shiftedUser = { ...shiftedUser, margin, contactNumber };
+      }
+      onSubmit(shiftedUser, shiftTo);
+      onClose();
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog
+      open={open}
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          onClose();
+        }
+      }}
+      maxWidth="xs"
+      fullWidth
+      disableEscapeKeyDown
+    >
       <DialogTitle>Shift User to {shiftTo}</DialogTitle>
       <DialogContent>
         <TextField
@@ -298,6 +344,8 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
               fullWidth
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
+              error={!!errors.contactNumber}
+              helperText={errors.contactNumber}
             />
             <TextField
               margin="dense"
@@ -305,6 +353,8 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
               fullWidth
               value={margin}
               onChange={(e) => setMargin(e.target.value)}
+              error={!!errors.margin}
+              helperText={errors.margin}
             />
           </>
         )}
@@ -318,6 +368,8 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
               InputProps={{
                 readOnly: true,
               }}
+              error={!!errors.password}
+              helperText={errors.password}
             />
             <Select
               margin="dense"
@@ -325,13 +377,21 @@ const ShiftModal = ({ open, onClose, user, shiftTo, onSubmit, categories }) => {
               fullWidth
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
+              error={!!errors.category}
+              displayEmpty
             >
+              <MenuItem value="" disabled>
+                Select a category
+              </MenuItem>
               {categories.map((category) => (
                 <MenuItem key={category._id} value={category.name}>
                   {category.name}
                 </MenuItem>
               ))}
             </Select>
+            {errors.category && (
+              <FormHelperText error>{errors.category}</FormHelperText>
+            )}
           </>
         )}
       </DialogContent>
@@ -426,13 +486,25 @@ const UserDBTable = ({ users, onShiftUser, categories }) => {
                         <TableCell key={column.id} align="left">
                           {column.id === "action" ? (
                             <Select
-                              defaultValue=""
+                              value=""
                               displayEmpty
                               size="small"
                               sx={{ minWidth: 100 }}
-                              onChange={(e) =>
-                                handleShiftClick(row, e.target.value)
-                              }
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleShiftClick(row, e.target.value);
+                                }
+                              }}
+                              onClose={() => {
+                                // Reset the select value when closed
+                                const selectElement = document.querySelector(
+                                  `select[name="shift-${row.id}"]`
+                                );
+                                if (selectElement) {
+                                  selectElement.value = "";
+                                }
+                              }}
+                              name={`shift-${row.id}`}
                             >
                               <MenuItem value="" disabled>
                                 Shift
@@ -619,7 +691,9 @@ const UsersDB = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axiosInstance.get(`/getUserDBCategories/${adminId}`);
+      const response = await axiosInstance.get(
+        `/getUserDBCategories/${adminId}`
+      );
       if (response.data.success) {
         setCategories(response.data.categories);
       }
@@ -634,7 +708,7 @@ const UsersDB = () => {
         `/addUserDBCategory/${adminId}`,
         categoryData
       );
-      if (response.data.success) {  
+      if (response.data.success) {
         setCategories([...categories, response.data.category]);
         setShowNotification(true);
         setNotificationMessage("Category added successfully");
@@ -684,11 +758,10 @@ const UsersDB = () => {
   };
 
   const calculateAdditionalFields = (user) => {
-    // This is a placeholder calculation. Replace with your actual calculation logic.
-    const metalBalanceAED = user.metalWeightGM * 200; // Assuming 1 GM = 200 AED
-    const netEquity = user.accBalance + metalBalanceAED;
+    const metalBalanceAED = user.metalWeightGM * 307.1214995;
+    const netEquity = metalBalanceAED + user.accBalance;
     const marginAmount = netEquity * (parseFloat(user.margin) / 100);
-    const totalNeededAmount = netEquity - marginAmount;
+    const totalNeededAmount = netEquity + marginAmount;
 
     return {
       metalBalanceAED,
