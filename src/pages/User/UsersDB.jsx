@@ -1050,12 +1050,6 @@ const UsersDB = () => {
                         minWidth: 120,
                         format: (value) => value.toLocaleString(),
                       },
-                      {
-                        id: "metalWeightGM",
-                        label: "Metal Weight GM",
-                        minWidth: 150,
-                        format: (value) => value.toFixed(2),
-                      },
                     ]}
                   />
                 </TabPanel>
