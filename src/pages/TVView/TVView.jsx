@@ -17,6 +17,22 @@ const TVView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [exchangeRate] = useState(3.674);
 
+  // Function to fetch spot rates
+  const fetchSpotRates = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const spotratesResponse = await axiosInstance.get(`/spotrates/${id}`);
+      if (spotratesResponse.data) {
+        setSpreadMarginData(spotratesResponse.data);
+        if (spotratesResponse.data.commodities) {
+          setCommodities(spotratesResponse.data.commodities);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch spot rates:", err);
+    }
+  }, []);
+
   // Fetch server URL for socket connection
   useEffect(() => {
     const fetchServerURL = async () => {
@@ -71,7 +87,7 @@ const TVView = () => {
     return () => socket.disconnect();
   }, [serverURL]);
 
-  // Fetch admin ID and spot rates
+  // Initial fetch of admin ID and setup polling
   useEffect(() => {
     const userName = localStorage.getItem("userName");
     if (userName) {
@@ -80,17 +96,9 @@ const TVView = () => {
           const response = await axiosInstance.get(`/data/${userName}`);
           setAdminId(response.data.data._id);
 
-          // Fetch spot rates immediately after getting admin ID
+          // Initial fetch of spot rates
           if (response.data.data._id) {
-            const spotratesResponse = await axiosInstance.get(
-              `/spotrates/${response.data.data._id}`
-            );
-            if (spotratesResponse.data) {
-              setSpreadMarginData(spotratesResponse.data);
-              if (spotratesResponse.data.commodities) {
-                setCommodities(spotratesResponse.data.commodities);
-              }
-            }
+            await fetchSpotRates(response.data.data._id);
           }
         } catch (err) {
           console.error("Failed to fetch data:", err);
@@ -100,9 +108,22 @@ const TVView = () => {
       };
       fetchAdminData();
     }
-  }, []);
+  }, [fetchSpotRates]);
 
-  // Utility functions
+  // Set up polling for spot rates
+  useEffect(() => {
+    if (!adminId) return;
+
+    // Fetch spot rates every 5 seconds
+    const intervalId = setInterval(() => {
+      fetchSpotRates(adminId);
+    }, 5000); // 5 seconds interval
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [adminId, fetchSpotRates]);
+
+  // Rest of your existing code remains the same...
   const getUnitMultiplier = useCallback((unit) => {
     const lowerCaseUnit = String(unit).toLowerCase();
     switch (lowerCaseUnit) {
@@ -190,6 +211,11 @@ const TVView = () => {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Get first 5 commodities for display
+  const getDisplayedCommodities = useCallback(() => {
+    return commodities.slice(0, 5);
+  }, [commodities]);
 
   return (
     <div className="bg-black h-screen flex flex-col p-4">
@@ -320,9 +346,8 @@ const TVView = () => {
           <div className="h-40 mb-4" />
           <div className="bg-[#1A1512] rounded-lg overflow-hidden">
             <div className="bg-[#D4AF37] p-3">
-              <div className="grid grid-cols-5 text-black font-bold">
+              <div className="grid grid-cols-4 text-black font-bold">
                 <div>METAL</div>
-                <div>PURITY</div>
                 <div>WEIGHT</div>
                 <div>SELL AED</div>
                 <div>BUY AED</div>
@@ -332,10 +357,16 @@ const TVView = () => {
               {isLoading ? (
                 <div className="p-4 text-center text-white">Loading...</div>
               ) : commodities.length > 0 ? (
-                commodities.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-5 p-4 text-white">
-                    <div className="font-bold text-[#D4AF37]">{item.metal}</div>
-                    <div>{item.purity}</div>
+                getDisplayedCommodities().map((item, idx) => (
+                  <div key={idx} className="grid grid-cols-4 p-4 text-white">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-[#D4AF37]">
+                        {item.metal}
+                      </span>
+                      <span className="text-sm text-gray-400">
+                        {item.purity}
+                      </span>
+                    </div>
                     <div>{`${item.unit} ${item.weight}`}</div>
                     <div className="text-green-400">
                       {calculateUserSpotRatePrice(item, "sell")}
