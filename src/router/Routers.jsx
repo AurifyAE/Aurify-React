@@ -17,6 +17,7 @@ import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
 import TVViewLayout from "../layout/TVViewLayout";
+import TVViewSectionLayout from "../layout/TVViewSectionLayout";
 import UsersDBLayout from "../layout/UsersDBLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UsersSpotRateLayout from "../layout/UsersSpotRateLayout";
@@ -133,7 +134,8 @@ function Routers() {
           path="users-spotrate/:categoryId"
           element={<UsersSpotRateLayout />}
         />
-        <Route path="tv-view" element={<TVViewLayout />} />
+        <Route path="tv-view" element={<TVViewSectionLayout />} />
+        <Route path="tvView" element={<TVViewLayout />} />
         {/* Protected Routes */}
         <Route
           path="/feature/shop"
