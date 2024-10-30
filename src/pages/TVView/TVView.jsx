@@ -218,134 +218,243 @@ const TVView = () => {
   }, [commodities]);
 
   return (
-    <div className="bg-black h-screen flex flex-col p-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-4xl font-bold text-[#D4AF37]">
-          {currentTime.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })}
+    <div className="bg-gradient-to-b from-black to-[#1A1512] min-h-screen flex flex-col p-6 space-y-6">
+      {/* Enhanced Header */}
+      <div className="bg-[#1A1512]/50 rounded-xl p-4 flex justify-between items-center backdrop-blur-sm">
+        <div className="flex flex-col">
+          <div className="text-5xl font-bold text-[#D4AF37] font-digital tracking-wider">
+            {currentTime.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })}
+          </div>
+          <div className="text-gray-400 text-sm">UAE Time</div>
         </div>
-        <div className="text-3xl font-bold text-[#D4AF37]">
-          AURIFY GOLD & DIAMONDS
+
+        <div className="flex flex-col items-center">
+          <div className="text-4xl font-bold text-[#D4AF37] tracking-wider">
+            AURIFY GOLD & DIAMONDS
+          </div>
+          <div className="text-gray-400 mt-1">Premium Bullion Dealer</div>
         </div>
-        <div className="text-2xl font-bold text-[#D4AF37]">
-          {currentTime
-            .toLocaleDateString("en-GB", {
-              weekday: "long",
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })
-            .toUpperCase()}
+
+        <div className="flex flex-col items-end">
+          <div className="text-2xl font-bold text-[#D4AF37]">
+            {currentTime
+              .toLocaleDateString("en-GB", {
+                weekday: "long",
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+              .toUpperCase()}
+          </div>
+          <div className="text-gray-400 text-sm">Dubai, UAE</div>
         </div>
       </div>
 
-      <div className="flex gap-4 h-full">
+      <div className="flex gap-6 flex-1">
         {/* Left Column */}
-        <div className="w-2/5 space-y-4">
-          <div className="h-40">
+        <div className="w-2/5 space-y-6">
+          {/* Enhanced Image Card */}
+          <div className="relative h-40 rounded-xl overflow-hidden group">
             <img
               src={GoldBar}
               alt="Gold bars"
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent">
+              <div className="absolute bottom-4 left-4 text-white">
+                <div className="text-xl font-bold">Premium Gold Bars</div>
+                <div className="text-sm text-gray-300">24K | 999.9 Purity</div>
+              </div>
+            </div>
           </div>
 
-          {/* Spot Rate Card */}
-          <div className="bg-[#1A1512] rounded-lg overflow-hidden">
-            <div className="bg-[#D4AF37] p-3">
-              <div className="flex justify-between text-black font-bold">
-                <span>SPOT RATE</span>
-                <div className="flex gap-8">
+          {/* Enhanced Spot Rate Card */}
+          <div className="bg-[#1A1512] rounded-xl overflow-hidden shadow-lg">
+            <div className="bg-gradient-to-r from-[#D4AF37] to-[#E5C158] p-4">
+              <div className="flex justify-between text-black font-bold items-center">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">SPOT RATE</span>
+                  <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">
+                    LIVE
+                  </span>
+                </div>
+                <div className="flex gap-8 text-sm">
                   <span>$ BID oz</span>
                   <span>$ ASK oz</span>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 space-y-6">
+            <div className="p-6 space-y-8">
               {/* Gold Section */}
               <div className="text-white">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-[#D4AF37]">GOLD</span>
-                  <div className="flex gap-8">
-                    <span className="text-xl bg-[#2A2520] px-3 py-1 rounded">
-                      {formatPrice(marketData.Gold?.bid || 0)}
+                  <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-[#D4AF37]">
+                      GOLD
                     </span>
-                    <span className="text-xl bg-[#2A2520] px-3 py-1 rounded">
+                    <span className="text-xs text-gray-400">
+                      Live Market Price
+                    </span>
+                  </div>
+                  <div className="flex gap-8">
+                    <motion.span
+                      className="text-xl bg-[#2A2520] px-4 py-2 rounded-lg font-semibold"
+                      animate={{
+                        backgroundColor:
+                          marketData.Gold?.bidChanged === "up"
+                            ? ["#2A2520", "#1f3a1f", "#2A2520"]
+                            : marketData.Gold?.bidChanged === "down"
+                            ? ["#2A2520", "#3a1f1f", "#2A2520"]
+                            : "#2A2520",
+                      }}
+                    >
+                      {formatPrice(marketData.Gold?.bid || 0)}
+                    </motion.span>
+                    <motion.span
+                      className="text-xl bg-[#2A2520] px-4 py-2 rounded-lg font-semibold"
+                      animate={{
+                        backgroundColor:
+                          marketData.Gold?.bidChanged === "up"
+                            ? ["#2A2520", "#1f3a1f", "#2A2520"]
+                            : marketData.Gold?.bidChanged === "down"
+                            ? ["#2A2520", "#3a1f1f", "#2A2520"]
+                            : "#2A2520",
+                      }}
+                    >
                       {formatPrice(
                         (marketData.Gold?.bid || 0) +
                           parseFloat(getSpreadOrMarginFromDB("Gold", "ask")) +
                           0.5
                       )}
-                    </span>
+                    </motion.span>
                   </div>
                 </div>
-                <div className="flex justify-end gap-8 mt-2">
-                  <span className="text-red-500">
-                    Low {formatPrice(marketData.Gold?.low || 0)}
-                  </span>
-                  <span className="text-green-500">
-                    High {formatPrice(marketData.Gold?.high || 0)}
-                  </span>
+                <div className="flex justify-between mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">24h Volume:</span>
+                    <span className="text-sm">127.5K oz</span>
+                  </div>
+                  <div className="flex gap-6">
+                    <div className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                      <span className="text-sm text-red-500">
+                        Low {formatPrice(marketData.Gold?.low || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                      <span className="text-sm text-green-500">
+                        High {formatPrice(marketData.Gold?.high || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Silver Section */}
-              <div className="text-white">
+              <div className="text-white border-t border-gray-800 pt-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-xl font-bold text-gray-300">
-                    SILVER
-                  </span>
-                  <div className="flex gap-8">
-                    <span className="text-xl bg-[#2A2520] px-3 py-1 rounded">
-                      {formatPrice(marketData.Silver?.bid || 0)}
+                  <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-gray-300">
+                      SILVER
                     </span>
-                    <span className="text-xl bg-[#2A2520] px-3 py-1 rounded">
+                    <span className="text-xs text-gray-400">
+                      Live Market Price
+                    </span>
+                  </div>
+                  <div className="flex gap-8">
+                    <motion.span
+                      className="text-xl bg-[#2A2520] px-4 py-2 rounded-lg font-semibold"
+                      animate={{
+                        backgroundColor:
+                          marketData.Silver?.bidChanged === "up"
+                            ? ["#2A2520", "#1f3a1f", "#2A2520"]
+                            : marketData.Silver?.bidChanged === "down"
+                            ? ["#2A2520", "#3a1f1f", "#2A2520"]
+                            : "#2A2520",
+                      }}
+                    >
+                      {formatPrice(marketData.Silver?.bid || 0)}
+                    </motion.span>
+                    <motion.span
+                      className="text-xl bg-[#2A2520] px-4 py-2 rounded-lg font-semibold"
+                      animate={{
+                        backgroundColor:
+                          marketData.Silver?.bidChanged === "up"
+                            ? ["#2A2520", "#1f3a1f", "#2A2520"]
+                            : marketData.Silver?.bidChanged === "down"
+                            ? ["#2A2520", "#3a1f1f", "#2A2520"]
+                            : "#2A2520",
+                      }}
+                    >
                       {formatPrice(
                         (marketData.Silver?.bid || 0) +
                           parseFloat(getSpreadOrMarginFromDB("Silver", "ask")) +
                           0.05
                       )}
-                    </span>
+                    </motion.span>
                   </div>
                 </div>
-                <div className="flex justify-end gap-8 mt-2">
-                  <span className="text-red-500">
-                    Low {formatPrice(marketData.Silver?.low || 0)}
-                  </span>
-                  <span className="text-green-500">
-                    High {formatPrice(marketData.Silver?.high || 0)}
-                  </span>
+                <div className="flex justify-between mt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400">24h Volume:</span>
+                    <span className="text-sm">892.3K oz</span>
+                  </div>
+                  <div className="flex gap-6">
+                    <div className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-red-500 mr-2"></span>
+                      <span className="text-sm text-red-500">
+                        Low {formatPrice(marketData.Silver?.low || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                      <span className="text-sm text-green-500">
+                        High {formatPrice(marketData.Silver?.high || 0)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Market Sentiment Card */}
-          <div className="bg-[#1A1512] rounded-lg overflow-hidden p-4">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-green-500">BUYERS (56%)</span>
-              <span className="text-green-500">+0.040%</span>
-              <span className="text-red-500">SELLERS (44%)</span>
+          {/* Enhanced Market Sentiment Card */}
+          <div className="bg-[#1A1512] rounded-xl overflow-hidden p-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-2">
+                <span className="text-green-500 font-bold">BUYERS</span>
+                <span className="text-sm bg-green-500/20 text-green-500 px-2 py-0.5 rounded-full">
+                  56%
+                </span>
+                <span className="text-xs text-green-500">+0.040%</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-red-500 font-bold">SELLERS</span>
+                <span className="text-sm bg-red-500/20 text-red-500 px-2 py-0.5 rounded-full">
+                  44%
+                </span>
+              </div>
             </div>
-            <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-3 bg-gray-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-red-500"
+                className="h-full bg-gradient-to-r from-green-500 to-red-500 transition-all duration-1000"
                 style={{ width: "56%" }}
               />
             </div>
           </div>
         </div>
 
-        {/* Right Column - Commodity Table */}
-        <div className="flex-1">
+        {/* Right Column - Enhanced Commodity Table */}
+        <div className="flex-1 flex flex-col">
           <div className="h-40 mb-4" />
-          <div className="bg-[#1A1512] rounded-lg overflow-hidden">
-            <div className="bg-[#D4AF37] p-3">
+          <div className="bg-[#1A1512] rounded-xl overflow-hidden flex-1">
+            <div className="bg-gradient-to-r from-[#D4AF37] to-[#E5C158] p-4">
               <div className="grid grid-cols-4 text-black font-bold">
                 <div>METAL</div>
                 <div>WEIGHT</div>
@@ -353,12 +462,20 @@ const TVView = () => {
                 <div>BUY AED</div>
               </div>
             </div>
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-gray-700/50">
               {isLoading ? (
-                <div className="p-4 text-center text-white">Loading...</div>
+                <div className="p-8 text-center">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-[#D4AF37] border-r-2 border-b-2 border-gray-800"></div>
+                  <div className="text-gray-400 mt-4">
+                    Loading commodity data...
+                  </div>
+                </div>
               ) : commodities.length > 0 ? (
                 getDisplayedCommodities().map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-4 p-4 text-white">
+                  <div
+                    key={idx}
+                    className="grid grid-cols-4 p-6 text-white hover:bg-white/5 transition-colors duration-200"
+                  >
                     <div className="flex flex-col">
                       <span className="font-bold text-[#D4AF37]">
                         {item.metal}
@@ -367,17 +484,17 @@ const TVView = () => {
                         {item.purity}
                       </span>
                     </div>
-                    <div>{`${item.unit} ${item.weight}`}</div>
-                    <div className="text-green-400">
+                    <div className="flex items-center">{`${item.unit} ${item.weight}`}</div>
+                    <div className="text-green-400 font-medium">
                       {calculateUserSpotRatePrice(item, "sell")}
                     </div>
-                    <div className="text-red-400">
+                    <div className="text-red-400 font-medium">
                       {calculateUserSpotRatePrice(item, "buy")}
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center text-white">
+                <div className="p-8 text-center text-gray-400">
                   No commodities available
                 </div>
               )}
@@ -386,13 +503,16 @@ const TVView = () => {
         </div>
       </div>
 
-      {/* News Ticker */}
+      {/* Enhanced News Ticker */}
       <div className="mt-4">
-        <div className="bg-[#D4AF37] p-2 rounded-lg">
-          <div className="flex items-center">
-            <span className="font-bold px-4">Aurify Gold Updates</span>
+        <div className="bg-gradient-to-r from-[#D4AF37] to-[#E5C158] rounded-xl overflow-hidden">
+          <div className="flex items-center p-3">
+            <div className="font-bold px-4 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Aurify Gold Updates
+            </div>
             <motion.span
-              className="whitespace-nowrap"
+              className="whitespace-nowrap text-black/80"
               animate={{ x: [-1000, 1000] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             >
