@@ -274,20 +274,26 @@ const ProfilePage = () => {
                   onChange={handleInputChange}
                 />
                 {/* New latitude and longitude input fields */}
-                <InputField
-                  label="Latitude"
-                  type="number"
-                  name="latitude"
-                  value={profileInfo.latitude}
-                  onChange={handleInputChange}
-                />
-                <InputField
-                  label="Longitude"
-                  type="number"
-                  name="longitude"
-                  value={profileInfo.longitude}
-                  onChange={handleInputChange}
-                />
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <InputField
+                      label="Latitude"
+                      type="number"
+                      name="latitude"
+                      value={profileInfo.latitude}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <InputField
+                      label="Longitude"
+                      type="number"
+                      name="longitude"
+                      value={profileInfo.longitude}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-2">
                     Social Media
