@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { FaDownload, FaRedo } from "react-icons/fa";
 import axiosInstance from "../../axios/axiosInstance";
+import Draggable from 'react-draggable';
+import { set } from "lodash";
 
 const BannerCreator = () => {
   const [storedBackground, setStoredBackground] = useState(null);
@@ -26,6 +28,15 @@ const BannerCreator = () => {
   const [askRate, setAskRate] = useState("");
   const [errors, setErrors] = useState({});
 
+  // Draggable state
+  const [logoPosition, setLogoPosition] = useState({ x: 180, y: 300 });
+  const [companyNamePosition, setCompanyNamePosition] = useState({ x: 120, y: 400 });
+  const [addressPosition, setAddressPosition] = useState({ x: 200, y: 450 });
+  const [mobileNumberPosition, setMobileNumberPosition] = useState({ x: 160, y: 470 });
+  const [datePosition, setDatePosition] = useState({ x: 100, y: 50 });
+  const [closingRatePosition, setClosingRatePosition] = useState({ x: 130, y: 100 });
+  const [bidAskPosition, setBidAskPosition] = useState({ x: 150, y: 200 });
+
   useEffect(() => {
     const fetchAdminId = async () => {
       try {
@@ -34,6 +45,8 @@ const BannerCreator = () => {
         setAdminId(response.data.data._id);
         setLogo(response.data.data.logo);
         setCompanyName(response.data.data.companyName);
+        setAddress(response.data.data.address);
+        setMobileNumber(response.data.data.whatsapp);
         const uniqueSymbols = [
           ...new Set(
             response.data.data.commodities.map((commodity) => commodity.symbol)
@@ -219,6 +232,12 @@ const BannerCreator = () => {
     ));
   };
 
+
+  const handleDrag = (setter) => (e, data) => {
+    setter({ x: data.x, y: data.y });
+  };
+
+
   return (
     <div className="flex flex-col space-y-8 p-6">
       <div className="flex space-x-8">
@@ -337,12 +356,43 @@ const BannerCreator = () => {
                 })`,
               }}
             >
-              <div className="text-center" style={{ color: textColor }}>
-                <div className="text-4xl font-bold mb-4">
-                  {format(new Date(), "dd MMM yyyy").toUpperCase()}
+              {/* <div className="text-center" style={{ color: textColor }}> */}
+              <Draggable
+                position={datePosition}
+                onDrag={handleDrag(setDatePosition)}
+              >
+                <div 
+                  className="absolute cursor-move text-center" 
+                  style={{ color: textColor }}
+                >
+                  <div className="text-4xl font-bold mb-4">
+                    {format(new Date(), "dd MMM yyyy").toUpperCase()}
+                  </div>
                 </div>
-                <div className="text-2xl mb-4">CLOSING RATE</div>
-                <div className="flex justify-center space-x-16 mb-2">
+              </Draggable>
+                
+                {/* Closing Rate Text */}
+              <Draggable
+                position={closingRatePosition}
+                onDrag={handleDrag(setClosingRatePosition)}
+              >
+                <div 
+                  className="absolute cursor-move text-center p-2 bg-black/20 rounded" 
+                  style={{ color: textColor }}
+                >
+                  <div className="text-2xl">CLOSING RATE</div>
+                </div>
+              </Draggable>
+
+               {/* Bid/Ask Rates */}
+               <Draggable
+                position={bidAskPosition}
+                onDrag={handleDrag(setBidAskPosition)}
+              >
+                <div 
+                  className="absolute flex justify-center space-x-16 mb-2 cursor-move" 
+                  style={{ color: textColor }}
+                >
                   <div className="text-center">
                     <div className="text-2xl font-bold mb-2">BID</div>
                     <div className="bg-gray-800 bg-opacity-50 p-2 rounded-lg">
@@ -356,27 +406,63 @@ const BannerCreator = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </Draggable>
+               {/* Logo */}
+               {logo && (
+                <Draggable
+                  position={logoPosition}
+                  onDrag={handleDrag(setLogoPosition)}
+                >
+                  <img
+                    src={logo}
+                    alt="Logo"
+                    className="absolute w-20 h-20 object-contain cursor-move"
+                  />
+                </Draggable>
+              )}
 
-              <div className="text-center" style={{ color: textColor }}>
-                <div className="flex flex-col items-center">
-                  {logo && (
-                    <img
-                      src={logo}
-                      alt="Logo"
-                      className="w-20 h-20 object-contain mb-2"
-                    />
-                  )}
-                  <div
-                    className="text-3xl font-bold mb-2"
-                    style={{ color: companyNameColor }}
-                  >
+               {/* Company Name */}
+               <Draggable
+                position={companyNamePosition}
+                onDrag={handleDrag(setCompanyNamePosition)}
+              >
+                <div 
+                  className="absolute cursor-move text-center" 
+                  style={{ color: companyNameColor }}
+                >
+                  <div className="text-3xl font-bold mb-2">
                     {companyName}
                   </div>
+                </div>
+              </Draggable>
+
+               {/* Address */}
+               <Draggable
+                position={addressPosition}
+                onDrag={handleDrag(setAddressPosition)}
+              >
+                <div 
+                  className="absolute cursor-move text-center" 
+                  style={{ color: textColor }}
+                >
                   <div className="text-lg mb-1">{formatAddress(address)}</div>
+                </div>
+              </Draggable>
+
+              {/* Mobile Number */}
+              <Draggable
+                position={mobileNumberPosition}
+                onDrag={handleDrag(setMobileNumberPosition)}
+              >
+                <div 
+                  className="absolute cursor-move text-center" 
+                  style={{ color: textColor }}
+                >
                   <div className="text-lg">{mobileNumber}</div>
                 </div>
-              </div>
+              </Draggable>
+
+             
             </div>
           ) : (
             <div className="w-full h-[550px] rounded-lg bg-gray-200 flex items-center justify-center">
@@ -390,3 +476,4 @@ const BannerCreator = () => {
 };
 
 export default BannerCreator;
+
