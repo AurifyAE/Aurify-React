@@ -24,6 +24,7 @@ import UserChatLayout from "../pages/Chat/UserChat";
 import NotFound from "../pages/Error/NotFound";
 import ServerError from "../pages/Error/ServerError";
 import Protect from "../protectorRouter/adminProtect";
+import UsersProductManagement from "../layout/UsersProductManagementLayout"
 
 function Routers() {
   const [features, setFeatures] = useState(null);
@@ -133,6 +134,9 @@ function Routers() {
           path="users-spotrate/:categoryId"
           element={<UsersSpotRateLayout />}
         />
+        <Route path="users-productmanagement/:userId"
+        element={<UsersProductManagement />} />
+        
         <Route path="tv-view" element={<TVViewLayout />} />
         {/* Protected Routes */}
         <Route

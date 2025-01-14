@@ -9,8 +9,6 @@ const ProfilePage = () => {
   const [isLogoSubmitted, setIsLogoSubmitted] = useState(false);
   const [userData, setUserData] = useState(null);
   const [error, setError] = useState(null);
-  
-
 
 
   const handleFileChange = (event) => {
@@ -68,14 +66,16 @@ const ProfilePage = () => {
     companyName: '',
     email: '',
     mobile: '',
-    location: ''
+    location: '',
+    whatsapp:'',
   });
 
   const [profileInfo, setProfileInfo] = useState({
     comapanyName: '',
     email: '',
     mobile: '',
-    location: ''
+    location: '',
+    whatsapp:'',
   });
   
   useEffect(() => {
@@ -84,7 +84,8 @@ const ProfilePage = () => {
         companyName: userData.data.companyName || '',
         email: userData.data.email || '',
         mobile: userData.data.contact || '',
-        location: userData.data.address || ''
+        location: userData.data.address || '',
+         whatsapp: userData.data.whatsapp || ''
       };
       setProfileInfo(newProfileInfo);
       setOriginalProfileInfo(newProfileInfo);
@@ -113,7 +114,8 @@ const ProfilePage = () => {
         companyName: profileInfo.companyName,
         email: profileInfo.email,
         mobile: profileInfo.mobile,
-        location: profileInfo.location
+        location: profileInfo.location,
+        whatsapp: profileInfo.whatsapp
       });
       if (response.status === 200) {
         toast.success('Profile updated successfully');
@@ -125,9 +127,7 @@ const ProfilePage = () => {
     }
   };
   
-  
 
-  
   useEffect(() => {
     const fetchUserData = async () => {
       const userName = localStorage.getItem('userName');
@@ -136,7 +136,6 @@ const ProfilePage = () => {
         setError('User not logged in');
         return;
       }
-  
       try {
         // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userName}`);
@@ -233,6 +232,12 @@ const ProfilePage = () => {
           label="Location" 
           name="location" 
           value={profileInfo.location} 
+          onChange={handleInputChange} 
+        />
+         <InputField 
+          label="Whatsapp" 
+          name="whatsapp" 
+          value={profileInfo.whatsapp} 
           onChange={handleInputChange} 
         />
         <div>
