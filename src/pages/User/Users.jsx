@@ -87,6 +87,8 @@ const CategoryManagement = ({
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState(null);
   const navigate = useNavigate();
+ 
+
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -136,6 +138,8 @@ const CategoryManagement = ({
   const handleViewCategory = (categoryId) => {
     navigate(`/users-spotrate/${categoryId}`);
   };
+
+ 
 
   const columns = [
     { id: "name", label: "Name", minWidth: 170 },
@@ -242,6 +246,7 @@ const UserDataTable = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openModal, setOpenModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+  const navigate = useNavigate();
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -277,6 +282,7 @@ const UserDataTable = ({
     { id: "category", label: "Category", minWidth: 130 },
     { id: "location", label: "Location", minWidth: 170 },
     { id: "password", label: "Password", minWidth: 170 },
+    { id: "product management", label: "Product Management", minWidth: 130 },
     { id: "actions", label: "Actions", minWidth: 130 },
   ];
 
@@ -319,6 +325,10 @@ const UserDataTable = ({
                     <TableCell>{user.categoryName}</TableCell>
                     <TableCell>{user.location}</TableCell>
                     <TableCell>{user.decryptedPassword}</TableCell>
+                    <TableCell><Button variant="contained" 
+                    onClick={() => navigate(`/users-productmanagement/${user._id}`)}
+                    >Product Management
+                    </Button></TableCell>
                     <TableCell>
                       <IconButton
                         onClick={() => handleOpenModal(user)}
@@ -368,6 +378,9 @@ const UserList = () => {
   const [categories, setCategories] = useState([]);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+
+
+
 
   useEffect(() => {
     const fetchData = async () => {

@@ -150,7 +150,6 @@ const ProfilePage = () => {
         setError("User not logged in");
         return;
       }
-
       try {
         // Include the email directly in the URL
         const response = await axiosInstance.get(`/data/${userName}`);

@@ -131,6 +131,7 @@ const LoginPage = ({ onLoginSuccess })=> {
     try {
       const response = await axiosInstance.post("/login", values);
       if (response.data.success) {
+        console.log(response.data)
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userName", userName);
         if (rememberMe) {

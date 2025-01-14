@@ -23,6 +23,7 @@ import UserChatLayout from "../pages/Chat/UserChat";
 import NotFound from "../pages/Error/NotFound";
 import ServerError from "../pages/Error/ServerError";
 import Protect from "../protectorRouter/adminProtect";
+import UsersProductManagement from "../layout/UsersProductManagementLayout"
 
 function Routers() {
   const [features, setFeatures] = useState(null);
