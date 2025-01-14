@@ -790,7 +790,7 @@ const UsersDB = () => {
   const fetchCategories = async () => {
     try {
       const response = await axiosInstance.get(
-        `/getUserDBCategories/${adminId}`
+        `/getCategories/${adminId}`
       );
       if (response.data.success) {
         setCategories(response.data.categories);
@@ -803,7 +803,7 @@ const UsersDB = () => {
   const handleAddCategory = async (categoryData) => {
     try {
       const response = await axiosInstance.post(
-        `/addUserDBCategory/${adminId}`,
+        `/addCategory/${adminId}`,
         categoryData
       );
       if (response.data.success) {
@@ -819,7 +819,7 @@ const UsersDB = () => {
   const handleEditCategory = async (categoryId, categoryData) => {
     try {
       const response = await axiosInstance.put(
-        `/editUserDBCategory/${categoryId}/${adminId}`,
+        `/editCategory/${categoryId}/${adminId}`,
         categoryData
       );
       if (response.data.success) {
@@ -839,7 +839,7 @@ const UsersDB = () => {
   const handleDeleteCategory = async (categoryId) => {
     try {
       const response = await axiosInstance.delete(
-        `/deleteUserDBCategory/${categoryId}/${adminId}`
+        `/deleteCategory/${categoryId}/${adminId}`
       );
       if (response.data.success) {
         setCategories(categories.filter((cat) => cat._id !== categoryId));
