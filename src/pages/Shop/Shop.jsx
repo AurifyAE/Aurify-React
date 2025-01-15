@@ -1,7 +1,9 @@
 import {
   Delete as DeleteIcon,
+  CheckCircle,
+  Block as BlockIcon,
   Edit as EditIcon,
-} from '@mui/icons-material';
+} from "@mui/icons-material";
 import {
   Button,
   Image,
@@ -25,30 +27,36 @@ import {
   CardHeader,
   Divider,
   Link,
-
 } from "@nextui-org/react";
 import React, { useCallback, useEffect, useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { MdAddShoppingCart } from "react-icons/md";
 import axiosInstance from "../../axios/axiosInstance";
-import { IconButton } from '@mui/material';
+import { IconButton } from "@mui/material";
 
 const ProductTag = {
-  BEST_SELLER: 'Best Seller',
-  SEASONAL: 'Seasonal',
-  NEW_ARRIVAL: 'New Arrival',
-  TOP_RATED: 'Top Rated',
-  EXCLUSIVE: 'Exclusive',
-  BACK_IN_STOCK: 'Back in Stock',
-  NONE: 'None',
+  BEST_SELLER: "Best Seller",
+  SEASONAL: "Seasonal",
+  NEW_ARRIVAL: "New Arrival",
+  TOP_RATED: "Top Rated",
+  EXCLUSIVE: "Exclusive",
+  BACK_IN_STOCK: "Back in Stock",
+  NONE: "None",
 };
 
 const Shop = () => {
-
+  const adminId = localStorage.getItem("adminId");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  //banner
+  const [isEcomBannerModalOpen, setIsEcomBannerModalOpen] = useState(false);
+  const [isViewAllEcomBannerOpen, setIsViewAllEcomBannerOpen] = useState(false);
+  const [bannerForm, setBannerForm] = useState({
+    title: "",
+    image: [],
+  });
+  const [banners, setBanners] = useState([]);
   // maincategory
   const [isMainCategoryModalOpen, setIsMainCategoryModalOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
@@ -70,39 +78,41 @@ const Shop = () => {
 
   // subcategory
   const [isSubCategoryModalOpen, setIsSubCategoryModalOpen] = useState(false);
+  const [isViewAllSubOpen, setIsViewAllSubOpen] = useState(false);
   const [subCategoryForm, setSubCategoryForm] = useState({
     name: "",
     description: "",
     mainCategoryId: "",
+    createdBy: adminId,
   });
   const [mainCategories, setMainCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
-  const [isViewAllSubOpen, setIsViewAllSubOpen] = useState(false);
 
   // product
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productForm, setProductForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    weight: '',
-    purity: '',
-    type: '',
-    tags: 'New Arrival',
-    sku: '',
-    subCategory: '',
+    title: "",
+    description: "",
+    price: "",
+    weight: "",
+    makingCharge: "",
+    purity: "",
+    type: "",
+    tags: "New Arrival",
+    sku: "",
+    subCategory: "",
     image: [],
   });
   const [products, setProducts] = useState([]);
   const [isViewAllProductOpen, setIsViewAllProductOpen] = useState(false);
   const [commodities, setCommodities] = useState([]);
 
-
   const toggleViewAll = () => setIsViewAllOpen(!isViewAllOpen);
   const toogleSubViewAll = () => setIsViewAllSubOpen(!isViewAllSubOpen);
-  const toogleProductViewAll = () => setIsViewAllProductOpen(!isViewAllProductOpen);
-
-
+  const toogleProductViewAll = () =>
+    setIsViewAllProductOpen(!isViewAllProductOpen);
+  const toogleEcomBannerViewAll = () =>
+    setIsViewAllEcomBannerOpen(!isViewAllEcomBannerOpen);
   // filter
   const [filterSubCategories, setFilterSubCategories] = useState([]);
   const [filterProducts, setFilterProducts] = useState([]);
@@ -115,12 +125,13 @@ const Shop = () => {
   const [editingMainCategory, setEditingMainCategory] = useState(null);
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
-
+  const [editingEcomBanner, setEditingEcomBanner] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       await fetchCategories();
       await fetchSubCategories();
+      await fetchEcomBanner();
       await fetchProducts();
       await fetchCommodities();
     };
@@ -133,7 +144,6 @@ const Shop = () => {
 
   // Function to fetch commodities
   const fetchCommodities = async (userName) => {
-
     try {
       const userName = localStorage.getItem("userName");
       if (!userName) {
@@ -149,20 +159,22 @@ const Shop = () => {
         throw new Error("Failed to fetch commodities.");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || "An error occurred while fetching commodities.";
+      const errorMessage =
+        error.response?.data?.message ||
+        "An error occurred while fetching commodities.";
       toast.error(errorMessage);
       console.error("Error fetching commodities:", error);
     }
   };
-
-
 
   // filter
 
   const handleMainCategoryClick = async (mainCategory) => {
     try {
       setSelectedMainCategory(mainCategory);
-      const response = await axiosInstance.get(`/sub-categories/${mainCategory._id}`);
+      const response = await axiosInstance.get(
+        `/sub-categories/${mainCategory._id}`
+      );
       console.log("Fetched subcategories:", response.data); // Debug
       setFilterSubCategories(response.data.data || []); // Update state with fetched subcategories
     } catch (error) {
@@ -180,7 +192,9 @@ const Shop = () => {
       setLoading(true); // Start loading
       setError(""); // Clear previous errors
 
-      const response = await axiosInstance.get(`/get-product?subCateId=${subCategory._id}`);
+      const response = await axiosInstance.get(
+        `/get-product?subCateId=${subCategory._id}`
+      );
       console.log("Fetched products:", response.data); // Debugging
 
       if (response.data.success) {
@@ -202,19 +216,16 @@ const Shop = () => {
     fetchByProducts(subCategory); // Fetch products for the selected subcategory
   };
 
-
-
-
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/main-categories');
+      const response = await axiosInstance.get(`/main-categories/${adminId}`);
       setMainCategories(response.data.data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch categories');
-      toast.error('Error loading categories');
-      console.error('Error fetching categories:', err);
+      setError("Failed to fetch categories");
+      toast.error("Error loading categories");
+      console.error("Error fetching categories:", err);
     } finally {
       setLoading(false);
     }
@@ -223,13 +234,30 @@ const Shop = () => {
   const fetchSubCategories = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/sub-categories');
+      const response = await axiosInstance.get(
+        `/get-sub-categories/${adminId}`
+      );
       setSubCategories(response.data.data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch subcategories');
-      toast.error('Error loading subcategories');
-      console.error('Error fetching subcategories:', err);
+      setError("Failed to fetch subcategories");
+      toast.error("Error loading subcategories");
+      console.error("Error fetching subcategories:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchEcomBanner = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/banner/${adminId}`);
+      console.log(response.data.data);
+      setBanners(response.data.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch EcomBanner");
+      toast.error("Error loading EcomBanner");
+      console.error("Error fetching EcomBanner:", err);
     } finally {
       setLoading(false);
     }
@@ -241,7 +269,6 @@ const Shop = () => {
       ...prevData,
       [name]: value,
     }));
-
   };
 
   const handleSubCategoryInputChange = (e) => {
@@ -269,9 +296,36 @@ const Shop = () => {
     }));
   };
 
+  const handleEcomBannerInputChange = (e) => {
+    const { name, value } = e.target;
+    setBannerForm((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleFileImgChangeEcomBanner = (e, field) => {
+    const files = e.target.files;
+    if (files && files?.length > 0) {
+      const fileArray = Array.from(files);
+      setBannerForm((prevState) => ({
+        ...prevState,
+        [field]: fileArray,
+      }));
+    }
+  };
+
+  const handleFileChangeEcomBanner = (e) => {
+    const file = e.target.files[0];
+    setBannerForm((prevData) => ({
+      ...prevData,
+      image: file,
+      imagePreview: file ? URL.createObjectURL(file) : "",
+    }));
+  };
 
   const handleDeleteCategory = async (categoryId) => {
-    if (!window.confirm('Are you sure you want to delete this category?')) {
+    if (!window.confirm("Are you sure you want to delete this category?")) {
       return;
     }
 
@@ -280,19 +334,17 @@ const Shop = () => {
       await fetchCategories();
 
       // Remove subcategories associated with this category
-      const updatedSubCategories = subCategories.filter(
-        subCat => subCat.mainCategory !== categoryId
+      const updatedSubCategories = subCategories?.filter(
+        (subCat) => subCat.mainCategory !== categoryId
       );
       setSubCategories(updatedSubCategories);
 
-
-      toast.success('Category  deleted successfully!');
+      toast.success("Category  deleted successfully!");
     } catch (error) {
-      toast.error('Error deleting category');
-      console.error('Error:', error);
+      toast.error("Error deleting category");
+      console.error("Error:", error);
     }
   };
-
 
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -301,6 +353,7 @@ const Shop = () => {
     const formData = new FormData();
     formData.append("image", mainCategoryformData.image);
     formData.append("name", mainCategoryformData.name);
+    formData.append("createdBy", adminId);
     formData.append("description", mainCategoryformData.description);
 
     try {
@@ -325,6 +378,7 @@ const Shop = () => {
 
       // Refresh categories
       await fetchCategories();
+      // await fetchSubCategories();
     } catch (error) {
       console.error("Error adding main category:", error);
       toast.error("Failed to add Main Category. Please try again.");
@@ -337,14 +391,12 @@ const Shop = () => {
     setEditingMainCategory(category);
     setMainCategoryFormData({
       name: category.name,
-      description: category.description || '',
+      description: category.description || "",
       image: null,
-      imagePreview: category.image
+      imagePreview: category.image,
     });
     setIsViewAllOpen(true);
   };
-
-
 
   // Create a new function for updating a category
   const handleUpdateCategory = async () => {
@@ -358,11 +410,15 @@ const Shop = () => {
     }
 
     try {
-      const response = await axiosInstance.put(`/main-category/${editingMainCategory._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await axiosInstance.put(
+        `/main-category/${editingMainCategory._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
 
       toast.success("Category updated successfully!");
 
@@ -387,37 +443,30 @@ const Shop = () => {
 
   const handleAddSubCategory = async () => {
     try {
-      const response = await axiosInstance.post("/sub-category", subCategoryForm); // Replace with your endpoint
+      const response = await axiosInstance.post(
+        "/sub-category",
+        subCategoryForm
+      ); // Replace with your endpoint
+      setIsSubCategoryModalOpen(false); // Close the modal
       toast.success("Subcategory added successfully!");
       setSubCategoryForm({
         name: "",
         description: "",
         mainCategoryId: "",
       });
-      onClose();
+
+      await fetchSubCategories();
     } catch (error) {
       console.error("Error adding subcategory:", error);
       toast.error("Failed to add subcategory. Please try again.");
     }
   };
 
-  // Fetch Products Method
-  const fetchProducts = async () => {
-    try {
-      const response = await axiosInstance.get(`/get-allproduct`);
-      setProducts(response.data.data);
-    } catch (error) {
-      toast.error('Error loading products');
-      console.error('Error fetching products:', error);
-    }
-  };
-
- 
-
-
   const handleDeleteSubCategory = async (subCategoryId) => {
     // Confirm deletion
-    if (!window.confirm('Are you sure you want to delete this sub-category? ')) {
+    if (
+      !window.confirm("Are you sure you want to delete this sub-category? ")
+    ) {
       return;
     }
     try {
@@ -425,156 +474,19 @@ const Shop = () => {
       await axiosInstance.delete(`/sub-category/${subCategoryId}`);
 
       // Remove from local state
-      setSubCategories(prevSubCategories =>
-        prevSubCategories.filter(subCat => subCat._id !== subCategoryId)
+      setSubCategories((prevSubCategories) =>
+        prevSubCategories.filter((subCat) => subCat._id !== subCategoryId)
       );
 
-
-      toast.success('Sub-Category and associated products deleted successfully!');
+      toast.success(
+        "Sub-Category and associated products deleted successfully!"
+      );
+      await fetchSubCategories();
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error deleting sub-category';
+      const errorMessage =
+        error.response?.data?.message || "Error deleting sub-category";
       toast.error(errorMessage);
-      console.error('Delete Sub-Category Error:', error);
-    }
-  };
-
-
-  // product section
-
-  // new code
-  // const handleAddProduct = async () => {
-  //   try {
-  //     // Validation
-  //     if (!productForm.title || !productForm.price || !productForm.sku || !productForm.subCategory) {
-  //       toast.error('Please fill in all required fields: Title, Price, SKU, and Subcategory.');
-  //       return;
-  //     }
-
-  //     // Prepare form data
-  //     const formData = new FormData();
-  //     formData.append('title', productForm.title);
-  //     formData.append('description', productForm.description);
-  //     formData.append('price', Number(productForm.price));
-  //     formData.append('weight', Number(productForm.weight));
-  //     formData.append('purity', Number(productForm.purity));
-  //     formData.append('type', productForm.type);
-  //     formData.append('tags', productForm.tags);
-  //     formData.append('sku', productForm.sku);
-  //     formData.append('subCategory', productForm.subCategory);
-
-  //     // Handle image uploads
-  //     if (productForm.image) {
-  //       if (Array.isArray(productForm.image)) {
-  //         productForm.image.forEach((img) => formData.append('image', img));
-  //       } else {
-  //         formData.append('image', productForm.image);
-  //       }
-  //     }
-
-  //     // Define `adminId` or `userId`
-  //     const adminId = '6750225790f570ea51d41d61'; // Replace with actual admin ID logic (e.g., from Redux, Context, or localStorage)
-  //     const userId = null; // Or fetch the userId if applicable
-
-  //     // Construct the URL with query parameters
-  //     const url = `/products${adminId ? `?adminId=${adminId}` : userId ? `?userId=${userId}` : ''}`;
-
-  //     // Make the API request
-  //     const response = await axiosInstance.post(url, formData, {
-  //       headers: { 'Content-Type': 'multipart/form-data' },
-  //     });
-
-  //     console.log('Product added:', response.data);
-
-  //     // Close the modal and reset the form
-  //     setIsViewAllProductOpen(false);
-  //     setProductForm({
-  //       title: '',
-  //       description: '',
-  //       price: '',
-  //       weight: '',
-  //       purity: '',
-  //       type: '',
-  //       tags: 'New Arrival',
-  //       sku: '',
-  //       subCategory: '',
-  //       image: null,
-  //     });
-
-  //     toast.success('Product added successfully!');
-  //   } catch (error) {
-  //     const errorMessage = error.response?.data?.message || 'Failed to add product.';
-  //     toast.error(errorMessage);
-  //     console.error('Error adding product:', error.response || error);
-  //   }
-  // };
-
-  const handleAddProduct = async () => {
-    try {
-      // Validation
-      if (!productForm.title || !productForm.price || !productForm.sku || !productForm.subCategory) {
-        toast.error('Please fill in all required fields: Title, Price, SKU, and Subcategory.');
-        return;
-      }
-
-      // Retrieve user from localStorage
-      const userString = localStorage.getItem('user');
-      const user = userString ? JSON.parse(userString) : null;
-
-      // Determine adminId or userId
-      const adminId = user?._id || null;
-      const userId = null; // Modify this if you want to use userId in some cases
-
-      // Prepare form data
-      const formData = new FormData();
-      formData.append('title', productForm.title);
-      formData.append('description', productForm.description);
-      formData.append('price', Number(productForm.price));
-      formData.append('weight', Number(productForm.weight));
-      formData.append('purity', Number(productForm.purity));
-      formData.append('type', productForm.type);
-      formData.append('tags', productForm.tags);
-      formData.append('sku', productForm.sku);
-      formData.append('subCategory', productForm.subCategory);
-
-      // Handle image uploads
-      if (productForm.image) {
-        if (Array.isArray(productForm.image)) {
-          productForm.image.forEach((img) => formData.append('image', img));
-        } else {
-          formData.append('image', productForm.image);
-        }
-      }
-
-      // Construct the URL with query parameters
-      const url = `/products${adminId ? `?adminId=${adminId}` : userId ? `?userId=${userId}` : ''}`;
-
-      // Make the API request
-      const response = await axiosInstance.post(url, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      console.log('Product added:', response.data);
-
-      // Close the modal and reset the form
-      setIsViewAllProductOpen(false);
-      setProductForm({
-        title: '',
-        description: '',
-        price: '',
-        weight: '',
-        purity: '',
-        type: '',
-        tags: 'New Arrival',
-        sku: '',
-        subCategory: '',
-        image: null,
-      });
-
-      toast.success('Product added successfully!');
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to add product.';
-      toast.error(errorMessage);
-      console.error('Error adding product:', error.response || error);
+      console.error("Delete Sub-Category Error:", error);
     }
   };
   // -------------------------------
@@ -583,28 +495,18 @@ const Shop = () => {
     setEditingSubCategory(subCategory); // Store the selected subcategory for editing
     setSubCategoryForm({
       name: subCategory.name,
-      description: subCategory.description || '',
-      mainCategoryId: subCategory.mainCategory._id || '', // Assuming mainCategory is an object
+      description: subCategory.description || "",
+      mainCategoryId: subCategory.mainCategory._id || "", // Assuming mainCategory is an object
     });
     setIsViewAllSubOpen(true); // Open the modal for editing
   };
 
   const handleUpdateSubCategory = async () => {
-    const formData = new FormData();
-    formData.append("name", subCategoryForm.name);
-    formData.append("description", subCategoryForm.description);
-
-    // Only append image if a new image is selected
-    if (subCategoryForm.image) {
-      formData.append("image", subCategoryForm.image);
-    }
-
     try {
-      const response = await axiosInstance.put(`/sub-category/${editingSubCategory._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await axiosInstance.put(
+        `/sub-category/${editingSubCategory._id}`,
+        subCategoryForm
+      );
 
       toast.success("Subcategory updated successfully!");
 
@@ -616,9 +518,9 @@ const Shop = () => {
         image: null,
         imagePreview: null,
       });
-      setIsSubCategoryModalOpen(false); // Close the modal
       setIsEditMode(false); // Exit edit mode
       setEditingSubCategory(null); // Clear the editing subcategory
+      setIsSubCategoryModalOpen(false); // Close the modal
 
       // Refresh subcategories
       await fetchSubCategories();
@@ -627,96 +529,193 @@ const Shop = () => {
       toast.error("Failed to update subcategory. Please try again.");
     }
   };
-// ------------------------
 
-    const handleEditProduct = (product) => {
-      setIsEditMode(true); // Enable edit mode
-      setEditingProduct(product); 
-      setProductForm({
-          title: product.title,
-          description: product.description || '',
-          price: product.price?.toString() || '',
-          weight: product.weight?.toString() || '',
-          type: product.type || '',
-          purity: product.purity?.toString() || '',
-          tags: product.tag || 'New Arrival',
-          sku: product.sku,
-          subCategory: product.subCategory.toString(),
-          image: [], 
+  const fetchProducts = async () => {
+    try {
+      const response = await axiosInstance.get(`/get-all-product/${adminId}`);
+      setProducts(response.data.data);
+    } catch (error) {
+      toast.error("Error loading products");
+      console.error("Error fetching products:", error);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    try {
+      // Validation
+      if (
+        !productForm.title ||
+        !productForm.price ||
+        !productForm.sku ||
+        !productForm.subCategory
+      ) {
+        toast.error(
+          "Please fill in all required fields: Title, Price, SKU, and Subcategory."
+        );
+        return;
+      }
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("title", productForm.title);
+      formData.append("description", productForm.description);
+      formData.append("price", Number(productForm.price));
+      formData.append("weight", Number(productForm.weight));
+      formData.append("makingCharge", Number(productForm.makingCharge));
+      formData.append("purity", Number(productForm.purity));
+      formData.append("type", productForm.type);
+      formData.append("tags", productForm.tags);
+      formData.append("sku", productForm.sku);
+      formData.append("subCategory", productForm.subCategory);
+
+      // Handle image uploads
+      if (productForm.image) {
+        if (Array.isArray(productForm.image)) {
+          productForm.image.forEach((img) => formData.append("image", img));
+        } else {
+          formData.append("image", productForm.image);
+        }
+      }
+
+      // Construct the URL with query parameters
+      const url = `/products?adminId=${adminId}`;
+
+      // Make the API request
+      const response = await axiosInstance.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      setIsViewAllProductOpen(true);
+
+      console.log("Product added:", response.data);
+
+      // Close the modal and reset the form
+      setIsViewAllProductOpen(false);
+      setProductForm({
+        title: "",
+        description: "",
+        price: "",
+        weight: "",
+        makingCharge: "",
+        purity: "",
+        type: "",
+        tags: "New Arrival",
+        sku: "",
+        subCategory: "",
+        image: [],
+      });
+       // Refresh product list
+       await fetchProducts();
+      toast.success("Product added successfully!");
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to add product.";
+      toast.error(errorMessage);
+      console.error("Error adding product:", error.response || error);
+    }
+  };
+
+  // ------------------------
+
+  const handleEditProduct = (product) => {
+    setIsEditMode(true); // Enable edit mode
+    setEditingProduct(product);
+    setProductForm({
+      title: product.title,
+      description: product.description || "",
+      price: product.price?.toString() || "",
+      weight: product.weight?.toString() || "",
+      makingCharge: product.makingCharge?.toString() || "",
+      type: product.type || "",
+      purity: product.purity?.toString() || "",
+      tags: product.tag || "New Arrival",
+      sku: product.sku,
+      subCategory: product.subCategory.toString(),
+      image: [],
+    });
+    setIsViewAllProductOpen(true);
   };
   const handleUpdateProduct = async () => {
     try {
       // Form validation
-      if (!productForm.title || !productForm.price || !productForm.sku || !productForm.subCategory) {
-        toast.error("Please fill in all required fields: Title, Price, SKU, and Subcategory.");
+      if (
+        !productForm.title ||
+        !productForm.price ||
+        !productForm.sku ||
+        !productForm.subCategory
+      ) {
+        toast.error(
+          "Please fill in all required fields: Title, Price, SKU, and Subcategory."
+        );
         return;
       }
-  
+
       // Prepare form data
       const formData = new FormData();
       formData.append("title", productForm.title);
       formData.append("description", productForm.description);
       formData.append("price", Number(productForm.price)); // Convert to number
-      formData.append("weight", Number(productForm.weight)); // Convert to number
+      formData.append("weight", Number(productForm.weight));
+      formData.append("makingCharge", Number(productForm.makingCharge)); // Convert to number
       formData.append("purity", Number(productForm.purity)); // Convert to number
       formData.append("type", productForm.type);
       formData.append("tags", productForm.tags);
       formData.append("sku", productForm.sku);
       formData.append("subCategory", productForm.subCategory);
-  
+
       // Append images (newly uploaded ones only)
-      if (productForm.image && productForm.image.length > 0) {
+      if (productForm?.image && productForm?.image.length > 0) {
         productForm.image.forEach((img) => {
-          formData.append("images", img); // Backend must handle multiple image uploads
+          formData.append("image", img); // Backend must handle multiple image uploads
         });
       }
-  
+
       // Make API request to update the product
-      const response = await axiosInstance.put(`/products/${editingProduct._id}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-  
+      const response = await axiosInstance.put(
+        `/products/${editingProduct._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
       // Notify user of success
       toast.success("Product updated successfully!");
-  
+
       // Reset form and state
       setProductForm({
         title: "",
         description: "",
         price: "",
         weight: "",
+        makingCharge: "",
         purity: "",
         type: "",
         tags: "New Arrival",
         sku: "",
         subCategory: "",
-        image: null,
-        imagePreview: null,
+        image: [],
+        imagePreview: [],
       });
-  
+
       setIsEditMode(false); // Exit edit mode
       setEditingProduct(null); // Clear the editing product
       setIsViewAllProductOpen(false); // Close the modal
-  
+
       // Refresh product list
       await fetchProducts();
     } catch (error) {
       // Handle errors
-      const errorMessage = error.response?.data?.message || "Failed to update product. Please try again.";
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to update product. Please try again.";
       toast.error(errorMessage);
       console.error("Error updating product:", error.response || error);
     }
   };
-  
-
 
   const handleFileImgChange = (e, field) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
+    if (files && files?.length > 0) {
       const fileArray = Array.from(files);
       setProductForm((prevState) => ({
         ...prevState,
@@ -726,27 +725,153 @@ const Shop = () => {
   };
 
   const handleDeleteProduct = async (productId) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) {
+    if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
     }
     try {
       await axiosInstance.delete(`/products/${productId}`);
       await fetchProducts(); // Refresh product list after deletion
-      toast.success('Product deleted successfully');
+      toast.success("Product deleted successfully");
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error deleting product';
+      const errorMessage =
+        error.response?.data?.message || "Error deleting product";
       toast.error(errorMessage);
-      console.error('Error deleting product:', error.response?.data || error);
+      console.error("Error deleting product:", error.response?.data || error);
+    }
+  };
+
+  ///banner
+  const handleAddEcomBanner = async () => {
+    try {
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("title", bannerForm.title);
+      formData.append("adminId", adminId);
+
+      // Handle image uploads
+      if (bannerForm.image) {
+        if (Array.isArray(bannerForm.image)) {
+          bannerForm.image.forEach((img) => formData.append("image", img));
+        } else {
+          formData.append("image", bannerForm.image);
+        }
+      }
+
+      // Construct the URL with query parameters
+      const url = `/addBanner`;
+
+      // Make the API request
+      const response = await axiosInstance.post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("EcomBanner added:", response.data);
+
+      // Close the modal and reset the form
+      setIsViewAllEcomBannerOpen(false);
+      setBannerForm({
+        title: "",
+        image: null,
+      });
+
+      toast.success("EcomBanner added successfully!");
+      // Refresh EcomBanner list
+      await fetchEcomBanner();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to add EcomBanner.";
+      toast.error(errorMessage);
+      console.error("Error adding EcomBanner:", error.response || error);
+    }
+  };
+
+  const handleEditEcomBanner = (banner) => {
+    setIsEditMode(true); // Enable edit mode
+    setEditingEcomBanner(banner);
+    setBannerForm({
+      title: banner.title,
+      image: [],
+    });
+    setIsViewAllEcomBannerOpen(true);
+  };
+
+  const handleUpdateEcomBanner = async () => {
+    try {
+      // Prepare form data
+      const formData = new FormData();
+      formData.append("title", bannerForm.title);
+      formData.append("adminId", adminId);
+
+      // Append images (newly uploaded ones only)
+      if (bannerForm.image && bannerForm.image.length > 0) {
+        bannerForm.image.forEach((img) => {
+          formData.append("image", img); // Backend must handle multiple image uploads
+        });
+      }
+
+      // Make API request to update the product
+      const response = await axiosInstance.put(
+        `/banner/${editingEcomBanner._id}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Notify user of success
+      toast.success("EcomBanner updated successfully!");
+
+      // Reset form and state
+      setBannerForm({
+        title: "",
+        image: null,
+        imagePreview: null,
+      });
+
+      setIsEditMode(false); // Exit edit mode
+      setEditingEcomBanner(null); // Clear the editing product
+      setIsViewAllEcomBannerOpen(false); // Close the modal
+
+      // Refresh EcomBanner list
+      await fetchEcomBanner();
+    } catch (error) {
+      // Handle errors
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to update EcomBanner. Please try again.";
+      toast.error(errorMessage);
+      console.error("Error updating EcomBanner:", error.response || error);
+    }
+  };
+
+  const handleDeleteEcomBanner = async (bannerId) => {
+    if (!window.confirm("Are you sure you want to delete this EcomBanner?")) {
+      return;
+    }
+    try {
+      await axiosInstance.delete(`/banner/${bannerId}/${adminId}`);
+      await fetchProducts(); // Refresh product list after deletion
+      toast.success("EcomBanner deleted successfully");
+      // Refresh EcomBanner list
+      await fetchEcomBanner();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error deleting EcomBanner";
+      toast.error(errorMessage);
+      console.error(
+        "Error deleting EcomBanner:",
+        error.response?.data || error
+      );
     }
   };
 
   return (
     <div className="container mx-auto px-4">
-
       <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Product Management</h1>
-
       </div>
 
       <div className="mb-6">
@@ -772,7 +897,6 @@ const Shop = () => {
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Main Category
-
         </Button>
 
         <Button
@@ -789,71 +913,22 @@ const Shop = () => {
         >
           Add Product
         </Button>
+
+        <Button
+          auto
+          onClick={() => {
+            setIsEcomBannerModalOpen(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Ecom Banner
+        </Button>
       </div>
 
-      {/* main category addform Modal */}
-      {/* <Modal isOpen={isViewAllOpen} onClose={toggleViewAll}>
-        <ModalContent >
-          <ModalHeader>All Main Categories</ModalHeader>
-          <ModalBody>
-
-            <Input
-              type="text"
-              name="name"
-              placeholder="Enter category name"
-              value={mainCategoryformData.name}
-              onChange={handleInputChange}
-              fullWidth
-            />
-            <Textarea
-              name="description"
-              placeholder="Enter category description"
-              value={mainCategoryformData.description}
-              onChange={handleInputChange}
-              fullWidth
-            />
-            <Input
-              type="file"
-              name="image"
-              accept="image/*"
-              onChange={handleFileChange}
-              fullWidth
-            />
-            {mainCategoryformData.imagePreview && (
-              <div style={{ marginTop: "10px" }}>
-                <img
-                  src={mainCategoryformData.imagePreview}
-                  alt="Selected"
-                  style={{
-                    width: "100%",
-                    maxWidth: "200px",
-                    borderRadius: "8px",
-                  }}
-                />
-              </div>
-            )}
-          </ModalBody>
-
-          <ModalFooter>
-            <Button color="secondary" onPress={toggleViewAll}>
-              Close
-            </Button>
-            <Button
-              auto
-              className="bg-blue-500 text-white"
-              onClick={handleAddMainCategory}
-            >
-              Add
-            </Button>
-
-          </ModalFooter>
-        </ModalContent>
-      </Modal> */}
-
-      <Modal isOpen={isViewAllOpen} onClose={toggleViewAll} >
+      <Modal isOpen={isViewAllOpen} onClose={toggleViewAll}>
         <ModalContent>
           <ModalHeader>
-            {isEditMode ? 'Edit Category' : 'Add New Category'}
+            {isEditMode ? "Edit Category" : "Add New Category"}
           </ModalHeader>
           <ModalBody>
             <Input
@@ -861,20 +936,24 @@ const Shop = () => {
               name="name"
               placeholder="Enter category name"
               value={mainCategoryformData.name}
-              onChange={(e) => setMainCategoryFormData(prev => ({
-                ...prev,
-                name: e.target.value
-              }))}
+              onChange={(e) =>
+                setMainCategoryFormData((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                }))
+              }
               fullWidth
             />
             <Textarea
               name="description"
               placeholder="Enter category description"
               value={mainCategoryformData.description}
-              onChange={(e) => setMainCategoryFormData(prev => ({
-                ...prev,
-                description: e.target.value
-              }))}
+              onChange={(e) =>
+                setMainCategoryFormData((prev) => ({
+                  ...prev,
+                  description: e.target.value,
+                }))
+              }
               fullWidth
             />
             <Input
@@ -904,7 +983,6 @@ const Shop = () => {
               color="secondary"
               onPress={() => {
                 toggleViewAll();
-
               }}
             >
               Close
@@ -913,23 +991,27 @@ const Shop = () => {
             <Button
               auto
               className="bg-blue-500 text-white"
-              onClick={isEditMode ? handleUpdateCategory : handleAddMainCategory}            >
-              {isEditMode ? 'Update' : 'Save'}
+              onClick={
+                isEditMode ? handleUpdateCategory : handleAddMainCategory
+              }
+            >
+              {isEditMode ? "Update" : "Save"}
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-
 
       {/* Main Category table Modal */}
       <Modal
         isOpen={isMainCategoryModalOpen}
         onOpenChange={() => setIsMainCategoryModalOpen(false)}
       >
-        <ModalContent style={{ width: "70%", maxWidth: "900px", marginTop: "400px" }}>
+        <ModalContent
+          style={{ width: "70%", maxWidth: "900px", marginTop: "400px" }}
+        >
           {(onClose) => (
             <>
-              <ModalHeader >
+              <ModalHeader>
                 Add Main Category
                 <Button onClick={toggleViewAll}> Add</Button>
               </ModalHeader>
@@ -944,31 +1026,33 @@ const Shop = () => {
                   <TableBody>
                     {mainCategories?.map((category) => (
                       <TableRow key={category.id}>
-                        <TableCell> <img
-                          src={category.image}
-                          alt={category.name}
-                          style={{
-                            width: '50px',
-                            height: '50px',
-                            objectFit: 'cover'
-                          }}
-                        /></TableCell>
+                        <TableCell>
+                          {" "}
+                          <img
+                            src={category.image}
+                            alt={category.name}
+                            style={{
+                              width: "50px",
+                              height: "50px",
+                              objectFit: "cover",
+                            }}
+                          />
+                        </TableCell>
                         <TableCell>{category.name}</TableCell>
                         <TableCell>{category.description}</TableCell>
                         <TableCell>
                           <IconButton
                             color="primary"
                             size="sm"
-                            onClick={() => handleEditCategory(category)}                              >
+                            onClick={() => handleEditCategory(category)}
+                          >
                             <EditIcon />
-
                           </IconButton>
                           <IconButton
                             color="error"
                             size="sm"
                             className="mt-2"
                             onClick={() => handleDeleteCategory(category._id)}
-
                           >
                             <DeleteIcon />
                           </IconButton>
@@ -977,93 +1061,28 @@ const Shop = () => {
                     ))}
                   </TableBody>
                 </Table>
-
               </ModalBody>
 
               <ModalFooter>
                 <Button auto flat onPress={onClose}>
                   Cancel
                 </Button>
-
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
 
-      {/* Add form for subcategory */}
-      {/* <Modal
-        isOpen={isViewAllSubOpen} onClose={toogleSubViewAll}
-        onOpenChange={() => setIsSubCategoryModalOpen(false)}
-      >
-        <ModalContent >
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                Add Subcategory
-              </ModalHeader>
-              <ModalBody>
-
-                <Input
-                  type="text"
-                  name="name"
-                  placeholder="Enter subcategory name"
-                  value={subCategoryForm.name}
-                  onChange={handleSubCategoryInputChange} // Corrected function
-                  fullWidth
-                />
-
-                <Textarea
-                  name="description"
-                  placeholder="Enter subcategory description"
-                  value={subCategoryForm.description}
-                  onChange={handleSubCategoryInputChange} // Corrected function
-                  fullWidth
-                />
-
-                <select
-                  name="mainCategoryId"
-                  value={subCategoryForm.mainCategoryId}
-                  onChange={handleSubCategoryInputChange} // Corrected function
-                  className="w-full border rounded p-2 mt-4"
-                >
-                  <option value="" disabled>
-                    Select Main Category
-                  </option>
-                  {mainCategories.map((mainCategory) => (
-                    <option key={mainCategory._id} value={mainCategory._id}>
-                      {mainCategory.name}
-                    </option>
-                  ))}
-                </select>
-              </ModalBody>
-              <ModalFooter>
-                <Button auto flat onClick={() => setIsSubCategoryModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  auto
-                  className="bg-blue-500 text-white"
-                  onClick={handleAddSubCategory} // Submit action
-                >
-                  Add Subcategory
-                </Button>
-              </ModalFooter>
-
-            </>
-          )}
-        </ModalContent>
-      </Modal> */}
-
       <Modal
-        isOpen={isViewAllSubOpen} onClose={toogleSubViewAll}
+        isOpen={isViewAllSubOpen}
+        onClose={toogleSubViewAll}
         onOpenChange={() => setIsSubCategoryModalOpen(false)}
       >
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader>
-                {isEditMode ? 'Edit Subcategory' : 'Add Subcategory'}
+                {isEditMode ? "Edit Subcategory" : "Add Subcategory"}
               </ModalHeader>
               <ModalBody>
                 {/* Subcategory Name */}
@@ -1073,7 +1092,10 @@ const Shop = () => {
                   placeholder="Enter subcategory name"
                   value={subCategoryForm.name}
                   onChange={(e) =>
-                    setSubCategoryForm({ ...subCategoryForm, name: e.target.value })
+                    setSubCategoryForm({
+                      ...subCategoryForm,
+                      name: e.target.value,
+                    })
                   }
                   fullWidth
                 />
@@ -1084,7 +1106,10 @@ const Shop = () => {
                   placeholder="Enter subcategory description"
                   value={subCategoryForm.description}
                   onChange={(e) =>
-                    setSubCategoryForm({ ...subCategoryForm, description: e.target.value })
+                    setSubCategoryForm({
+                      ...subCategoryForm,
+                      description: e.target.value,
+                    })
                   }
                   fullWidth
                 />
@@ -1094,7 +1119,10 @@ const Shop = () => {
                   name="mainCategoryId"
                   value={subCategoryForm.mainCategoryId}
                   onChange={(e) =>
-                    setSubCategoryForm({ ...subCategoryForm, mainCategoryId: e.target.value })
+                    setSubCategoryForm({
+                      ...subCategoryForm,
+                      mainCategoryId: e.target.value,
+                    })
                   }
                   className="w-full border rounded p-2 mt-4"
                 >
@@ -1109,15 +1137,21 @@ const Shop = () => {
                 </select>
               </ModalBody>
               <ModalFooter>
-                <Button auto flat onClick={() => setIsSubCategoryModalOpen(false)}>
+                <Button
+                  auto
+                  flat
+                  onClick={() => setIsSubCategoryModalOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button
                   auto
                   className="bg-blue-500 text-white"
-                  onClick={isEditMode ? handleUpdateSubCategory : handleAddSubCategory}
+                  onClick={
+                    isEditMode ? handleUpdateSubCategory : handleAddSubCategory
+                  }
                 >
-                  {isEditMode ? 'Save Changes' : 'Add Subcategory'}
+                  {isEditMode ? "Save Changes" : "Add Subcategory"}
                 </Button>
               </ModalFooter>
             </>
@@ -1127,9 +1161,16 @@ const Shop = () => {
 
       {/*table Subcategory Modal */}
 
-      <Modal isOpen={isSubCategoryModalOpen} onClose={() => setIsSubCategoryModalOpen(false)}>
-        <ModalContent style={{ width: "70%", maxWidth: "900px", marginTop: "400px" }}>
-          <ModalHeader>Add Subcategory
+      <Modal
+        isOpen={isSubCategoryModalOpen}
+        onClose={() => setIsSubCategoryModalOpen(false)}
+        onOpenChange={() => setIsSubCategoryModalOpen(false)}
+      >
+        <ModalContent
+          style={{ width: "70%", maxWidth: "900px", marginTop: "400px" }}
+        >
+          <ModalHeader>
+            Add Subcategory
             <Button onClick={toogleSubViewAll}> Add</Button>
           </ModalHeader>
           <ModalBody>
@@ -1173,42 +1214,46 @@ const Shop = () => {
               Cancel
             </Button>
           </ModalFooter>
-
         </ModalContent>
       </Modal>
 
-
-
       {/*table Product Modal */}
 
-      <Modal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)}
-        onOpenChange={() => setIsProductModalOpen(false)}>
-        <ModalContent style={{ width: "80%", maxWidth: "1000px", marginTop: "400px" }}>
-          <ModalHeader>Add Product
+      <Modal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        onOpenChange={() => setIsProductModalOpen(false)}
+      >
+        <ModalContent
+          style={{ width: "80%", maxWidth: "1000px", marginTop: "400px" }}
+        >
+          <ModalHeader>
+            Add Product
             <Button onClick={toogleProductViewAll}> Add</Button>
           </ModalHeader>
           <ModalBody>
             <Table aria-label="Subcategories Table">
               <TableHeader>
-              <TableColumn>Images</TableColumn>
+                <TableColumn>Images</TableColumn>
                 <TableColumn>Title</TableColumn>
                 <TableColumn>Description</TableColumn>
                 <TableColumn>Price</TableColumn>
                 <TableColumn>Weight</TableColumn>
+                <TableColumn>makingCharge</TableColumn>
                 <TableColumn>Purity</TableColumn>
                 <TableColumn>Type</TableColumn>
                 <TableColumn>Tags</TableColumn>
                 <TableColumn>Sku</TableColumn>
                 <TableColumn>Stock</TableColumn>
                 <TableColumn>Actions</TableColumn>
-
               </TableHeader>
               <TableBody>
-                {products?.map((product) => (
+                { products && products?.length>0 ? (
+                  products?.map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <img
-                        src={product.images[0]}
+                        src={product?.images[0]}
                         alt={product.title}
                         style={{ width: "60px", height: "60px" }}
                       />
@@ -1217,6 +1262,7 @@ const Shop = () => {
                     <TableCell>{product.description}</TableCell>
                     <TableCell>{product.price}</TableCell>
                     <TableCell>{product.weight}</TableCell>
+                    <TableCell>{product.makingCharge}</TableCell>
                     <TableCell>{product.purity}</TableCell>
                     <TableCell>{product.type}</TableCell>
                     <TableCell>{product.tags}</TableCell>
@@ -1247,21 +1293,48 @@ const Shop = () => {
                       <IconButton
                         color="primary"
                         size="sm"
-                      onClick={() => handleEditProduct(product)}
+                        onClick={() => handleEditProduct(product)}
                       >
                         <EditIcon />
                       </IconButton>
-                      <IconButton
+                      {/* <IconButton
                         color="error"
                         size="sm"
                         className="mt-2"
                         onClick={() => handleDeleteProduct(product._id)}
                       >
                         <DeleteIcon />
-                      </IconButton>
+                      </IconButton> */}
+                      {product.stock ? (
+                        <CheckCircle
+                          onClick={() => handleDeleteProduct(product._id)}
+                          style={{
+                            cursor: "pointer",
+                            color: "green",
+                          }}
+                        />
+                      ) : (
+                        <BlockIcon
+                          onClick={() => handleDeleteProduct(product._id)}
+                          style={{
+                            cursor: "pointer",
+                            color: "red",
+                          }}
+                        />
+                      )}
                     </TableCell>
                   </TableRow>
-                ))}
+                ))) :(
+                  <TableRow>
+                  <TableCell>&nbsp;</TableCell>
+                  <TableCell>
+                    <div className="text-center">No products available</div>
+                  </TableCell>
+                  <TableCell>&nbsp;</TableCell>
+                </TableRow>
+                )
+              
+              }
               </TableBody>
             </Table>
           </ModalBody>
@@ -1270,10 +1343,8 @@ const Shop = () => {
               Cancel
             </Button>
           </ModalFooter>
-
         </ModalContent>
       </Modal>
-
 
       {/* editing product add form */}
 
@@ -1306,7 +1377,6 @@ const Shop = () => {
                   fullWidth
                 />
 
-
                 {/* Price */}
                 <Input
                   type="number"
@@ -1323,6 +1393,15 @@ const Shop = () => {
                   name="weight"
                   placeholder="Enter product weight (grams)"
                   value={productForm.weight}
+                  onChange={handleProductInputChange}
+                  fullWidth
+                />
+                {/* makingCharge */}
+                <Input
+                  type="number"
+                  name="makingCharge"
+                  placeholder="Enter product makingCharge (%)"
+                  value={productForm.makingCharge}
                   onChange={handleProductInputChange}
                   fullWidth
                 />
@@ -1344,7 +1423,9 @@ const Shop = () => {
                   onChange={handleProductInputChange}
                   className="w-full border rounded p-2 mt-4"
                 >
-                  <option value="" disabled>Select a Tag</option>
+                  <option value="" disabled>
+                    Select a Tag
+                  </option>
                   {Object.entries(ProductTag).map(([key, value]) => (
                     <option key={key} value={value}>
                       {value}
@@ -1353,29 +1434,28 @@ const Shop = () => {
                 </select>
 
                 {/* Type */}
-                
-                  <select
-                    name="type"
-                    value={productForm.type}
-                    onChange={handleProductInputChange}
-                    className="w-full border rounded p-2 mt-4"
-                  >
-                    <option value="" disabled>
-                      Select Commodity Type
-                    </option>
-                    {commodities.length > 0 ? (
-                      commodities.map((commodity) => (
-                        <option key={commodity._id} value={commodity.symbol}>
-                          {commodity.symbol}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        No commodities available
+
+                <select
+                  name="type"
+                  value={productForm.type}
+                  onChange={handleProductInputChange}
+                  className="w-full border rounded p-2 mt-4"
+                >
+                  <option value="" disabled>
+                    Select Commodity Type
+                  </option>
+                  {commodities.length > 0 ? (
+                    commodities.map((commodity) => (
+                      <option key={commodity._id} value={commodity.symbol}>
+                        {commodity.symbol}
                       </option>
-                    )}
-                  </select>
-              
+                    ))
+                  ) : (
+                    <option value="" disabled>
+                      No commodities available
+                    </option>
+                  )}
+                </select>
 
                 {/* SKU */}
                 <Input
@@ -1404,29 +1484,28 @@ const Shop = () => {
                   ))}
                 </select>
 
-
                 <input
                   type="file"
                   id="file-uploader"
                   accept="image/*"
-                  style={{ display: 'none' }} // Hide the input
-                  onChange={(e) => handleFileImgChange(e, 'image')}
+                  style={{ display: "none" }} // Hide the input
+                  onChange={(e) => handleFileImgChange(e, "image")}
                   multiple
                 />
-
 
                 <Button
                   variant="contained"
                   component="label"
-                  onClick={() => document.getElementById('file-uploader').click()} // Trigger input click
+                  onClick={() =>
+                    document.getElementById("file-uploader").click()
+                  } // Trigger input click
                   sx={{ mt: 2 }}
                 >
                   Upload Image
                 </Button>
 
-
-                {productForm.image.length > 0 && (
-                  <div style={{ marginTop: '20px' }}>
+                {productForm?.image.length > 0 && (
+                  <div style={{ marginTop: "20px" }}>
                     <h4>Uploaded Images:</h4>
                     <ul>
                       {productForm.image.map((file, index) => (
@@ -1435,10 +1514,13 @@ const Shop = () => {
                     </ul>
                   </div>
                 )}
-
               </ModalBody>
               <ModalFooter>
-                <Button auto flat onClick={() => setIsViewAllProductOpen(false)}>
+                <Button
+                  auto
+                  flat
+                  onClick={() => setIsViewAllProductOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button
@@ -1453,6 +1535,158 @@ const Shop = () => {
           )}
         </ModalContent>
       </Modal>
+
+      {/*table Banner Modal */}
+
+      <Modal
+        isOpen={isEcomBannerModalOpen}
+        onClose={() => setIsEcomBannerModalOpen(false)}
+        onOpenChange={() => setIsEcomBannerModalOpen(false)}
+      >
+        <ModalContent
+          style={{ width: "80%", maxWidth: "1000px", marginTop: "400px" }}
+        >
+          <ModalHeader>
+            Add Ecom Banner
+            <Button onClick={toogleEcomBannerViewAll}>Add</Button>
+          </ModalHeader>
+          <ModalBody>
+            <Table aria-label="Banners Table">
+              <TableHeader>
+                <TableColumn>Images</TableColumn>
+                <TableColumn>Title</TableColumn>
+                <TableColumn>Actions</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {banners && banners?.length > 0 ? (
+                  banners?.map((banner) => (
+                    <TableRow key={banner._id}>
+                      <TableCell>
+                        {banner.imageUrl && banner.imageUrl[0] && (
+                          <img
+                            src={banner.imageUrl[0]}
+                            alt={banner.title}
+                            style={{ width: "60px", height: "60px" }}
+                          />
+                        )}
+                      </TableCell>
+                      <TableCell>{banner.title}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          color="primary"
+                          size="sm"
+                          onClick={() => handleEditEcomBanner(banner)}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                        <IconButton
+                          color="error"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => handleDeleteEcomBanner(banner._id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell>&nbsp;</TableCell>
+                    <TableCell>
+                      <div className="text-center">No banners available</div>
+                    </TableCell>
+                    <TableCell>&nbsp;</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ModalBody>
+          <ModalFooter>
+            <Button auto flat onPress={() => setIsEcomBannerModalOpen(false)}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* editing banner add form */}
+
+      <Modal
+        isOpen={isViewAllEcomBannerOpen}
+        onClose={toogleEcomBannerViewAll}
+        onOpenChange={() => setIsEcomBannerModalOpen(false)}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader>Add Ecom Banner</ModalHeader>
+              <ModalBody>
+                {/* Product Title */}
+                <Input
+                  type="text"
+                  name="title"
+                  placeholder="Enter product title"
+                  value={bannerForm.title}
+                  onChange={handleEcomBannerInputChange}
+                  fullWidth
+                />
+
+                <input
+                  type="file"
+                  id="file-uploader"
+                  accept="image/*"
+                  style={{ display: "none" }} // Hide the input
+                  onChange={(e) => handleFileImgChangeEcomBanner(e, "image")}
+                  multiple
+                />
+
+                <Button
+                  variant="contained"
+                  component="label"
+                  onClick={() =>
+                    document.getElementById("file-uploader").click()
+                  } // Trigger input click
+                  sx={{ mt: 2 }}
+                >
+                  Upload Image
+                </Button>
+
+                {bannerForm.image && bannerForm.image.length > 0 && (
+                  <div style={{ marginTop: "20px" }}>
+                    <h4>Uploaded Images:</h4>
+                    <ul>
+                      {Array.from(bannerForm.image).map((file, index) => (
+                        <li key={index}>{file.name}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  auto
+                  flat
+                  onClick={() => setIsViewAllEcomBannerOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  auto
+                  className="bg-blue-500 text-white"
+                  onClick={
+                    isEditMode ? handleUpdateEcomBanner : handleAddEcomBanner
+                  }
+                >
+                  Add Ecom Banner
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      {/*  pr add form */}
 
       <div>
         {/* Main Categories */}
@@ -1496,7 +1730,7 @@ const Shop = () => {
 
               </CardFooter>
             </Card> */}
-            <Table aria-label="Products Table" className='mt-2'>
+            <Table aria-label="Products Table" className="mt-2">
               <TableHeader>
                 <TableColumn>Main Category</TableColumn>
                 <TableColumn>Description</TableColumn>
@@ -1509,11 +1743,10 @@ const Shop = () => {
               </TableBody>
             </Table>
 
-
-            <div className='mt-5'>
+            <div className="mt-5">
               <h4>SubCategories</h4>
               <ButtonGroup>
-                {filterSubCategories.length > 0 ? (
+                {filterSubCategories?.length > 0 ? (
                   filterSubCategories.map((subCategory) => (
                     <Button
                       key={subCategory._id}
@@ -1527,7 +1760,6 @@ const Shop = () => {
                 )}
               </ButtonGroup>
             </div>
-
           </div>
         )}
 
@@ -1539,7 +1771,7 @@ const Shop = () => {
               <p className="error">{error}</p>
             ) : (
               <div className="product-grid mt-2">
-                {filteredProducts.length > 0 ? (
+                {filteredProducts?.length > 0 ? (
                   <Table aria-label="Products Table">
                     <TableHeader>
                       <TableColumn>Title</TableColumn>
@@ -1549,10 +1781,9 @@ const Shop = () => {
                       <TableColumn>Sku</TableColumn>
                       <TableColumn>Tags</TableColumn>
                       <TableColumn>Weight</TableColumn>
-
                     </TableHeader>
                     <TableBody>
-                      {filteredProducts.map((product) => (
+                      {filteredProducts?.map((product) => (
                         <TableRow key={product._id}>
                           <TableCell>{product.title}</TableCell>
                           <TableCell>{product.description}</TableCell>
@@ -1561,7 +1792,6 @@ const Shop = () => {
                           <TableCell>{product.sku}</TableCell>
                           <TableCell>{product.tags}</TableCell>
                           <TableCell>{product.weight}</TableCell>
-
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1569,25 +1799,13 @@ const Shop = () => {
                 ) : (
                   <p>No products found</p>
                 )}
-
               </div>
             )}
           </div>
         )}
-
-
       </div>
-
-
-
-
     </div>
-
   );
 };
 
-
-
-
 export default Shop;
-

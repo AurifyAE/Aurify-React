@@ -63,6 +63,8 @@ const SignOutButton = () => {
   const handleSignOut = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userName");
+    localStorage.removeItem("adminId");
+    localStorage.removeItem("userEmail");
     localStorage.removeItem("reminderModalClosedDate");
     localStorage.removeItem("rememberMe");
     navigate("/");

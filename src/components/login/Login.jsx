@@ -70,6 +70,7 @@ const LoginPage = ({ onLoginSuccess })=> {
           // Token is invalid or expired, clear it
           localStorage.removeItem("token");
           localStorage.removeItem("userName");
+          localStorage.removeItem("adminId");
           localStorage.removeItem("rememberMe");
         }
       }
@@ -131,9 +132,9 @@ const LoginPage = ({ onLoginSuccess })=> {
     try {
       const response = await axiosInstance.post("/login", values);
       if (response.data.success) {
-        console.log(response.data)
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("userName", userName);
+        localStorage.setItem("adminId",response.data.adminId );
         if (rememberMe) {
           localStorage.setItem("rememberMe", "true");
         } else {
