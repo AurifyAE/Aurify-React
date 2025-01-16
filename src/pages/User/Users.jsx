@@ -326,8 +326,8 @@ const UserDataTable = ({
                     <TableCell>{user.location}</TableCell>
                     <TableCell>{user.decryptedPassword}</TableCell>
                     <TableCell><Button variant="contained" 
-                    onClick={() => navigate(`/users-productmanagement/${user._id}`)}
-                    >Product Management
+                    // onClick={() => navigate(`/users-productmanagement/${user._id}`)}
+                    >Coming Soon
                     </Button></TableCell>
                     <TableCell>
                       <IconButton
@@ -492,8 +492,9 @@ const UserList = () => {
       if (response.data.success) {
         setUserData((prevUserData) => [...prevUserData, response.data.user]);
         setShowNotification(true);
+        await fetchUserData();
         setNotificationMessage("User added successfully");
-        fetchUserData(); // Refresh the user list after adding
+       await fetchUserData(); // Refresh the user list after adding
       }
     } catch (error) {
       console.error(
@@ -520,6 +521,7 @@ const UserList = () => {
           )
         );
         setShowNotification(true);
+        await fetchUserData()
         setNotificationMessage("User updated successfully");
       }
     } catch (error) {
@@ -551,6 +553,7 @@ const UserList = () => {
         if (response.data.success) {
           setUserData(userData.filter((user) => user._id !== userToDelete));
           setShowNotification(true);
+          await fetchUserData()
           setNotificationMessage("User deleted successfully");
         }
       } catch (error) {

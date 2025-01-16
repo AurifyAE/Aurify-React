@@ -28,7 +28,11 @@ import {
   Divider,
   Link,
 } from "@nextui-org/react";
-import React, { useCallback, useEffect, useState } from "react";
+import { Upload, Loader2, Video, X } from "lucide-react";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import Slider from "react-slick";
+import React, { useCallback, useRef, useEffect, useState } from "react";
 import { toast, Toaster } from "react-hot-toast";
 import { MdAddShoppingCart } from "react-icons/md";
 import axiosInstance from "../../axios/axiosInstance";
@@ -57,7 +61,25 @@ const Shop = () => {
     image: [],
   });
   const [banners, setBanners] = useState([]);
-  // maincategory
+  //   Order Management
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [isViewAllOrderOpen, setIsViewAllOrderOpen] = useState(false);
+  const [order, setOrders] = useState([]);
+  console.log(order);
+  // banner Video
+  const [isVideoBannerModalOpen, setIsVideoBannerModalOpen] = useState(false);
+  const [isViewAllVideoBannerOpen, setIsViewAllVideoBannerOpen] =
+    useState(false);
+  const [videoBannerForm, setVideoBannerForm] = useState({
+    title: "",
+    videos: [],
+  });
+  const [videoBanners, setVideoBanner] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState(null);
+  const [uploadMode, setUploadMode] = useState("single");
+  const fileInputRef = useRef(null);
+  //   // maincategory
   const [isMainCategoryModalOpen, setIsMainCategoryModalOpen] = useState(false);
   const [isViewAllOpen, setIsViewAllOpen] = useState(false);
 
@@ -113,6 +135,9 @@ const Shop = () => {
     setIsViewAllProductOpen(!isViewAllProductOpen);
   const toogleEcomBannerViewAll = () =>
     setIsViewAllEcomBannerOpen(!isViewAllEcomBannerOpen);
+  const toogleVideoBannerViewAll = () =>
+    setIsViewAllVideoBannerOpen(!isViewAllVideoBannerOpen);
+  const toogleOrderViewAll = () => setIsViewAllOrderOpen(!isViewAllOrderOpen);
   // filter
   const [filterSubCategories, setFilterSubCategories] = useState([]);
   const [filterProducts, setFilterProducts] = useState([]);
@@ -133,6 +158,8 @@ const Shop = () => {
       await fetchSubCategories();
       await fetchEcomBanner();
       await fetchProducts();
+      await fetchVideoBanner();
+      await fetchAllOrder();
       await fetchCommodities();
     };
     fetchData();
@@ -251,13 +278,42 @@ const Shop = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/banner/${adminId}`);
-      console.log(response.data.data);
       setBanners(response.data.data);
       setError(null);
     } catch (err) {
       setError("Failed to fetch EcomBanner");
       toast.error("Error loading EcomBanner");
       console.error("Error fetching EcomBanner:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchVideoBanner = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/videoBanners/${adminId}`);
+      setVideoBanner(response.data.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch EcomBanner");
+      toast.error("Error loading EcomBanner");
+      console.error("Error fetching EcomBanner:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllOrder = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/booking/${adminId}`);
+      setOrders(response.data.orderDetails);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch Order Management");
+      toast.error("Error loading Order Management");
+      console.error("Error fetching Order Management:", err);
     } finally {
       setLoading(false);
     }
@@ -601,8 +657,8 @@ const Shop = () => {
         subCategory: "",
         image: [],
       });
-       // Refresh product list
-       await fetchProducts();
+      // Refresh product list
+      await fetchProducts();
       toast.success("Product added successfully!");
     } catch (error) {
       const errorMessage =
@@ -867,24 +923,134 @@ const Shop = () => {
     }
   };
 
+  const handleInputVideoBannerChange = (e) => {
+    const { name, value } = e.target;
+    setVideoBannerForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleVideoBannerChange = (e) => {
+    const files = Array.from(e.target.files);
+
+    // Validate files
+    const validFiles = files.filter((file) => {
+      const isVideo = file.type.startsWith("video/");
+      const isValidSize = file.size <= 500 * 1024 * 1024; // 500MB
+      return isVideo && isValidSize;
+    });
+
+    if (validFiles.length === 0) {
+      setMessage({
+        type: "error",
+        text: "Please select valid video files under 500MB",
+      });
+      return;
+    }
+
+    if (uploadMode === "single") {
+      setVideoBannerForm((prev) => ({
+        ...prev,
+        videos: validFiles.slice(0, 1),
+      }));
+    } else {
+      setVideoBannerForm((prev) => ({
+        ...prev,
+        videos: [...prev.videos, ...validFiles].slice(0, 5),
+      }));
+    }
+
+    // Reset input
+    fileInputRef.current.value = "";
+  };
+
+  const removeVideo = (index) => {
+    setVideoBannerForm((prev) => ({
+      ...prev,
+      videos: prev.videos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmitVideoBanner = async () => {
+    if (!videoBannerForm.title.trim()) {
+      setMessage({ type: "error", text: "Please enter a title" });
+      return;
+    }
+
+    if (videoBannerForm.videos.length === 0) {
+      setMessage({ type: "error", text: "Please select at least one video" });
+      return;
+    }
+
+    setUploading(true);
+    setMessage(null);
+
+    try {
+      console.log(videoBannerForm);
+      const formData = new FormData();
+      formData.append("title", videoBannerForm.title);
+
+      videoBannerForm.videos.forEach((video, index) => {
+        formData.append("video", video);
+      });
+      console.log(adminId);
+      const response = await axiosInstance.post(
+        `/video-banner/create/${adminId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      if (!response.data.success) throw new Error("Upload failed");
+
+      // Close the modal and reset the form
+      setIsViewAllVideoBannerOpen(false);
+      toast.success(response.data.message);
+
+      // Reset form
+      setVideoBannerForm({ title: "", videos: [] });
+
+      await fetchVideoBanner();
+    } catch (error) {
+      console.error("Submit error:", error);
+      setMessage({
+        type: "error",
+        text: "Failed to save banner. Please try again.",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteVideoBanner = async (bannerId) => {
+    if (!window.confirm("Are you sure you want to delete this VideoBanner?")) {
+      return;
+    }
+    try {
+      await axiosInstance.delete(`/videoBanner/${bannerId}/${adminId}`);
+      await fetchProducts(); // Refresh product list after deletion
+      toast.success("VideoBanner deleted successfully");
+      // Refresh VideoBanner list
+      await fetchVideoBanner();
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message || "Error deleting VideoBanner";
+      toast.error(errorMessage);
+      console.error(
+        "Error deleting VideoBanner:",
+        error.response?.data || error
+      );
+    }
+  };
   return (
     <div className="container mx-auto px-4">
       <Toaster position="top-center" />
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Product Management</h1>
-      </div>
-
-      <div className="mb-6">
-        <select
-          onChange={(e) => setFilter(e.target.value)}
-          className="border rounded px-2 py-1"
-        >
-          <option value="all">All Items</option>
-          <option value="gold">Gold</option>
-          <option value="silver">Silver</option>
-          <option value="platinum">Platinum</option>
-          <option value="copper">Copper</option>
-        </select>
       </div>
 
       <div className="space-x-4">
@@ -922,6 +1088,24 @@ const Shop = () => {
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Ecom Banner
+        </Button>
+        <Button
+          auto
+          onClick={() => {
+            setIsVideoBannerModalOpen(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Add Video Banner
+        </Button>
+        <Button
+          auto
+          onClick={() => {
+            setIsOrderModalOpen(true);
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Order Management
         </Button>
       </div>
 
@@ -1013,7 +1197,10 @@ const Shop = () => {
             <>
               <ModalHeader>
                 Add Main Category
-                <Button onClick={toggleViewAll}> Add</Button>
+                <Button className="ml-3" onClick={toggleViewAll}>
+                  {" "}
+                  Add
+                </Button>
               </ModalHeader>
               <ModalBody>
                 <Table aria-label="Main Categories Table">
@@ -1229,7 +1416,10 @@ const Shop = () => {
         >
           <ModalHeader>
             Add Product
-            <Button onClick={toogleProductViewAll}> Add</Button>
+            <Button className="ml-3" onClick={toogleProductViewAll}>
+              {" "}
+              Add
+            </Button>
           </ModalHeader>
           <ModalBody>
             <Table aria-label="Subcategories Table">
@@ -1248,56 +1438,56 @@ const Shop = () => {
                 <TableColumn>Actions</TableColumn>
               </TableHeader>
               <TableBody>
-                { products && products?.length>0 ? (
+                {products && products?.length > 0 ? (
                   products?.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <img
-                        src={product?.images[0]}
-                        alt={product.title}
-                        style={{ width: "60px", height: "60px" }}
-                      />
-                    </TableCell>
-                    <TableCell>{product.title}</TableCell>
-                    <TableCell>{product.description}</TableCell>
-                    <TableCell>{product.price}</TableCell>
-                    <TableCell>{product.weight}</TableCell>
-                    <TableCell>{product.makingCharge}</TableCell>
-                    <TableCell>{product.purity}</TableCell>
-                    <TableCell>{product.type}</TableCell>
-                    <TableCell>{product.tags}</TableCell>
-                    <TableCell>{product.sku}</TableCell>
-                    {/* Product Stock */}
-                    <TableCell>
-                      {product.stock ? (
-                        <span
-                          style={{
-                            color: "green",
-                            fontWeight: "bold",
-                          }}
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <img
+                          src={product?.images[0]}
+                          alt={product.title}
+                          style={{ width: "60px", height: "60px" }}
+                        />
+                      </TableCell>
+                      <TableCell>{product.title}</TableCell>
+                      <TableCell>{product.description}</TableCell>
+                      <TableCell>{product.price}</TableCell>
+                      <TableCell>{product.weight}</TableCell>
+                      <TableCell>{product.makingCharge}</TableCell>
+                      <TableCell>{product.purity}</TableCell>
+                      <TableCell>{product.type}</TableCell>
+                      <TableCell>{product.tags}</TableCell>
+                      <TableCell>{product.sku}</TableCell>
+                      {/* Product Stock */}
+                      <TableCell>
+                        {product.stock ? (
+                          <span
+                            style={{
+                              color: "green",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Stock In
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              color: "red",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            Stock Out
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <IconButton
+                          color="primary"
+                          size="sm"
+                          onClick={() => handleEditProduct(product)}
                         >
-                          Stock In
-                        </span>
-                      ) : (
-                        <span
-                          style={{
-                            color: "red",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          Stock Out
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        color="primary"
-                        size="sm"
-                        onClick={() => handleEditProduct(product)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      {/* <IconButton
+                          <EditIcon />
+                        </IconButton>
+                        {/* <IconButton
                         color="error"
                         size="sm"
                         className="mt-2"
@@ -1305,36 +1495,35 @@ const Shop = () => {
                       >
                         <DeleteIcon />
                       </IconButton> */}
-                      {product.stock ? (
-                        <CheckCircle
-                          onClick={() => handleDeleteProduct(product._id)}
-                          style={{
-                            cursor: "pointer",
-                            color: "green",
-                          }}
-                        />
-                      ) : (
-                        <BlockIcon
-                          onClick={() => handleDeleteProduct(product._id)}
-                          style={{
-                            cursor: "pointer",
-                            color: "red",
-                          }}
-                        />
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))) :(
+                        {product.stock ? (
+                          <CheckCircle
+                            onClick={() => handleDeleteProduct(product._id)}
+                            style={{
+                              cursor: "pointer",
+                              color: "green",
+                            }}
+                          />
+                        ) : (
+                          <BlockIcon
+                            onClick={() => handleDeleteProduct(product._id)}
+                            style={{
+                              cursor: "pointer",
+                              color: "red",
+                            }}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
                   <TableRow>
-                  <TableCell>&nbsp;</TableCell>
-                  <TableCell>
-                    <div className="text-center">No products available</div>
-                  </TableCell>
-                  <TableCell>&nbsp;</TableCell>
-                </TableRow>
-                )
-              
-              }
+                    <TableCell>&nbsp;</TableCell>
+                    <TableCell>
+                      <div className="text-center">No products available</div>
+                    </TableCell>
+                    <TableCell>&nbsp;</TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </ModalBody>
@@ -1548,7 +1737,9 @@ const Shop = () => {
         >
           <ModalHeader>
             Add Ecom Banner
-            <Button onClick={toogleEcomBannerViewAll}>Add</Button>
+            <Button className="ml-3" onClick={toogleEcomBannerViewAll}>
+              Add
+            </Button>
           </ModalHeader>
           <ModalBody>
             <Table aria-label="Banners Table">
@@ -1683,6 +1874,329 @@ const Shop = () => {
               </ModalFooter>
             </>
           )}
+        </ModalContent>
+      </Modal>
+
+      {/*table VidoeBanner Modal */}
+
+      <Modal
+        isOpen={isVideoBannerModalOpen}
+        onClose={() => setIsVideoBannerModalOpen(false)}
+        onOpenChange={() => setIsVideoBannerModalOpen(false)}
+      >
+        <ModalContent
+          style={{ width: "80%", maxWidth: "1000px", marginTop: "700px" }}
+        >
+          <ModalHeader>
+            Add Video Banner
+            <Button className="ml-3" onClick={toogleVideoBannerViewAll}>
+              Add
+            </Button>
+          </ModalHeader>
+          <ModalBody>
+            <Table aria-label="Banners Table">
+              <TableHeader>
+                <TableColumn>Video</TableColumn>
+                <TableColumn>Title</TableColumn>
+                <TableColumn>Actions</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {videoBanners && videoBanners?.length > 0 ? (
+                  videoBanners?.map((banner, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        {banner.videos && banner.videos.length > 0 ? (
+                          <Slider
+                            dots={true}
+                            infinite={false}
+                            speed={500}
+                            slidesToShow={3}
+                            slidesToScroll={1}
+                          >
+                            {banner.videos.map((video, index) => (
+                              <div key={index}>
+                                <video
+                                  src={video.location}
+                                  controls
+                                  style={{
+                                    width: "100%",
+                                    height: "100%",
+                                    borderRadius: "8px",
+                                    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </Slider>
+                        ) : (
+                          <span>No Videos Available</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{banner.title}</TableCell>
+                      <TableCell>
+                        <IconButton
+                          color="error"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => handleDeleteVideoBanner(banner._id)}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell>&nbsp;</TableCell>
+                    <TableCell>
+                      <div className="text-center">
+                        No Video Banners Available
+                      </div>
+                    </TableCell>
+                    <TableCell>&nbsp;</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ModalBody>
+          <ModalFooter>
+            <Button auto flat onPress={() => setIsEcomBannerModalOpen(false)}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* editing videobanner add form */}
+
+      <Modal
+        isOpen={isViewAllVideoBannerOpen}
+        onClose={toogleVideoBannerViewAll}
+        onOpenChange={() => setIsVideoBannerModalOpen(false)}
+      >
+        <ModalContent>
+          <div className="flex justify-between items-center p-4 border-b">
+            <ModalHeader className="p-0">Add Video Banner</ModalHeader>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setUploadMode("single")}
+                className={`px-4 py-1 rounded text-sm ${
+                  uploadMode === "single"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                Single
+              </button>
+              <button
+                onClick={() => setUploadMode("multiple")}
+                className={`px-4 py-1 rounded text-sm ${
+                  uploadMode === "multiple"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700"
+                }`}
+              >
+                Multiple
+              </button>
+            </div>
+          </div>
+
+          <ModalBody className="gap-4">
+            <Input
+              label="Banner Title"
+              type="text"
+              name="title"
+              value={videoBannerForm.title}
+              onChange={handleInputVideoBannerChange}
+              placeholder="Enter banner title"
+              className="w-full"
+            />
+
+            <div
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 transition-colors"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                type="file"
+                name="video"
+                ref={fileInputRef}
+                onChange={handleVideoBannerChange}
+                accept="video/*"
+                multiple={uploadMode === "multiple"}
+                className="hidden"
+              />
+              <Upload className="mx-auto h-8 w-8 text-gray-400" />
+              <p className="mt-2 text-sm text-gray-600">
+                Click or drag videos to upload
+                {uploadMode === "multiple" && " (up to 5 videos)"}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Maximum file size: 500MB
+              </p>
+            </div>
+
+            {/* Selected Videos Preview */}
+            {videoBannerForm.videos.length > 0 && (
+              <div className="space-y-2">
+                {videoBannerForm.videos.map((video, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Video className="h-5 w-5 text-gray-500" />
+                      <div className="text-sm">
+                        <p className="font-medium truncate max-w-[200px]">
+                          {video.name}
+                        </p>
+                        <p className="text-gray-500">
+                          {(video.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removeVideo(index)}
+                      className="p-1 hover:bg-gray-200 rounded"
+                    >
+                      <X className="h-4 w-4 text-gray-500" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {message && (
+              <div
+                className={`p-2 rounded text-sm ${
+                  message.type === "error"
+                    ? "bg-red-100 text-red-600"
+                    : "bg-green-100 text-green-600"
+                }`}
+              >
+                {message.text}
+              </div>
+            )}
+          </ModalBody>
+
+          <ModalFooter>
+            <Button auto flat onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              auto
+              className={`${
+                uploading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+              } text-white`}
+              onClick={handleSubmitVideoBanner}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </div>
+              ) : isEditMode ? (
+                "Update Video Banner"
+              ) : (
+                "Add Video Banner"
+              )}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/*table Order Management  Modal */}
+
+      <Modal
+        isOpen={isOrderModalOpen}
+        onClose={() => setIsOrderModalOpen(false)}
+        onOpenChange={() => setIsOrderModalOpen(false)}
+      >
+        <ModalContent
+          style={{ width: "80%", maxWidth: "1000px", marginTop: "100px" }}
+        >
+          <ModalHeader>Order Management</ModalHeader>
+          <ModalBody>
+            <Table aria-label="Order Table">
+              <TableHeader>
+                <TableColumn>Product</TableColumn>
+                <TableColumn>Title</TableColumn>
+                <TableColumn>Price</TableColumn>
+                <TableColumn>Weight</TableColumn>
+                <TableColumn>MakingCharge</TableColumn>
+                <TableColumn>User Name</TableColumn>
+                <TableColumn>Contact</TableColumn>
+                <TableColumn>Location</TableColumn>
+                <TableColumn>Delivery Date</TableColumn>
+                <TableColumn>PaymentMethod</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {order && order.length > 0 ? (
+                  order.map((orderItem, i) => (
+                    <TableRow key={i}>
+                      {/* User and Product Details */}
+                      <TableCell>
+                        {orderItem.productDetails.map((product, idx) => (
+                          <div key={idx}>
+                            <img
+                              src={product.images[0]}
+                              alt={product.title}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {orderItem.productDetails.map((product, idx) => (
+                          <div key={idx}>{product.title}</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {orderItem.productDetails.map((product, idx) => (
+                          <div key={idx}>${product.price}</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {orderItem.productDetails.map((product, idx) => (
+                          <div key={idx}>{product.weight}g</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        {orderItem.productDetails.map((product, idx) => (
+                          <div key={idx}>{product.makingCharge}g</div>
+                        ))}
+                      </TableCell>
+                      <TableCell>{orderItem.userDetails.users.name}</TableCell>
+                      <TableCell>
+                        {orderItem.userDetails.users.contact}
+                      </TableCell>
+                      <TableCell>
+                        {orderItem.userDetails.users.location}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(orderItem.deliveryDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>{orderItem.paymentMethod}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7}>
+                      <div className="text-center">No Orders Available</div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </ModalBody>
+          <ModalFooter>
+            <Button auto flat onPress={() => setIsOrderModalOpen(false)}>
+              Cancel
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 
