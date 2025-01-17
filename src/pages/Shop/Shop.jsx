@@ -64,8 +64,8 @@ const Shop = () => {
   //   Order Management
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
   const [isViewAllOrderOpen, setIsViewAllOrderOpen] = useState(false);
-  const [order, setOrders] = useState([]);
-  console.log(order);
+  const [orders, setOrders] = useState([]);
+  console.log(orders);
   // banner Video
   const [isVideoBannerModalOpen, setIsVideoBannerModalOpen] = useState(false);
   const [isViewAllVideoBannerOpen, setIsViewAllVideoBannerOpen] =
@@ -108,6 +108,7 @@ const Shop = () => {
     createdBy: adminId,
   });
   const [mainCategories, setMainCategories] = useState([]);
+  console.log(mainCategories);
   const [subCategories, setSubCategories] = useState([]);
 
   // product
@@ -158,9 +159,9 @@ const Shop = () => {
       await fetchSubCategories();
       await fetchEcomBanner();
       await fetchProducts();
+      await fetchCommodities();
       await fetchVideoBanner();
       await fetchAllOrder();
-      await fetchCommodities();
     };
     fetchData();
   }, []);
@@ -291,7 +292,6 @@ const Shop = () => {
 
   const fetchVideoBanner = async () => {
     try {
-      setLoading(true);
       const response = await axiosInstance.get(`/videoBanners/${adminId}`);
       setVideoBanner(response.data.data);
       setError(null);
@@ -299,14 +299,11 @@ const Shop = () => {
       setError("Failed to fetch EcomBanner");
       toast.error("Error loading EcomBanner");
       console.error("Error fetching EcomBanner:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchAllOrder = async () => {
     try {
-      setLoading(true);
       const response = await axiosInstance.get(`/booking/${adminId}`);
       setOrders(response.data.orderDetails);
       setError(null);
@@ -314,8 +311,6 @@ const Shop = () => {
       setError("Failed to fetch Order Management");
       toast.error("Error loading Order Management");
       console.error("Error fetching Order Management:", err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -2130,63 +2125,73 @@ const Shop = () => {
                 <TableColumn>PaymentMethod</TableColumn>
               </TableHeader>
               <TableBody>
-                {order && order.length > 0 ? (
-                  order.map((orderItem, i) => (
+                {orders && orders.length > 0 ? (
+                  orders.map((orderItem, i) => (
                     <TableRow key={i}>
-                      {/* User and Product Details */}
                       <TableCell>
                         {orderItem.productDetails.map((product, idx) => (
                           <div key={idx}>
                             <img
                               src={product.images[0]}
                               alt={product.title}
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                objectFit: "cover",
-                              }}
+                              className="w-12 h-12 object-cover"
                             />
                           </div>
                         ))}
                       </TableCell>
                       <TableCell>
                         {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.title}</div>
+                          <div key={idx}>{product.title || "N/A"}</div>
                         ))}
                       </TableCell>
                       <TableCell>
                         {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>${product.price}</div>
+                          <div key={idx}>${product.price || "0.00"}</div>
                         ))}
                       </TableCell>
                       <TableCell>
                         {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.weight}g</div>
+                          <div key={idx}>{product.weight || "0"}g</div>
                         ))}
                       </TableCell>
                       <TableCell>
                         {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.makingCharge}g</div>
+                          <div key={idx}>{product.makingCharge || "0"}%</div>
                         ))}
                       </TableCell>
-                      <TableCell>{orderItem.userDetails.users.name}</TableCell>
                       <TableCell>
-                        {orderItem.userDetails.users.contact}
+                        {orderItem.userDetails?.users?.name || "N/A"}
                       </TableCell>
                       <TableCell>
-                        {orderItem.userDetails.users.location}
+                        {orderItem.userDetails?.users?.contact || "N/A"}
                       </TableCell>
                       <TableCell>
-                        {new Date(orderItem.deliveryDate).toLocaleDateString()}
+                        {orderItem.userDetails?.users?.location || "N/A"}
                       </TableCell>
-                      <TableCell>{orderItem.paymentMethod}</TableCell>
+                      <TableCell>
+                        {orderItem.deliveryDate
+                          ? new Date(
+                              orderItem.deliveryDate
+                            ).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell>{orderItem.paymentMethod || "N/A"}</TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7}>
-                      <div className="text-center">No Orders Available</div>
+                    <TableCell  className="text-center">
+                      No Orders Available
                     </TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -2208,12 +2213,8 @@ const Shop = () => {
         <div className="group-button mt-5">
           <h4>MainCategories</h4>
           <ButtonGroup>
-            {loading ? (
-              <Button disabled>Loading...</Button>
-            ) : error ? (
-              <Button variant="danger">Error loading categories</Button>
-            ) : (
-              mainCategories.map((category) => (
+            {mainCategories && mainCategories?.length > 0 ? (
+              mainCategories?.map((category) => (
                 <Button
                   key={category._id}
                   onClick={() => handleMainCategoryClick(category)}
@@ -2221,6 +2222,12 @@ const Shop = () => {
                   {category.name}
                 </Button>
               ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7}>
+                  <div className="text-center">No mainCategories Available</div>
+                </TableCell>
+              </TableRow>
             )}
           </ButtonGroup>
         </div>
