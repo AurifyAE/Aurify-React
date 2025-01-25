@@ -2101,7 +2101,7 @@ const Shop = () => {
       </Modal>
       {/*table Order Management  Modal */}
 
-      <Modal
+      {/* <Modal
         isOpen={isOrderModalOpen}
         onClose={() => setIsOrderModalOpen(false)}
         onOpenChange={() => setIsOrderModalOpen(false)}
@@ -2203,7 +2203,7 @@ const Shop = () => {
             </Button>
           </ModalFooter>
         </ModalContent>
-      </Modal>
+      </Modal> */}
 
       {/*  pr add form */}
 

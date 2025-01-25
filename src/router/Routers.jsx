@@ -13,6 +13,7 @@ import MediaLayout from "../layout/MediaLayout";
 import MessagesLayout from "../layout/MessagesLayout";
 import NewsLayout from "../layout/NewsLayout";
 import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
+import Orders from "../layout/OrdersLayout";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
@@ -180,6 +181,15 @@ function Routers() {
             <ProtectedRoute
               element={PremiumDiscountLayout}
               path="/feature/premium-discount"
+            />
+          }
+        />
+        <Route
+          path="/feature/orders"
+          element={
+            <ProtectedRoute
+              element={Orders}
+              path="/feature/orders"
             />
           }
         />

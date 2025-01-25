@@ -15,6 +15,7 @@ import {
   Settings as SettingsIcon,
   ShowChart as ShowChartIcon,
   Storefront as StorefrontIcon,
+  ShoppingCart as ShoppingCartIcon,
 } from "@mui/icons-material";
 import {
   Button,
@@ -97,6 +98,8 @@ const FeatureDropdown = ({ features, isLoading }) => {
         return MonetizationOnIcon;
       case "premium discount":
         return LocalOfferIcon;
+      case "orders":
+        return ShoppingCartIcon;
       case "users db":
         return DatasetIcon;
       default:
@@ -164,6 +167,8 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
         return GroupIcon;
       case "market closing":
         return MonetizationOnIcon;
+      case "orders":
+        return ShoppingCartIcon;
       default:
         return PersonIcon;
     }
