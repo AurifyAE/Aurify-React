@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axiosInstance from "../../axios/axiosInstance";
 import {
   Box,
@@ -37,12 +37,12 @@ const OrderManagement = () => {
   });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  console.log(selectedProduct);
   const [remark, setRemark] = useState("");
   const [quantity, setQuantity] = useState(0);
   const [error, setError] = useState("");
   const [userDetails, setUserDetails] = useState(null);
-
+  const [isPolling, setIsPolling] = useState(true);
+  
   const adminId = localStorage.getItem("adminId");
 
   const orderStatuses = [
@@ -53,21 +53,64 @@ const OrderManagement = () => {
     "Processing",
   ];
 
-  useEffect(() => {
-    fetchOrders();
-  }, [adminId]);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const response = await axiosInstance.get(`/booking/${adminId}`);
-      // Ensure we're getting the full order details including user information
-      console.log("Order Response:", response.data.orderDetails);
-      setOrders(response.data.orderDetails);
+      
+      setOrders(prevOrders => {
+        const newOrders = response.data.orderDetails;
+        
+        // Check if we have any new or updated orders
+        const hasChanges = JSON.stringify(prevOrders) !== JSON.stringify(newOrders);
+        
+        // If there are changes and we already had orders loaded (not initial load)
+        if (hasChanges && prevOrders.length > 0) {
+          toast.success("New orders received!");
+        }
+        
+        return newOrders;
+      });
     } catch (error) {
       console.error("Error fetching orders:", error);
       setError("Failed to load orders.");
     }
-  };
+  }, [adminId]);
+
+
+   // Initial fetch on component mount
+   useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Polling effect
+  useEffect(() => {
+    let intervalId;
+
+    if (isPolling) {
+      intervalId = setInterval(() => {
+        fetchOrders();
+      }, 30000); // Poll every 30 seconds
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [fetchOrders, isPolling]);
+
+  // Pause polling when tab is not visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPolling(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const toggleOrderExpansion = (orderId) => {
     setExpandedOrders((prev) => ({
@@ -104,7 +147,8 @@ const OrderManagement = () => {
         await axiosInstance.put(`/update-order-quantity/${order._id}`, {
           itemStatus: "Approved",
           itemId: item._id,
-          //   quantity: item.quantity,
+          fixedPrice:item.fixedPrice,
+          quantity: item.quantity,
         });
         toast.success("Order status updated successfully");
         await fetchOrders();
@@ -169,7 +213,7 @@ const OrderManagement = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="-mt-10">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Order Management</h1>
       </div>

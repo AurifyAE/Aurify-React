@@ -16,7 +16,9 @@ import {
   ShowChart as ShowChartIcon,
   Storefront as StorefrontIcon,
   ShoppingCart as ShoppingCartIcon,
+  Slideshow as  SlideshowIcon
 } from "@mui/icons-material";
+
 import {
   Button,
   Modal,
@@ -100,6 +102,8 @@ const FeatureDropdown = ({ features, isLoading }) => {
         return LocalOfferIcon;
       case "orders":
         return ShoppingCartIcon;
+        case "screen slider":
+          return SlideshowIcon;
       case "users db":
         return DatasetIcon;
       default:
@@ -169,6 +173,8 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
         return MonetizationOnIcon;
       case "orders":
         return ShoppingCartIcon;
+        case "screen slider":
+          return SlideshowIcon;
       default:
         return PersonIcon;
     }
@@ -367,6 +373,8 @@ const Sidebar = () => {
     "24x7 Chat",
     "Shop",
     "Users",
+    "Screen Slider",
+    "Orders",
     "Market Closing",
     "Premium Discount",
     "Users DB",

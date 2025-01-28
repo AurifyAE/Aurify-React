@@ -14,6 +14,7 @@ import MessagesLayout from "../layout/MessagesLayout";
 import NewsLayout from "../layout/NewsLayout";
 import PremiumDiscountLayout from "../layout/PremiumDiscountLayout";
 import Orders from "../layout/OrdersLayout";
+import ScreenSlider from "../layout/ScreenSlider";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
@@ -190,6 +191,15 @@ function Routers() {
             <ProtectedRoute
               element={Orders}
               path="/feature/orders"
+            />
+          }
+        />
+        <Route
+          path="/feature/screen-slider"
+          element={
+            <ProtectedRoute
+              element={ScreenSlider}
+              path="/feature/screen-slider"
             />
           }
         />

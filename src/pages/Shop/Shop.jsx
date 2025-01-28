@@ -27,7 +27,13 @@ import {
   CardHeader,
   Divider,
   Link,
+  Pagination,
+  Select,
+  SelectItem,
 } from "@nextui-org/react";
+
+import { AddPhotoAlternate, Delete, Warning } from "@mui/icons-material";
+
 import { Upload, Loader2, Video, X } from "lucide-react";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -48,6 +54,16 @@ const ProductTag = {
   NONE: "None",
 };
 
+const purityOptions = [
+  { value: 9999, label: "9999" },
+  { value: 999.9, label: "999.9" },
+  { value: 999, label: "999" },
+  { value: 995, label: "995" },
+  { value: 916, label: "916" },
+  { value: 920, label: "920" },
+  { value: 875, label: "875" },
+  { value: 750, label: "750" },
+];
 const Shop = () => {
   const adminId = localStorage.getItem("adminId");
   const [filter, setFilter] = useState("all");
@@ -61,11 +77,7 @@ const Shop = () => {
     image: [],
   });
   const [banners, setBanners] = useState([]);
-  //   Order Management
-  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
-  const [isViewAllOrderOpen, setIsViewAllOrderOpen] = useState(false);
-  const [orders, setOrders] = useState([]);
-  console.log(orders);
+
   // banner Video
   const [isVideoBannerModalOpen, setIsVideoBannerModalOpen] = useState(false);
   const [isViewAllVideoBannerOpen, setIsViewAllVideoBannerOpen] =
@@ -127,6 +139,7 @@ const Shop = () => {
     image: [],
   });
   const [products, setProducts] = useState([]);
+  console.log(productForm);
   const [isViewAllProductOpen, setIsViewAllProductOpen] = useState(false);
   const [commodities, setCommodities] = useState([]);
 
@@ -138,8 +151,7 @@ const Shop = () => {
     setIsViewAllEcomBannerOpen(!isViewAllEcomBannerOpen);
   const toogleVideoBannerViewAll = () =>
     setIsViewAllVideoBannerOpen(!isViewAllVideoBannerOpen);
-  const toogleOrderViewAll = () => setIsViewAllOrderOpen(!isViewAllOrderOpen);
-  // filter
+
   const [filterSubCategories, setFilterSubCategories] = useState([]);
   const [filterProducts, setFilterProducts] = useState([]);
   const [selectedMainCategory, setSelectedMainCategory] = useState(null);
@@ -152,7 +164,8 @@ const Shop = () => {
   const [editingSubCategory, setEditingSubCategory] = useState(null);
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingEcomBanner, setEditingEcomBanner] = useState(null);
-
+  const [page, setPage] = useState(1);
+  const rowsPerPage = 5;
   useEffect(() => {
     const fetchData = async () => {
       await fetchCategories();
@@ -161,7 +174,6 @@ const Shop = () => {
       await fetchProducts();
       await fetchCommodities();
       await fetchVideoBanner();
-      await fetchAllOrder();
     };
     fetchData();
   }, []);
@@ -302,18 +314,6 @@ const Shop = () => {
     }
   };
 
-  const fetchAllOrder = async () => {
-    try {
-      const response = await axiosInstance.get(`/booking/${adminId}`);
-      setOrders(response.data.orderDetails);
-      setError(null);
-    } catch (err) {
-      setError("Failed to fetch Order Management");
-      toast.error("Error loading Order Management");
-      console.error("Error fetching Order Management:", err);
-    }
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setMainCategoryFormData((prevData) => ({
@@ -332,6 +332,7 @@ const Shop = () => {
 
   const handleProductInputChange = (e) => {
     const { name, value } = e.target;
+    console.log(`${name}: ${value}`); // Debugging output
     setProductForm((prevData) => ({
       ...prevData,
       [name]: value,
@@ -774,7 +775,30 @@ const Shop = () => {
       }));
     }
   };
+  const MAX_IMAGES = 5;
 
+  const handleImageUpload = (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      if (files.length + productForm.image.length > MAX_IMAGES) {
+        alert(`You can only upload up to ${MAX_IMAGES} images`);
+        return;
+      }
+      handleFileImgChange(e, "image");
+    }
+  };
+
+  const removeImage = (indexToRemove) => {
+    const updatedImages = productForm.image.filter(
+      (_, index) => index !== indexToRemove
+    );
+    handleProductInputChange({
+      target: {
+        name: "image",
+        value: updatedImages,
+      },
+    });
+  };
   const handleDeleteProduct = async (productId) => {
     if (!window.confirm("Are you sure you want to delete this product?")) {
       return;
@@ -1041,6 +1065,14 @@ const Shop = () => {
       );
     }
   };
+
+  // Calculate pagination
+  const pages = Math.ceil((products?.length || 0) / rowsPerPage);
+  const start = (page - 1) * rowsPerPage;
+  const end = start + rowsPerPage;
+
+  // Get current page items
+  const currentProducts = products?.slice(start, end);
   return (
     <div className="container mx-auto px-4">
       <Toaster position="top-center" />
@@ -1092,15 +1124,6 @@ const Shop = () => {
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Add Video Banner
-        </Button>
-        <Button
-          auto
-          onClick={() => {
-            setIsOrderModalOpen(true);
-          }}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Order Management
         </Button>
       </div>
 
@@ -1407,120 +1430,152 @@ const Shop = () => {
         onOpenChange={() => setIsProductModalOpen(false)}
       >
         <ModalContent
-          style={{ width: "80%", maxWidth: "1000px", marginTop: "400px" }}
+          style={{ width: "100%", maxWidth: "1300px", marginTop: "300px" }}
         >
           <ModalHeader>
             Add Product
             <Button className="ml-3" onClick={toogleProductViewAll}>
-              {" "}
               Add
             </Button>
           </ModalHeader>
           <ModalBody>
-            <Table aria-label="Subcategories Table">
-              <TableHeader>
-                <TableColumn>Images</TableColumn>
-                <TableColumn>Title</TableColumn>
-                <TableColumn>Description</TableColumn>
-                <TableColumn>Price</TableColumn>
-                <TableColumn>Weight</TableColumn>
-                <TableColumn>makingCharge</TableColumn>
-                <TableColumn>Purity</TableColumn>
-                <TableColumn>Type</TableColumn>
-                <TableColumn>Tags</TableColumn>
-                <TableColumn>Sku</TableColumn>
-                <TableColumn>Stock</TableColumn>
-                <TableColumn>Actions</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {products && products?.length > 0 ? (
-                  products?.map((product) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <img
-                          src={product?.images[0]}
-                          alt={product.title}
-                          style={{ width: "60px", height: "60px" }}
-                        />
-                      </TableCell>
-                      <TableCell>{product.title}</TableCell>
-                      <TableCell>{product.description}</TableCell>
-                      <TableCell>{product.price}</TableCell>
-                      <TableCell>{product.weight}</TableCell>
-                      <TableCell>{product.makingCharge}</TableCell>
-                      <TableCell>{product.purity}</TableCell>
-                      <TableCell>{product.type}</TableCell>
-                      <TableCell>{product.tags}</TableCell>
-                      <TableCell>{product.sku}</TableCell>
-                      {/* Product Stock */}
-                      <TableCell>
-                        {product.stock ? (
-                          <span
+            <div className="overflow-x-auto">
+              <Table
+                aria-label="Subcategories Table"
+                bottomContent={
+                  <div className="flex w-full justify-center">
+                    <Pagination
+                      isCompact
+                      showControls
+                      showShadow
+                      color="primary"
+                      page={page}
+                      total={pages}
+                      onChange={(page) => setPage(page)}
+                    />
+                  </div>
+                }
+              >
+                <TableHeader>
+                  <TableColumn>Images</TableColumn>
+                  <TableColumn>Title</TableColumn>
+                  <TableColumn>Description</TableColumn>
+                  <TableColumn>Price</TableColumn>
+                  <TableColumn>Weight</TableColumn>
+                  <TableColumn>makingCharge</TableColumn>
+                  <TableColumn>Purity</TableColumn>
+                  <TableColumn>Type</TableColumn>
+                  <TableColumn>Tags</TableColumn>
+                  <TableColumn>Sku</TableColumn>
+                  <TableColumn>Stock</TableColumn>
+                  <TableColumn>Actions</TableColumn>
+                </TableHeader>
+                <TableBody>
+                  {products && products?.length > 0 ? (
+                    currentProducts?.map((product, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <img
+                            src={product?.images[0]}
+                            alt={product.title}
                             style={{
-                              color: "green",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Stock In
-                          </span>
-                        ) : (
-                          <span
-                            style={{
-                              color: "red",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Stock Out
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          color="primary"
-                          size="sm"
-                          onClick={() => handleEditProduct(product)}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        {/* <IconButton
-                        color="error"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => handleDeleteProduct(product._id)}
-                      >
-                        <DeleteIcon />
-                      </IconButton> */}
-                        {product.stock ? (
-                          <CheckCircle
-                            onClick={() => handleDeleteProduct(product._id)}
-                            style={{
-                              cursor: "pointer",
-                              color: "green",
+                              width: "60px",
+                              height: "60px",
+                              objectFit: "cover",
                             }}
                           />
-                        ) : (
-                          <BlockIcon
-                            onClick={() => handleDeleteProduct(product._id)}
-                            style={{
-                              cursor: "pointer",
-                              color: "red",
-                            }}
-                          />
-                        )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[150px] truncate">
+                            {product.title}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[200px]">
+                            {product.description
+                              ?.split(" ")
+                              .slice(0, 5)
+                              .join(" ")}
+                            {product.description?.split(" ").length > 5
+                              ? "..."
+                              : ""}
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.price}</TableCell>
+                        <TableCell>{product.weight}</TableCell>
+                        <TableCell>{product.makingCharge}</TableCell>
+                        <TableCell>{product.purity}</TableCell>
+                        <TableCell>{product.type}</TableCell>
+                        <TableCell>
+                          <div className="max-w-[150px] truncate">
+                            {product.tags}
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.sku}</TableCell>
+                        <TableCell>
+                          {product.stock ? (
+                            <span
+                              style={{ color: "green", fontWeight: "bold" }}
+                            >
+                              Stock In
+                            </span>
+                          ) : (
+                            <span style={{ color: "red", fontWeight: "bold" }}>
+                              Stock Out
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <IconButton
+                              color="primary"
+                              size="sm"
+                              onClick={() => handleEditProduct(product)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                            {product.stock ? (
+                              <CheckCircle
+                                onClick={() => handleDeleteProduct(product._id)}
+                                style={{
+                                  cursor: "pointer",
+                                  color: "green",
+                                }}
+                              />
+                            ) : (
+                              <BlockIcon
+                                onClick={() => handleDeleteProduct(product._id)}
+                                style={{
+                                  cursor: "pointer",
+                                  color: "red",
+                                }}
+                              />
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow key="2">
+                      <TableCell aria-colspan={12} colSpan={12}>
+                        <div className="text-center">No products available</div>
                       </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
+                      <TableCell className="hidden"> </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell>&nbsp;</TableCell>
-                    <TableCell>
-                      <div className="text-center">No products available</div>
-                    </TableCell>
-                    <TableCell>&nbsp;</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </ModalBody>
           <ModalFooter>
             <Button auto flat onPress={onClose}>
@@ -1536,183 +1591,282 @@ const Shop = () => {
         isOpen={isViewAllProductOpen}
         onClose={toogleProductViewAll}
         onOpenChange={() => setIsProductModalOpen(false)}
+        size="2xl"
+        scrollBehavior="inside"
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Add Product</ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">
+                <h2 className="text-2xl font-bold">
+                  {isEditMode ? "Edit Product" : "Add New Product"}
+                </h2>
+                <p className="text-sm text-gray-500">
+                  Start by uploading product images
+                </p>
+              </ModalHeader>
+
               <ModalBody>
-                {/* Product Title */}
-                <Input
-                  type="text"
-                  name="title"
-                  placeholder="Enter product title"
-                  value={productForm.title}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Product Description */}
-                <Input
-                  name="description"
-                  placeholder="Enter product description"
-                  value={productForm.description}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Price */}
-                <Input
-                  type="number"
-                  name="price"
-                  placeholder="Enter product price"
-                  value={productForm.price}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Weight */}
-                <Input
-                  type="number"
-                  name="weight"
-                  placeholder="Enter product weight (grams)"
-                  value={productForm.weight}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-                {/* makingCharge */}
-                <Input
-                  type="number"
-                  name="makingCharge"
-                  placeholder="Enter product makingCharge (%)"
-                  value={productForm.makingCharge}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Purity */}
-                <Input
-                  type="number"
-                  name="purity"
-                  placeholder="Enter purity percentage"
-                  value={productForm.purity}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Tags */}
-                <select
-                  name="tags"
-                  value={productForm.tags}
-                  onChange={handleProductInputChange}
-                  className="w-full border rounded p-2 mt-4"
-                >
-                  <option value="" disabled>
-                    Select a Tag
-                  </option>
-                  {Object.entries(ProductTag).map(([key, value]) => (
-                    <option key={key} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Type */}
-
-                <select
-                  name="type"
-                  value={productForm.type}
-                  onChange={handleProductInputChange}
-                  className="w-full border rounded p-2 mt-4"
-                >
-                  <option value="" disabled>
-                    Select Commodity Type
-                  </option>
-                  {commodities.length > 0 ? (
-                    commodities.map((commodity) => (
-                      <option key={commodity._id} value={commodity.symbol}>
-                        {commodity.symbol}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="" disabled>
-                      No commodities available
-                    </option>
-                  )}
-                </select>
-
-                {/* SKU */}
-                <Input
-                  type="text"
-                  name="sku"
-                  placeholder="Enter SKU value"
-                  value={productForm.sku}
-                  onChange={handleProductInputChange}
-                  fullWidth
-                />
-
-                {/* Subcategory Dropdown */}
-                <select
-                  name="subCategory"
-                  value={productForm.subCategory}
-                  onChange={handleProductInputChange}
-                  className="w-full border rounded p-2 mt-4"
-                >
-                  <option value="" disabled>
-                    Select Subcategory
-                  </option>
-                  {subCategories.map((subCategory) => (
-                    <option key={subCategory._id} value={subCategory._id}>
-                      {subCategory.name}
-                    </option>
-                  ))}
-                </select>
-
-                <input
-                  type="file"
-                  id="file-uploader"
-                  accept="image/*"
-                  style={{ display: "none" }} // Hide the input
-                  onChange={(e) => handleFileImgChange(e, "image")}
-                  multiple
-                />
-
-                <Button
-                  variant="contained"
-                  component="label"
-                  onClick={() =>
-                    document.getElementById("file-uploader").click()
-                  } // Trigger input click
-                  sx={{ mt: 2 }}
-                >
-                  Upload Image
-                </Button>
-
-                {productForm?.image.length > 0 && (
-                  <div style={{ marginTop: "20px" }}>
-                    <h4>Uploaded Images:</h4>
-                    <ul>
-                      {productForm.image.map((file, index) => (
-                        <li key={index}>{file.name}</li> // Display file name
-                      ))}
-                    </ul>
+                {/* Image Upload Section */}
+                <div className="mb-8 p-6 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Image className="text-blue-500" />
+                      <h3 className="text-lg font-semibold">Product Images</h3>
+                    </div>
+                    <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full">
+                      {productForm.image.length}/{MAX_IMAGES} images
+                    </span>
                   </div>
-                )}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-4">
+                    {productForm.image.map((file, index) => (
+                      <div key={index} className="relative group aspect-square">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg border-2 border-gray-200"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="p-2 bg-red-500 rounded-full text-white transform scale-75 group-hover:scale-100 transition-transform"
+                          >
+                            <Delete />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {productForm.image.length < MAX_IMAGES && (
+                      <label className="aspect-square flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <AddPhotoAlternate className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500">
+                          Add Images
+                        </span>
+                        <span className="text-xs text-gray-400 mt-1">
+                          Max {MAX_IMAGES}
+                        </span>
+                      </label>
+                    )}
+                  </div>
+
+                  {productForm.image.length === 0 && (
+                    <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 p-4 rounded-lg">
+                      <Warning />
+                      <div>
+                        <p className="font-medium">No images uploaded</p>
+                        <p className="text-sm">
+                          Please upload at least one product image
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Basic Info Section */}
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Input
+                        size="lg"
+                        label="Product Title"
+                        placeholder="Enter product title"
+                        name="title"
+                        value={productForm.title}
+                        onChange={handleProductInputChange}
+                        variant="bordered"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <Input
+                        size="lg"
+                        label="Description"
+                        placeholder="Enter product description"
+                        name="description"
+                        value={productForm.description}
+                        onChange={handleProductInputChange}
+                        variant="bordered"
+                      />
+                    </div>
+
+                    <Input
+                      size="lg"
+                      type="number"
+                      label="Price"
+                      placeholder="Enter price"
+                      name="price"
+                      value={productForm.price}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    />
+
+                    <Input
+                      size="lg"
+                      type="number"
+                      label="Weight (grams)"
+                      placeholder="Enter weight"
+                      name="weight"
+                      value={productForm.weight}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    />
+
+                    <Input
+                      size="lg"
+                      type="number"
+                      label="Making Charge"
+                      placeholder="Enter making charge"
+                      name="makingCharge"
+                      value={productForm.makingCharge}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    />
+
+                    <Select
+                      size="lg"
+                      label="Purity"
+                      placeholder="Select purity"
+                      name="purity"
+                      value={productForm.purity}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    >
+                      <SelectItem key="9999" value="9999">
+                        9999
+                      </SelectItem>
+                      <SelectItem key="999.9" value="999.9">
+                        999.9
+                      </SelectItem>
+                      <SelectItem key="999" value="999">
+                        999
+                      </SelectItem>
+                      <SelectItem key="995" value="995">
+                        995
+                      </SelectItem>
+                      <SelectItem key="916" value="916">
+                        916
+                      </SelectItem>
+                      <SelectItem key="920" value="920">
+                        920
+                      </SelectItem>
+                      <SelectItem key="875" value="875">
+                        875
+                      </SelectItem>
+                      <SelectItem key="750" value="750">
+                        750
+                      </SelectItem>
+                    </Select>
+
+                    <Select
+                      size="lg"
+                      label="Product Tag"
+                      placeholder="Select a tag"
+                      name="tags"
+                      value={productForm.tags}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                      defaultSelectedKeys={["None"]}
+                    >
+                      {Object.entries(ProductTag).map(([key, value]) => (
+                        <SelectItem key={key} value={value}>
+                          {value}
+                        </SelectItem>
+                      ))}
+                    </Select>
+
+                    <div className="relative">
+                      <select
+                        name="type"
+                        value={productForm.type}
+                        onChange={handleProductInputChange}
+                        className="w-full h-16 rounded-2xl p-3 text-gray-700 bg-white border  border-gray-300 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent appearance-none"
+                      >
+                        <option value="" disabled>
+                          Select Commodity Type
+                        </option>
+                        {commodities?.length > 0 ? (
+                          commodities.map((commodities) => (
+                            <option
+                              key={commodities._id}
+                              value={commodities.symbol}
+                            >
+                              {commodities.symbol}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="" disabled>
+                            No options available
+                          </option>
+                        )}
+                      </select>
+
+                      {/* Custom dropdown arrow */}
+                      <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                        <svg
+                          className="w-4 h-4 text-gray-400"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+
+                    <Input
+                      size="lg"
+                      label="SKU"
+                      placeholder="Enter SKU value"
+                      name="sku"
+                      value={productForm.sku}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    />
+
+                    <Select
+                      size="lg"
+                      label="Subcategory"
+                      placeholder="Select subcategory"
+                      name="subCategory"
+                      value={productForm.subCategory}
+                      onChange={handleProductInputChange}
+                      variant="bordered"
+                    >
+                      {subCategories.map((subCategory) => (
+                        <SelectItem
+                          key={subCategory._id}
+                          value={subCategory._id}
+                        >
+                          {subCategory.name}
+                        </SelectItem>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
               </ModalBody>
+
               <ModalFooter>
-                <Button
-                  auto
-                  flat
-                  onClick={() => setIsViewAllProductOpen(false)}
-                >
+                <Button color="danger" variant="light" onPress={onClose}>
                   Cancel
                 </Button>
                 <Button
-                  auto
-                  className="bg-blue-500 text-white"
-                  onClick={isEditMode ? handleUpdateProduct : handleAddProduct}
+                  color="primary"
+                  onPress={isEditMode ? handleUpdateProduct : handleAddProduct}
+                  isDisabled={productForm.image.length === 0}
                 >
-                  Add Product
+                  {isEditMode ? "Update Product" : "Add Product"}
                 </Button>
               </ModalFooter>
             </>
@@ -2099,113 +2253,6 @@ const Shop = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/*table Order Management  Modal */}
-
-      {/* <Modal
-        isOpen={isOrderModalOpen}
-        onClose={() => setIsOrderModalOpen(false)}
-        onOpenChange={() => setIsOrderModalOpen(false)}
-      >
-        <ModalContent
-          style={{ width: "80%", maxWidth: "1000px", marginTop: "100px" }}
-        >
-          <ModalHeader>Order Management</ModalHeader>
-          <ModalBody>
-            <Table aria-label="Order Table">
-              <TableHeader>
-                <TableColumn>Product</TableColumn>
-                <TableColumn>Title</TableColumn>
-                <TableColumn>Price</TableColumn>
-                <TableColumn>Weight</TableColumn>
-                <TableColumn>MakingCharge</TableColumn>
-                <TableColumn>User Name</TableColumn>
-                <TableColumn>Contact</TableColumn>
-                <TableColumn>Location</TableColumn>
-                <TableColumn>Delivery Date</TableColumn>
-                <TableColumn>PaymentMethod</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {orders && orders.length > 0 ? (
-                  orders.map((orderItem, i) => (
-                    <TableRow key={i}>
-                      <TableCell>
-                        {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>
-                            <img
-                              src={product.images[0]}
-                              alt={product.title}
-                              className="w-12 h-12 object-cover"
-                            />
-                          </div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.title || "N/A"}</div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>${product.price || "0.00"}</div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.weight || "0"}g</div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.productDetails.map((product, idx) => (
-                          <div key={idx}>{product.makingCharge || "0"}%</div>
-                        ))}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.userDetails?.users?.name || "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.userDetails?.users?.contact || "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.userDetails?.users?.location || "N/A"}
-                      </TableCell>
-                      <TableCell>
-                        {orderItem.deliveryDate
-                          ? new Date(
-                              orderItem.deliveryDate
-                            ).toLocaleDateString()
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell>{orderItem.paymentMethod || "N/A"}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell  className="text-center">
-                      No Orders Available
-                    </TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </ModalBody>
-          <ModalFooter>
-            <Button auto flat onPress={() => setIsOrderModalOpen(false)}>
-              Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal> */}
-
-      {/*  pr add form */}
 
       <div>
         {/* Main Categories */}
