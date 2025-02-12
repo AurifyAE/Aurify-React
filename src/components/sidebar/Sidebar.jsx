@@ -16,7 +16,8 @@ import {
   ShowChart as ShowChartIcon,
   Storefront as StorefrontIcon,
   ShoppingCart as ShoppingCartIcon,
-  Slideshow as  SlideshowIcon
+  Slideshow as SlideshowIcon,
+  AccountBalanceWallet as AccountBalanceWalletIcon
 } from "@mui/icons-material";
 
 import {
@@ -98,12 +99,14 @@ const FeatureDropdown = ({ features, isLoading }) => {
         return GroupIcon;
       case "market closing":
         return MonetizationOnIcon;
+      case "pricing options":
+        return AccountBalanceWalletIcon;
       case "premium discount":
         return LocalOfferIcon;
       case "orders":
         return ShoppingCartIcon;
-        case "screen slider":
-          return SlideshowIcon;
+      case "screen slider":
+        return SlideshowIcon;
       case "users db":
         return DatasetIcon;
       default:
@@ -171,10 +174,12 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
         return GroupIcon;
       case "market closing":
         return MonetizationOnIcon;
+      case "pricing options":
+        return AccountBalanceWalletIcon;
       case "orders":
         return ShoppingCartIcon;
-        case "screen slider":
-          return SlideshowIcon;
+      case "screen slider":
+        return SlideshowIcon;
       default:
         return PersonIcon;
     }
@@ -376,6 +381,7 @@ const Sidebar = () => {
     "Screen Slider",
     "Orders",
     "Market Closing",
+    "Pricing Options",
     "Premium Discount",
     "Users DB",
   ];

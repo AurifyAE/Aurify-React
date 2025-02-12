@@ -43,7 +43,7 @@ import { toast, Toaster } from "react-hot-toast";
 import { MdAddShoppingCart } from "react-icons/md";
 import axiosInstance from "../../axios/axiosInstance";
 import { IconButton } from "@mui/material";
-
+import io from "socket.io-client";
 const ProductTag = {
   BEST_SELLER: "Best Seller",
   SEASONAL: "Seasonal",
@@ -120,26 +120,29 @@ const Shop = () => {
     createdBy: adminId,
   });
   const [mainCategories, setMainCategories] = useState([]);
-  console.log(mainCategories);
+
   const [subCategories, setSubCategories] = useState([]);
 
   // product
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [server, setServer] = useState("");
   const [productForm, setProductForm] = useState({
     title: "",
     description: "",
-    price: "",
-    weight: "",
-    makingCharge: "",
-    purity: "",
-    type: "",
+    price: "0",
+    weight: "5",
+    makingCharge: "0",
+    purity: "9999",
+    type: "Gold",
     tags: "New Arrival",
     sku: "",
     subCategory: "",
     image: [],
   });
   const [products, setProducts] = useState([]);
-  console.log(productForm);
+
+  const [marketData, setMarketData] = useState({});
+
   const [isViewAllProductOpen, setIsViewAllProductOpen] = useState(false);
   const [commodities, setCommodities] = useState([]);
 
@@ -156,8 +159,9 @@ const Shop = () => {
   const [filterProducts, setFilterProducts] = useState([]);
   const [selectedMainCategory, setSelectedMainCategory] = useState(null);
   const [subCategoryProducts, setSubCategoryProducts] = useState([]);
-
+  console.log(marketData);
   const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+  const [spotrates, setSpotrates] = useState([]);
 
   // editing
   const [editingMainCategory, setEditingMainCategory] = useState(null);
@@ -165,11 +169,15 @@ const Shop = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [editingEcomBanner, setEditingEcomBanner] = useState(null);
   const [page, setPage] = useState(1);
+  const [calculatedPrice, setCalculatedPrice] = useState(0);
+  console.log(calculatedPrice);
   const rowsPerPage = 5;
   useEffect(() => {
     const fetchData = async () => {
       await fetchCategories();
+      await fetchServer();
       await fetchSubCategories();
+      await fetchSpotrates();
       await fetchEcomBanner();
       await fetchProducts();
       await fetchCommodities();
@@ -177,6 +185,109 @@ const Shop = () => {
     };
     fetchData();
   }, []);
+  const symbols = commodities?.map((commodity) => commodity.symbol) || [];
+
+  useEffect(() => {
+    const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
+
+    if (!socketSecret) {
+      console.error("Socket secret is not defined in environment variables");
+      return;
+    }
+
+    const socket = io(server, {
+      query: { secret: socketSecret },
+      transports: ["websocket"],
+      debug: false,
+    });
+
+    socket.on("connect", () => {
+      socket.emit("request-data", symbols);
+    });
+
+    socket.on("market-data", (data) => {
+      if (data && data.symbol) {
+        setMarketData((prevData) => ({
+          ...prevData,
+          [data.symbol]: {
+            ...data,
+            bidChanged:
+              prevData[data.symbol] && data.bid !== prevData[data.symbol].bid
+                ? data.bid > prevData[data.symbol].bid
+                  ? "up"
+                  : "down"
+                : null,
+          },
+        }));
+      }
+    });
+
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
+      setError("An error occurred while receiving data");
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [symbols, server]);
+  
+  const getNumberOfDigitsBeforeDecimal = useCallback((value) => {
+    if (value === undefined || value === null) return 0;
+    
+    const valueStr = value.toString();
+    const [integerPart] = valueStr.split(".");
+    return integerPart.length;
+  }, []);
+
+  // Calculate price whenever relevant fields change or market data updates
+  useEffect(() => {
+    if (isViewAllProductOpen) {
+      const calculatePrice = () => {
+        const currentMarketData = Object.values(marketData).find(
+          (item) =>
+            item.symbol === productForm.type || item.epic === productForm.type
+        );
+  
+        if (!currentMarketData) return 0;
+  
+        const spreadKey = `${currentMarketData.symbol.toLowerCase()}BidSpread`;
+        const bidSpread = spotrates?.[spreadKey] || 0;
+  
+        const biddingPrice = parseFloat(currentMarketData.bid) + bidSpread;
+  
+        if (!productForm.weight || !productForm.purity) return 0;
+  
+        const weight = parseFloat(productForm.weight) || 0;
+  
+        // Dynamically calculate purity based on its length before the decimal
+        const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(productForm.purity);
+        const purity = parseFloat(productForm.purity) / Math.pow(10, digitsBeforeDecimal);
+  
+        const makingCharge = parseFloat(productForm.makingCharge) || 0;
+  
+        return (
+          (
+            ((biddingPrice / 31.103) * 3.674 * weight * purity + makingCharge) * 100
+          ) / 100
+        ).toFixed(4);
+      };
+  
+      const newPrice = calculatePrice();
+      setCalculatedPrice(newPrice);
+      setProductForm((prev) => ({ ...prev, price: newPrice.toString() }));
+    }
+  }, [
+    isViewAllProductOpen,
+    marketData,
+    spotrates,
+    productForm.weight,
+    productForm.purity,
+    productForm.type,
+    productForm.makingCharge,
+  ]);
+  
+
   const onClose = () => {
     setIsMainCategoryModalOpen(false); // For main category modal
     setIsSubCategoryModalOpen(false); // For subcategory modal
@@ -270,7 +381,35 @@ const Shop = () => {
       setLoading(false);
     }
   };
+  const fetchServer = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/server-url`);
 
+      setServer(response.data.selectedServerURL);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch Server");
+      toast.error("Error loading Server");
+      console.error("Error fetching Server:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const fetchSpotrates = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/spotrates/${adminId}`);
+      setSpotrates(response.data);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch spotRates");
+      toast.error("Error loading spotRates");
+      console.error("Error fetching spotRates:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
   const fetchSubCategories = async () => {
     try {
       setLoading(true);
@@ -1702,11 +1841,21 @@ const Shop = () => {
                       size="lg"
                       type="number"
                       label="Price"
-                      placeholder="Enter price"
+                      placeholder="Calculated Automatically"
                       name="price"
                       value={productForm.price}
                       onChange={handleProductInputChange}
                       variant="bordered"
+                      isReadOnly
+                      endContent={
+                        <div className="flex items-center gap-1">
+                          <span className="text-primary font-bold">
+                            {calculatedPrice
+                              ? `${calculatedPrice}`
+                              : "0.00"}
+                          </span>
+                        </div>
+                      }
                     />
 
                     <Input

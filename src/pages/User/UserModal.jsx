@@ -15,11 +15,15 @@ import React, { useEffect, useState } from "react";
 const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
   const [userData, setUserData] = useState({
     name: "",
+    email: "", // Added email field
     contact: "",
     location: "",
     categoryId: "",
     password: "",
+    cashBalance: 0, // Added cash balance with a default value
+    goldBalance: 0, // Added gold balance with a default value
   });
+
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
 
@@ -27,18 +31,24 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
     if (user) {
       setUserData({
         name: user.name || "",
+        email: user.email || "", // Added email field
         contact: user.contact || "",
         location: user.location || "",
         categoryId: user.categoryId || "",
         password: user.decryptedPassword || "",
+        cashBalance: user.cashBalance || 0, // Added cash balance with a default value
+        goldBalance: user.goldBalance || 0, // Added gold balance with a default value
       });
     } else {
       setUserData({
         name: "",
+        email: "", // Reset email when no user is selected
         contact: "",
         location: "",
         categoryId: "",
         password: "",
+        cashBalance: 0, // Reset cash balance when no user is selected
+        goldBalance: 0, // Reset gold balance when no user is selected
       });
     }
     setErrors({});
@@ -84,16 +94,34 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
         return value.trim().length >= 2
           ? ""
           : "Name must be at least 2 characters long";
+
+      case "email":
+        return /\S+@\S+\.\S+/.test(value) ? "" : "Invalid email format"; // Email validation
+
       case "contact":
         return /^\d+$/.test(value) ? "" : "Contact must contain only numbers";
+
       case "location":
         return value.trim().length > 0 ? "" : "Location is required";
-      case "category":
+
+      case "categoryId": // Updated from "category" to match your state
         return value ? "" : "Category is required";
+
       case "password":
         return value.length >= 8
           ? ""
           : "Password must be at least 8 characters long";
+
+      case "cashBalance":
+        return !isNaN(value) && value >= 0
+          ? ""
+          : "Cash balance must be a positive number";
+
+      case "goldBalance":
+        return !isNaN(value) && value >= 0
+          ? ""
+          : "Gold balance must be a positive number";
+
       default:
         return "";
     }
@@ -122,10 +150,13 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
       onSubmit(userData);
       setUserData({
         name: "",
+        email: "", // Reset email when no user is selected
         contact: "",
         location: "",
         categoryId: "",
         password: "",
+        cashBalance: 0, // Reset cash balance when no user is selected
+        goldBalance: 0, // Reset gold balance when no user is selected
       });
       setErrors({});
       onClose();
@@ -141,7 +172,6 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
   const handleMouseDownPassword = (event) => {
     event.preventDefault();
   };
-
 
   return (
     <Dialog
@@ -170,6 +200,18 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
             required
             error={!!errors.name}
             helperText={errors.name}
+          />
+          <TextField
+            margin="dense"
+            name="email"
+            label="Email"
+            type="email"
+            fullWidth
+            value={userData.email}
+            onChange={handleChange}
+            required
+            error={!!errors.email}
+            helperText={errors.email}
           />
           <TextField
             margin="dense"
@@ -209,11 +251,35 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
             helperText={errors.categoryId}
           >
             {categories.map((category) => (
-               <MenuItem key={category._id} value={category._id}>
-               {category.name}
-             </MenuItem>
+              <MenuItem key={category._id} value={category._id}>
+                {category.name}
+              </MenuItem>
             ))}
           </TextField>
+          <TextField
+            margin="dense"
+            name="cashBalance"
+            label="Cash Balance"
+            type="number"
+            fullWidth
+            value={userData.cashBalance}
+            onChange={handleChange}
+            required
+            error={!!errors.cashBalance}
+            helperText={errors.cashBalance}
+          />
+          <TextField
+            margin="dense"
+            name="goldBalance"
+            label="Gold Balance"
+            type="number"
+            fullWidth
+            value={userData.goldBalance}
+            onChange={handleChange}
+            required
+            error={!!errors.goldBalance}
+            helperText={errors.goldBalance}
+          />
           <TextField
             margin="dense"
             name="password"

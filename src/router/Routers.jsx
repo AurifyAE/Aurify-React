@@ -26,7 +26,8 @@ import NotFound from "../pages/Error/NotFound";
 import ServerError from "../pages/Error/ServerError";
 import Protect from "../protectorRouter/adminProtect";
 import UsersProductManagement from "../layout/UsersProductManagementLayout"
-
+import PricingOptions from '../layout/PricingOptionsLayout'
+ 
 function Routers() {
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -174,6 +175,12 @@ function Routers() {
           path="/feature/chatbot"
           element={
             <ProtectedRoute element={ChatBotLayout} path="/feature/chatbot" />
+          }
+        />
+         <Route
+          path="/feature/pricing-options"
+          element={
+            <ProtectedRoute element={PricingOptions} path="/feature/pricing-options" />
           }
         />
         <Route

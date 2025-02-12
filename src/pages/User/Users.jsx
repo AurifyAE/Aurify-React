@@ -148,7 +148,7 @@ const CategoryManagement = ({
   ];
 
   return (
-    <Paper elevation={3} sx={{ p: 3, width: "100%" }}>
+    <Paper elevation={3} sx={{ p: 3, width: "93%" }}>
       <Typography variant="h6" gutterBottom>
         Category Management
       </Typography>
@@ -279,15 +279,18 @@ const UserDataTable = ({
   const columns = [
     { id: "name", label: "Name", minWidth: 170 },
     { id: "contact", label: "Contact", minWidth: 130 },
+    { id: "email", label: "Email", minWidth: 130 },
     { id: "category", label: "Category", minWidth: 130 },
     { id: "location", label: "Location", minWidth: 170 },
     { id: "password", label: "Password", minWidth: 170 },
+    { id: "cashBalance", label: "Cash Balance", minWidth: 150 },
+    { id: "goldBalance", label: "Gold Balance", minWidth: 150 },
     { id: "product management", label: "Product Management", minWidth: 130 },
     { id: "actions", label: "Actions", minWidth: 130 },
-  ];
+];
 
   return (
-    <Paper elevation={3} sx={{ width: "100%", overflow: "hidden" }}>
+    <Paper elevation={3} sx={{ width: "93%", overflow: "hidden" }}>
       <Typography variant="h6" gutterBottom sx={{ p: 2 }}>
         User Management
       </Typography>
@@ -322,9 +325,12 @@ const UserDataTable = ({
                   <TableRow hover role="checkbox" tabIndex={-1} key={user._id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.contact}</TableCell>
+                    <TableCell>{user.email}</TableCell>
                     <TableCell>{user.categoryName}</TableCell>
                     <TableCell>{user.location}</TableCell>
                     <TableCell>{user.decryptedPassword}</TableCell>
+                    <TableCell>{user.cashBalance?.toFixed(2) || "0.00"}</TableCell>
+                  <TableCell>{user.goldBalance?.toFixed(2) || "0.00"}</TableCell>
                     <TableCell><Button variant="contained" 
                     // onClick={() => navigate(`/users-productmanagement/${user._id}`)}
                     >Coming Soon
@@ -479,12 +485,15 @@ const UserList = () => {
     try {
       const newUser = {
         name: userData.name,
+        email: userData.email,  // Added email field
         contact: userData.contact,
         location: userData.location,
         categoryId: userData.categoryId,
         password: userData.password,
+        cashBalance: userData.cashBalance || 0, // Default value to prevent undefined
+        goldBalance: userData.goldBalance || 0, // Default value to prevent undefined
       };
-
+      
       const response = await axiosInstance.post(
         `/admin/${adminId}/users`,
         newUser
