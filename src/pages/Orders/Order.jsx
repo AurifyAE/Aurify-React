@@ -289,7 +289,7 @@ const ImageWithFallback = ({ src, style }) => {
 };
 
 const OrdersPDF = ({ orders, admin }) => {
-  console.log(orders)
+  console.log(orders);
   // Convert company name to watermark text
   const watermarkText = admin?.companyName || "INVOICE";
 
@@ -362,7 +362,7 @@ const OrdersPDF = ({ orders, admin }) => {
               </Text>
               <Text style={[styles.tableCellHeader, { flex: 0.5 }]}>Qty</Text>
               <Text style={[styles.tableCellHeader, { flex: 1 }]}>
-              Pricing Option
+                Pricing Option
               </Text>
               <Text style={[styles.tableCellHeader, { flex: 1 }]}>Amount</Text>
             </View>
@@ -393,13 +393,19 @@ const OrdersPDF = ({ orders, admin }) => {
                 <Text style={[styles.tableCell, { flex: 0.5 }]}>
                   {item.quantity}
                 </Text>
-                <Text style={[styles.tableCell, { flex: 1 }]}>{order.pricingOption || 'Standard'}</Text>
                 <Text style={[styles.tableCell, { flex: 1 }]}>
-                  {order.pricingOption === 'Discount' ? 
-                    `${order.discountAmount}` : 
-                    order.pricingOption === 'Premium' ? 
-                    `${order.premiumAmount}` : 
-                    'N/A'}
+                  {order.pricingOption ? order.pricingOption : "Nil"}
+                </Text>
+                <Text style={[styles.tableCell, { flex: 1 }]}>
+                  {order.pricingOption === "Discount"
+                    ? order.discountAmount && order.discountAmount !== 0
+                      ? order.discountAmount
+                      : "Nil"
+                    : order.pricingOption === "Premium"
+                    ? order.premiumAmount && order.premiumAmount !== 0
+                      ? order.premiumAmount
+                      : "Nil"
+                    : "Nil"}
                 </Text>
               </View>
             ))}
@@ -764,14 +770,21 @@ const OrderManagement = () => {
                         </Select>
                       </FormControl>
                     </TableCell>
-                    <TableCell>{order.pricingOption}</TableCell>
+                    <TableCell>
+                      {order.pricingOption ? order.pricingOption : "Nil"}
+                    </TableCell>
                     <TableCell>
                       {order.pricingOption === "Discount"
-                        ? `${order.discountAmount}`
+                        ? order.discountAmount && order.discountAmount !== 0
+                          ? `${order.discountAmount}`
+                          : "Nil"
                         : order.pricingOption === "Premium"
-                        ? `${order.premiumAmount}`
-                        : "N/A"}
+                        ? order.premiumAmount && order.premiumAmount !== 0
+                          ? `${order.premiumAmount}`
+                          : "Nil"
+                        : "Nil"}
                     </TableCell>
+
                     <TableCell>
                       <Button
                         variant="contained"
@@ -916,34 +929,59 @@ const OrderManagement = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
+            width: 420,
+            bgcolor: "white",
             boxShadow: 24,
             p: 4,
-            borderRadius: 1,
+            borderRadius: 2,
           }}
         >
-          <h2 className="text-2xl font-bold mb-4">User Details</h2>
-          {userDetails && (
-            <div className="space-y-4">
-              <p>
-                <strong>Name:</strong> {userDetails.name}
+          <div className="flex flex-col items-center text-center space-y-4">
+            {/* User Avatar */}
+            <Avatar sx={{ width: 80, height: 80, bgcolor: "#3B82F6" }}>
+            {userDetails?.name ? userDetails.name[0].toUpperCase() : "U"}
+            </Avatar>
+
+            {/* User Info */}
+            <h2 className="text-2xl font-bold text-gray-800">User Details</h2>
+
+            <div className="w-full bg-gray-100 p-4 rounded-lg text-left space-y-2">
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Name:</strong>{" "}
+                {userDetails?.name || "N/A"}
               </p>
-              <p>
-                <strong>Location:</strong> {userDetails.location}
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Email:</strong>{" "}
+                {userDetails?.email || "N/A"}
               </p>
-              <p>
-                <strong>Phone:</strong> {userDetails.contact}
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Phone:</strong>{" "}
+                {userDetails?.contact || "N/A"}
               </p>
-              <Button
-                variant="contained"
-                onClick={() => setModals((prev) => ({ ...prev, user: false }))}
-                sx={{ mt: 2 }}
-              >
-                Close
-              </Button>
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Location:</strong>{" "}
+                {userDetails?.location || "N/A"}
+              </p>
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Cash Balance:</strong> 
+                {userDetails?.cashBalance?.toFixed(2) || "0.00"}
+              </p>
+              <p className="text-gray-700">
+                <strong className="text-gray-900">Gold Balance:</strong>{" "}
+                {userDetails?.goldBalance?.toFixed(2) || "0.00"}
+              </p>
             </div>
-          )}
+
+            {/* Close Button */}
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setModals((prev) => ({ ...prev, user: false }))}
+              sx={{ width: "100%" }}
+            >
+              Close
+            </Button>
+          </div>
         </Box>
       </Modal>
 
