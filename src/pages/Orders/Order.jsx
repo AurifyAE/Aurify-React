@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import axiosInstance from "../../axios/axiosInstance";
 import {
   Box,
@@ -36,7 +36,6 @@ import {
   Image,
   Font,
 } from "@react-pdf/renderer";
-// Register fonts
 Font.register({
   family: "Roboto",
   src: "https://cdnjs.cloudflare.com/ajax/libs/ink/3.1.10/fonts/Roboto/roboto-light-webfont.ttf",
@@ -322,7 +321,12 @@ const OrdersPDF = ({ orders, admin }) => {
               <Text style={styles.invoiceTitle}>Delivery Note</Text>
               <Text style={styles.invoiceNumber}>#{order.transactionId}</Text>
               <Text style={styles.invoiceDate}>
-                Date: {new Date(order.deliveryDate).toLocaleDateString()}
+                Date:{" "}
+                {new Date().toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "numeric",
+                  year: "numeric",
+                })}
               </Text>
             </View>
           </View>
@@ -346,7 +350,12 @@ const OrdersPDF = ({ orders, admin }) => {
               <Text style={styles.billingInfo}>
                 Method: {order.paymentMethod}
                 {"\n"}
-                Order Date: {new Date(order.deliveryDate).toLocaleDateString()}
+                Order Date:{" "}
+                {new Date(order.deliveryDate).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "numeric",
+                  year: "numeric",
+                })}
                 {"\n"}
                 Transaction ID: {order.transactionId}
               </Text>
@@ -455,8 +464,147 @@ const OrdersPDF = ({ orders, admin }) => {
     </Document>
   );
 };
+// Components
+const UserDetailsModal = memo(({ open, onClose, userDetails }) => (
+  <Modal open={open} onClose={onClose}>
+    <Box
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 420,
+        bgcolor: "white",
+        boxShadow: 24,
+        p: 4,
+        borderRadius: 2,
+      }}
+    >
+      <div className="flex flex-col items-center text-center space-y-4">
+        <Avatar sx={{ width: 80, height: 80, bgcolor: "#3B82F6" }}>
+          {userDetails?.name ? userDetails.name[0].toUpperCase() : "U"}
+        </Avatar>
 
+        <h2 className="text-2xl font-bold text-gray-800">User Details</h2>
+
+        <div className="w-full bg-gray-100 p-4 rounded-lg text-left space-y-2">
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Name:</strong>{" "}
+            {userDetails?.name || "N/A"}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Email:</strong>{" "}
+            {userDetails?.email || "N/A"}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Phone:</strong>{" "}
+            {userDetails?.contact || "N/A"}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Location:</strong>{" "}
+            {userDetails?.location || "N/A"}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Cash Balance:</strong>{" "}
+            {userDetails?.cashBalance?.toFixed(2) || "0.00"}
+          </p>
+          <p className="text-gray-700">
+            <strong className="text-gray-900">Gold Balance:</strong>{" "}
+            {userDetails?.goldBalance?.toFixed(2) || "0.00"}
+          </p>
+        </div>
+
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={onClose}
+          sx={{ width: "100%" }}
+        >
+          Close
+        </Button>
+      </div>
+    </Box>
+  </Modal>
+));
+
+const RemarkModal = memo(({ open, onClose, remark, setRemark, onSubmit }) => (
+  <Modal open={open} onClose={onClose}>
+    <Box
+      sx={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 400,
+        bgcolor: "background.paper",
+        boxShadow: 24,
+        p: 4,
+        borderRadius: 1,
+      }}
+    >
+      <h2 className="text-2xl font-bold mb-4">Enter Remark</h2>
+      <TextField
+        label="Remark"
+        fullWidth
+        multiline
+        rows={4}
+        value={remark}
+        onChange={(e) => setRemark(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      <Box sx={{ display: "flex", gap: 1 }}>
+        <Button variant="contained" onClick={onSubmit} color="primary">
+          Submit
+        </Button>
+        <Button variant="outlined" onClick={onClose}>
+          Cancel
+        </Button>
+      </Box>
+    </Box>
+  </Modal>
+));
+
+const QuantityModal = memo(
+  ({ open, onClose, quantity, setQuantity, onSubmit }) => (
+    <Modal open={open} onClose={onClose}>
+      <Box
+        sx={{
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 400,
+          bgcolor: "background.paper",
+          boxShadow: 24,
+          p: 4,
+          borderRadius: 1,
+        }}
+      >
+        <h2 className="text-2xl font-bold mb-4">Update Product Quantity</h2>
+        <TextField
+          label="Quantity"
+          type="number"
+          fullWidth
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value))}
+          sx={{ mb: 2 }}
+        />
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <Button variant="contained" onClick={onSubmit} color="primary">
+            Update
+          </Button>
+          <Button variant="outlined" onClick={onClose}>
+            Cancel
+          </Button>
+        </Box>
+      </Box>
+    </Modal>
+  )
+);
+
+// Main Component
 const OrderManagement = () => {
+  // State management with custom hooks
   const [orders, setOrders] = useState([]);
   const [admin, setAdmin] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
@@ -486,7 +634,9 @@ const OrderManagement = () => {
     "Processing",
   ];
 
+  // Optimized API calls with useCallback
   const fetchOrders = useCallback(async () => {
+    const loadingToastId = toast.loading("Fetching orders...");
     try {
       const response = await axiosInstance.get(`/booking/${adminId}`);
       const newOrders = response.data.orderDetails;
@@ -495,12 +645,18 @@ const OrderManagement = () => {
         const hasChanges =
           JSON.stringify(prevOrders) !== JSON.stringify(newOrders);
         if (hasChanges && prevOrders.length > 0) {
-          toast.success("New orders received!");
+          toast.success("Orders updated!", {
+            id: loadingToastId,
+            duration: 3000,
+          });
+        } else {
+          toast.dismiss(loadingToastId);
         }
         return newOrders;
       });
     } catch (error) {
       console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders", { id: loadingToastId });
       setError("Failed to load orders.");
     }
   }, [adminId]);
@@ -510,81 +666,52 @@ const OrderManagement = () => {
       const response = await axiosInstance.get(`/data/${userName}`);
       setAdmin(response.data.data);
     } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError("Failed to load adminData.");
+      console.error("Error fetching admin data:", error);
+      toast.error("Failed to load admin data");
+      setError("Failed to load admin data.");
     }
   }, [userName]);
-  // Filter orders when active filter or orders change
-  useEffect(() => {
-    if (orders) {
-      if (activeFilter === "All") {
-        setFilteredOrders(orders);
-      } else {
-        setFilteredOrders(
-          orders.filter((order) => order.orderStatus === activeFilter)
-        );
-      }
-    }
-  }, [orders, activeFilter]);
-  useEffect(() => {
-    fetchAdmin();
-  }, []);
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
 
-  useEffect(() => {
-    let intervalId;
-    if (isPolling) {
-      intervalId = setInterval(() => {
-        fetchOrders();
-      }, 30000);
-    }
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [fetchOrders, isPolling]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPolling(!document.hidden);
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  const toggleOrderExpansion = (orderId) => {
-    setExpandedOrders((prev) => ({
-      ...prev,
-      [orderId]: !prev[orderId],
-    }));
-  };
-
+  // Optimized status update handler
   const handleStatusChange = async (orderId, newStatus) => {
+    if (!orderId || !newStatus) return;
+
     if (newStatus === "Rejected") {
       setSelectedOrder(orderId);
       setModals((prev) => ({ ...prev, remark: true }));
       return;
     }
 
+    const loadingToastId = toast.loading("Updating status...");
     try {
       await axiosInstance.put(`/update-order/${orderId}`, {
         orderStatus: newStatus,
       });
-      await fetchOrders();
-      toast.success("Order status updated successfully");
+
+      // Optimistic update
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === orderId ? { ...order, orderStatus: newStatus } : order
+        )
+      );
+
+      toast.success("Status updated successfully", {
+        id: loadingToastId,
+        duration: 3000,
+      });
     } catch (error) {
-      console.error(error);
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status", { id: loadingToastId });
       setError("Failed to update order status.");
     }
   };
 
+  // Optimized approval handler
   const handleApproval = async (order, item) => {
+    if (!order._id || !item._id) return;
+
     if (item.quantity <= 1) {
+      const loadingToastId = toast.loading("Processing approval...");
       try {
         await axiosInstance.put(`/update-order-quantity/${order._id}`, {
           itemStatus: "Approved",
@@ -592,10 +719,31 @@ const OrderManagement = () => {
           fixedPrice: item.fixedPrice,
           quantity: item.quantity,
         });
-        toast.success("Order status updated successfully");
-        await fetchOrders();
+
+        // Optimistic update
+        setOrders((prevOrders) =>
+          prevOrders.map((prevOrder) =>
+            prevOrder._id === order._id
+              ? {
+                  ...prevOrder,
+                  items: prevOrder.items.map((prevItem) =>
+                    prevItem._id === item._id
+                      ? { ...prevItem, itemStatus: "Approved" }
+                      : prevItem
+                  ),
+                }
+              : prevOrder
+          )
+        );
+
+        toast.success("Order approved", {
+          id: loadingToastId,
+          duration: 3000,
+        });
       } catch (error) {
-        setError("Failed to update order status.");
+        console.error("Error approving order:", error);
+        toast.error("Failed to approve order", { id: loadingToastId });
+        setError("Failed to approve order.");
       }
     } else {
       setSelectedOrder(order);
@@ -605,7 +753,11 @@ const OrderManagement = () => {
     }
   };
 
+  // Optimized quantity submission handler
   const handleQuantitySubmit = async () => {
+    if (!selectedOrder?._id || !selectedProduct?._id) return;
+
+    const loadingToastId = toast.loading("Updating quantity...");
     try {
       await axiosInstance.put(`/update-order-quantity/${selectedOrder._id}`, {
         itemStatus: "User Approval Pending",
@@ -614,43 +766,203 @@ const OrderManagement = () => {
         quantity: quantity,
       });
 
+      // Optimistic update
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === selectedOrder._id
+            ? {
+                ...order,
+                items: order.items.map((item) =>
+                  item._id === selectedProduct._id
+                    ? {
+                        ...item,
+                        quantity,
+                        itemStatus: "User Approval Pending",
+                      }
+                    : item
+                ),
+              }
+            : order
+        )
+      );
+
       setModals((prev) => ({ ...prev, quantity: false }));
-      await fetchOrders();
-      toast.success("Order status updated successfully");
+      toast.success("Quantity updated", {
+        id: loadingToastId,
+        duration: 3000,
+      });
     } catch (error) {
-      setError("Failed to update quantity and order status.");
+      console.error("Error updating quantity:", error);
+      toast.error("Failed to update quantity", { id: loadingToastId });
+      setError("Failed to update quantity.");
     }
   };
 
+  // Optimized remark submission handler
   const handleRemarkSubmit = async () => {
+    if (!selectedOrder || !remark.trim()) return;
+
+    const loadingToastId = toast.loading("Submitting remark...");
     try {
       await axiosInstance.put(`/update-order-reject/${selectedOrder}`, {
         orderStatus: "Rejected",
         remark,
       });
+
+      // Optimistic update
+      setOrders((prevOrders) =>
+        prevOrders.map((order) =>
+          order._id === selectedOrder
+            ? { ...order, orderStatus: "Rejected", remark }
+            : order
+        )
+      );
+
       setModals((prev) => ({ ...prev, remark: false }));
       setRemark("");
-      await fetchOrders();
-      toast.success("Order has been rejected");
+      toast.success("Order rejected", {
+        id: loadingToastId,
+        duration: 3000,
+      });
     } catch (error) {
-      setError("Failed to update remark.");
+      console.error("Error submitting remark:", error);
+      toast.error("Failed to submit remark", { id: loadingToastId });
+      setError("Failed to submit remark.");
     }
   };
 
-  const handleViewUser = async (order) => {
-    try {
-      setUserDetails(order.customer);
-      setSelectedOrder(order);
-      setModals((prev) => ({ ...prev, user: true }));
-    } catch (error) {
-      setError("Failed to fetch user details.");
-    }
-  };
+  // Effects
+  useEffect(() => {
+    fetchAdmin();
+  }, [fetchAdmin]);
 
-  const formatDate = (dateString) => {
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Optimized polling with debounce
+  useEffect(() => {
+    let timeoutId;
+
+    const debouncedFetch = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      timeoutId = setTimeout(() => {
+        if (isPolling) {
+          fetchOrders();
+        }
+      }, 30000);
+    };
+
+    debouncedFetch();
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [fetchOrders, isPolling]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      setIsPolling(!document.hidden);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, []);
+
+  // Filter orders when active filter changes
+  useEffect(() => {
+    if (orders) {
+      setFilteredOrders(
+        activeFilter === "All"
+          ? orders
+          : orders.filter((order) => order.orderStatus === activeFilter)
+      );
+    }
+  }, [orders, activeFilter]);
+
+  // Utility functions
+  const toggleOrderExpansion = useCallback((orderId) => {
+    setExpandedOrders((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  }, []);
+
+  const handleViewUser = useCallback((order) => {
+    setUserDetails(order.customer);
+    setSelectedOrder(order);
+    setModals((prev) => ({ ...prev, user: true }));
+  }, []);
+
+  const formatDate = useCallback((dateString) => {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-  };
+  }, []);
+
+  // Render functions
+  const renderOrderActions = useCallback(
+    (order) => (
+      <Button
+        variant="contained"
+        onClick={() => handleViewUser(order)}
+        color="primary"
+        size="small"
+        sx={{ mr: 1 }}
+      >
+        View User
+      </Button>
+    ),
+    [handleViewUser]
+  );
+
+  const renderItemActions = useCallback(
+    (order, item) => {
+      if (item.itemStatus === "Approval Pending") {
+        return (
+          <Button
+            variant="contained"
+            color="warning"
+            size="small"
+            onClick={() => handleApproval(order, item)}
+          >
+            Approve Pending
+          </Button>
+        );
+      } else if (item.itemStatus === "Approved") {
+        return (
+          <Button variant="contained" color="success" size="small">
+            Approved
+          </Button>
+        );
+      } else if (item.itemStatus === "User Approval Pending") {
+        return (
+          <Button
+            variant="contained"
+            color="info"
+            size="small"
+            onClick={() => handleApproval(order, item)}
+          >
+            User Approval Pending
+          </Button>
+        );
+      } else if (item.itemStatus === "Rejected") {
+        return (
+          <Button variant="contained" color="error" size="small">
+            Rejected
+          </Button>
+        );
+      }
+      return null;
+    },
+    [handleApproval]
+  );
 
   return (
     <div className="-mt-10">
@@ -690,7 +1002,7 @@ const OrderManagement = () => {
           document={<OrdersPDF orders={filteredOrders} admin={admin} />}
           fileName="orders-report.pdf"
         >
-          {({ blob, url, loading, error }) => (
+          {({ loading }) => (
             <Button
               variant="contained"
               color="secondary"
@@ -784,24 +1096,13 @@ const OrderManagement = () => {
                           : "Nil"
                         : "Nil"}
                     </TableCell>
-
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        onClick={() => handleViewUser(order)}
-                        color="primary"
-                        size="small"
-                        sx={{ mr: 1 }}
-                      >
-                        View User
-                      </Button>
-                    </TableCell>
+                    <TableCell>{renderOrderActions(order)}</TableCell>
                   </TableRow>
 
                   {expandedOrders[order._id] && (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         style={{ paddingBottom: 0, paddingTop: 0 }}
                       >
                         <Box sx={{ margin: 1 }}>
@@ -811,7 +1112,6 @@ const OrderManagement = () => {
                                 <TableCell>Product</TableCell>
                                 <TableCell>Product Image</TableCell>
                                 <TableCell>Quantity</TableCell>
-                                <TableCell></TableCell>
                                 <TableCell>Purity</TableCell>
                                 <TableCell>Weight</TableCell>
                                 <TableCell>Actions</TableCell>
@@ -837,52 +1137,10 @@ const OrderManagement = () => {
                                     </Tooltip>
                                   </TableCell>
                                   <TableCell>{item.quantity}</TableCell>
-                                  <TableCell>
-                                    {/* AED {item.product.price.toFixed(2)} */}
-                                  </TableCell>
                                   <TableCell>{item.product.purity}</TableCell>
                                   <TableCell>{item.product.weight}g</TableCell>
                                   <TableCell>
-                                    {item.itemStatus === "Approval Pending" ? (
-                                      <Button
-                                        variant="contained"
-                                        color="warning"
-                                        size="small"
-                                        onClick={() =>
-                                          handleApproval(order, item)
-                                        }
-                                      >
-                                        Approve Pending
-                                      </Button>
-                                    ) : item.itemStatus === "Approved" ? (
-                                      <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                      >
-                                        Approved
-                                      </Button>
-                                    ) : item.itemStatus ===
-                                      "User Approval Pending" ? (
-                                      <Button
-                                        variant="contained"
-                                        color="info"
-                                        size="small"
-                                        onClick={() =>
-                                          handleApproval(order, item)
-                                        }
-                                      >
-                                        User Approval Pending
-                                      </Button>
-                                    ) : item.itemStatus === "Rejected" ? (
-                                      <Button
-                                        variant="contained"
-                                        color="error"
-                                        size="small"
-                                      >
-                                        Rejected
-                                      </Button>
-                                    ) : null}
+                                    {renderItemActions(order, item)}
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -896,7 +1154,7 @@ const OrderManagement = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={7} align="center">
+                <TableCell colSpan={8} align="center">
                   No Orders Available
                 </TableCell>
               </TableRow>
@@ -918,167 +1176,39 @@ const OrderManagement = () => {
         />
       </TableContainer>
 
-      {/* User Details Modal */}
-      <Modal
+      {/* Modals */}
+      <UserDetailsModal
         open={modals.user}
         onClose={() => setModals((prev) => ({ ...prev, user: false }))}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 420,
-            bgcolor: "white",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 2,
-          }}
-        >
-          <div className="flex flex-col items-center text-center space-y-4">
-            {/* User Avatar */}
-            <Avatar sx={{ width: 80, height: 80, bgcolor: "#3B82F6" }}>
-            {userDetails?.name ? userDetails.name[0].toUpperCase() : "U"}
-            </Avatar>
+        userDetails={userDetails}
+      />
 
-            {/* User Info */}
-            <h2 className="text-2xl font-bold text-gray-800">User Details</h2>
-
-            <div className="w-full bg-gray-100 p-4 rounded-lg text-left space-y-2">
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Name:</strong>{" "}
-                {userDetails?.name || "N/A"}
-              </p>
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Email:</strong>{" "}
-                {userDetails?.email || "N/A"}
-              </p>
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Phone:</strong>{" "}
-                {userDetails?.contact || "N/A"}
-              </p>
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Location:</strong>{" "}
-                {userDetails?.location || "N/A"}
-              </p>
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Cash Balance:</strong> 
-                {userDetails?.cashBalance?.toFixed(2) || "0.00"}
-              </p>
-              <p className="text-gray-700">
-                <strong className="text-gray-900">Gold Balance:</strong>{" "}
-                {userDetails?.goldBalance?.toFixed(2) || "0.00"}
-              </p>
-            </div>
-
-            {/* Close Button */}
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setModals((prev) => ({ ...prev, user: false }))}
-              sx={{ width: "100%" }}
-            >
-              Close
-            </Button>
-          </div>
-        </Box>
-      </Modal>
-
-      {/* Remark Modal */}
-      <Modal
+      <RemarkModal
         open={modals.remark}
         onClose={() => setModals((prev) => ({ ...prev, remark: false }))}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 1,
-          }}
-        >
-          <h2 className="text-2xl font-bold mb-4">Enter Remark</h2>
-          <TextField
-            label="Remark"
-            fullWidth
-            multiline
-            rows={4}
-            value={remark}
-            onChange={(e) => setRemark(e.target.value)}
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="contained"
-              onClick={handleRemarkSubmit}
-              color="primary"
-            >
-              Submit
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setModals((prev) => ({ ...prev, remark: false }))}
-            >
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+        remark={remark}
+        setRemark={setRemark}
+        onSubmit={handleRemarkSubmit}
+      />
 
-      {/* Quantity Update Modal */}
-      <Modal
+      <QuantityModal
         open={modals.quantity}
         onClose={() => setModals((prev) => ({ ...prev, quantity: false }))}
-      >
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 400,
-            bgcolor: "background.paper",
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 1,
-          }}
-        >
-          <h2 className="text-2xl font-bold mb-4">Update Product Quantity</h2>
-          <TextField
-            label="Quantity"
-            type="number"
-            fullWidth
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-            sx={{ mb: 2 }}
-          />
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <Button
-              variant="contained"
-              onClick={handleQuantitySubmit}
-              color="primary"
-            >
-              Update
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() =>
-                setModals((prev) => ({ ...prev, quantity: false }))
-              }
-            >
-              Cancel
-            </Button>
-          </Box>
-        </Box>
-      </Modal>
+        quantity={quantity}
+        setQuantity={setQuantity}
+        onSubmit={handleQuantitySubmit}
+      />
 
-      <Toaster position="top-right" />
+      {/* <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+        }}
+      /> */}
     </div>
   );
 };
