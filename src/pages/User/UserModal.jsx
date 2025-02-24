@@ -15,13 +15,13 @@ import React, { useEffect, useState } from "react";
 const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
   const [userData, setUserData] = useState({
     name: "",
-    email: "", // Added email field
+    email: "",
     contact: "",
     location: "",
     categoryId: "",
     password: "",
-    cashBalance: 0, // Added cash balance with a default value
-    goldBalance: 0, // Added gold balance with a default value
+    cashBalance: "",
+    goldBalance: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -31,24 +31,24 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
     if (user) {
       setUserData({
         name: user.name || "",
-        email: user.email || "", // Added email field
+        email: user.email || "",
         contact: user.contact || "",
         location: user.location || "",
         categoryId: user.categoryId || "",
         password: user.decryptedPassword || "",
-        cashBalance: user.cashBalance || 0, // Added cash balance with a default value
-        goldBalance: user.goldBalance || 0, // Added gold balance with a default value
+        cashBalance: user.cashBalance || "",
+        goldBalance: user.goldBalance || "",
       });
     } else {
       setUserData({
         name: "",
-        email: "", // Reset email when no user is selected
+        email: "",
         contact: "",
         location: "",
         categoryId: "",
         password: "",
-        cashBalance: 0, // Reset cash balance when no user is selected
-        goldBalance: 0, // Reset gold balance when no user is selected
+        cashBalance: "",
+        goldBalance: "",
       });
     }
     setErrors({});
@@ -56,26 +56,21 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
 
   useEffect(() => {
     const generatePassword = () => {
-      const nameParts = userData.name.split(" ").filter(Boolean); // Split name into parts and remove empty spaces
+      const nameParts = userData.name.split(" ").filter(Boolean);
       let nameLetters = "";
 
-      // Collect letters from each name part until we get 4 letters
       for (let i = 0; i < nameParts.length; i++) {
         nameLetters += nameParts[i].substring(0, 4 - nameLetters.length);
         if (nameLetters.length >= 4) break;
       }
 
-      // If the name doesn't have 4 letters, pad with letters from the middle or last name part
       if (nameLetters.length < 4 && nameParts.length > 1) {
         const middleOrLastName = nameParts[1];
         nameLetters += middleOrLastName.substring(0, 4 - nameLetters.length);
       }
 
-      // Get the last 4 digits of the contact number
       const contactDigits = userData.contact.slice(-4);
-
-      // Concatenate the name letters and contact digits for the password
-      const password = (nameLetters + contactDigits).replace(/\s+/g, ""); // Remove any spaces
+      const password = (nameLetters + contactDigits).replace(/\s+/g, "");
 
       return password;
     };
@@ -96,7 +91,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
           : "Name must be at least 2 characters long";
 
       case "email":
-        return /\S+@\S+\.\S+/.test(value) ? "" : "Invalid email format"; // Email validation
+        return /\S+@\S+\.\S+/.test(value) ? "" : "Invalid email format";
 
       case "contact":
         return /^\d+$/.test(value) ? "" : "Contact must contain only numbers";
@@ -104,7 +99,7 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
       case "location":
         return value.trim().length > 0 ? "" : "Location is required";
 
-      case "categoryId": // Updated from "category" to match your state
+      case "categoryId":
         return value ? "" : "Category is required";
 
       case "password":
@@ -113,14 +108,14 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
           : "Password must be at least 8 characters long";
 
       case "cashBalance":
-        return !isNaN(value) && value >= 0
+        return !isNaN(value) && value !== ""
           ? ""
-          : "Cash balance must be a positive number";
+          : "Cash balance must be a valid number";
 
       case "goldBalance":
-        return !isNaN(value) && value >= 0
+        return !isNaN(value) && value !== ""
           ? ""
-          : "Gold balance must be a positive number";
+          : "Gold balance must be a valid number";
 
       default:
         return "";
@@ -129,9 +124,17 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
     if (name === "contact" && !/^\d*$/.test(value)) {
-      return; // Prevent non-numeric input for contact
+      return;
     }
+    
+    // Special handling for balance fields to allow negative numbers
+    if ((name === "cashBalance" || name === "goldBalance") && 
+        !/^-?\d*\.?\d*$/.test(value)) {
+      return;
+    }
+    
     setUserData({ ...userData, [name]: value });
     setErrors({ ...errors, [name]: validateField(name, value) });
   };
@@ -147,16 +150,23 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
     });
 
     if (Object.keys(newErrors).length === 0) {
-      onSubmit(userData);
+      // Convert balance strings to numbers before submitting
+      const processedUserData = {
+        ...userData,
+        cashBalance: parseFloat(userData.cashBalance) || 0,
+        goldBalance: parseFloat(userData.goldBalance) || 0,
+      };
+      
+      onSubmit(processedUserData);
       setUserData({
         name: "",
-        email: "", // Reset email when no user is selected
+        email: "",
         contact: "",
         location: "",
         categoryId: "",
         password: "",
-        cashBalance: 0, // Reset cash balance when no user is selected
-        goldBalance: 0, // Reset gold balance when no user is selected
+        cashBalance: "",
+        goldBalance: "",
       });
       setErrors({});
       onClose();
@@ -267,6 +277,9 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
             required
             error={!!errors.cashBalance}
             helperText={errors.cashBalance}
+            inputProps={{
+              step: "any"
+            }}
           />
           <TextField
             margin="dense"
@@ -279,6 +292,9 @@ const UserModal = ({ open, onClose, onSubmit, user, categories }) => {
             required
             error={!!errors.goldBalance}
             helperText={errors.goldBalance}
+            inputProps={{
+              step: "any"
+            }}
           />
           <TextField
             margin="dense"
