@@ -130,8 +130,8 @@ const BankDetailsModal = ({ open, handleClose, handleSave, editingBank, userName
     if (!bank.accountNumber.trim()) newErrors.accountNumber = 'Account Number is required';
     if (!/^\d+$/.test(bank.accountNumber)) newErrors.accountNumber = 'Account Number must be numeric';
     if (!bank.iban.trim()) newErrors.iban = 'IBAN is required';
-    if (!bank.ifsc.trim()) newErrors.ifsc = 'IFSC Code is required';
-    if (!bank.swift.trim()) newErrors.swift = 'SWIFT Code is required';
+    // if (!bank.ifsc.trim()) newErrors.ifsc = 'IFSC Code is required';
+    // if (!bank.swift.trim()) newErrors.swift = 'SWIFT Code is required';
     if (!bank.branch.trim()) newErrors.branch = 'Branch is required';
     if (!bank.city.trim()) newErrors.city = 'City is required';
     if (!bank.country.trim()) newErrors.country = 'Country is required';
@@ -216,8 +216,8 @@ const handleSubmit = async () => {
               { name: 'bankName', label: 'Bank Name', type: 'select' },
               { name: 'accountNumber', label: 'Account Number', type: 'text' },
               { name: 'iban', label: 'IBAN Code', type: 'text' },
-              { name: 'ifsc', label: 'IFSC Code', type: 'text' },
-              { name: 'swift', label: 'SWIFT Code', type: 'text' },
+              // { name: 'ifsc', label: 'IFSC Code', type: 'text' },
+              // { name: 'swift', label: 'SWIFT Code', type: 'text' },
               { name: 'branch', label: 'Branch', type: 'text' },
               { name: 'city', label: 'City', type: 'text' },
               { name: 'country', label: 'Country', type: 'text' },

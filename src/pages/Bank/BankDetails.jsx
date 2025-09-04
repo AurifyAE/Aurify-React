@@ -173,14 +173,14 @@ const BankDetails = () => {
                   <Typography variant="subtitle2" color="textSecondary">IBAN</Typography>
                   <Typography variant="body1">{bank.iban}</Typography>
                 </Grid>
-                <Grid item xs={12} sm={6} md={2}>
+                {/* <Grid item xs={12} sm={6} md={2}>
                   <Typography variant="subtitle2" color="textSecondary">IFSC</Typography>
                   <Typography variant="body1">{bank.ifsc}</Typography>
                 </Grid>
                 <Grid item xs={12} sm={6} md={2}>
                   <Typography variant="subtitle2" color="textSecondary">SWIFT</Typography>
                   <Typography variant="body1">{bank.swift}</Typography>
-                </Grid>
+                </Grid> */}
                 <Grid item xs={12} sm={6} md={2}>
                   <Typography variant="subtitle2" color="textSecondary">Branch</Typography>
                   <Typography variant="body1">{bank.branch}</Typography>
