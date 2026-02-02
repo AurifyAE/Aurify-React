@@ -26,6 +26,7 @@ import io from "socket.io-client";
 import axiosInstance from "../../axios/axiosInstance";
 import { useCurrency } from "../../context/CurrencyContext";
 import AddCommodityModal from "./AddCommodityModal";
+import AddMintedBarsModal from "./AddMintedBarsModal";
 
 const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState("AED");
@@ -174,9 +175,9 @@ const PriceCard = React.memo(
             <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
             <p className="text-gray-600 font-medium text-sm">
               {initialPrice !== undefined &&
-              initialPrice !== null &&
-              spread !== undefined &&
-              spread !== null
+                initialPrice !== null &&
+                spread !== undefined &&
+                spread !== null
                 ? (parseFloat(initialPrice) + parseFloat(spread)).toFixed(4)
                 : "N/A"}
             </p>
@@ -424,14 +425,36 @@ const SpotRate = () => {
   const [spreadMarginData, setSpreadMarginData] = useState({});
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [commodityToDelete, setCommodityToDelete] = useState(null);
+  const [mintedBarToDelete, setMintedBarToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMintedBarShow, setIsMintedBarShow] = useState(false);
+
+
+
+  const [openCommodityModal, setOpenCommodityModal] = useState(false);
+  const [openMintedBarsModal, setOpenMintedBarsModal] = useState(false);
+
+  const [selectedMintedBar, setSelectedMintedBar] = useState(null);
+
+  const [mintedBars, setMintedBars] = useState([]);
+
+  const handleOpenAddCommodityModal = useCallback(() => {
+    setSelectedCommodity(null);
+    setOpenCommodityModal(true);
+  }, []);
+
+  const handleOpenAddMintedBarsModal = useCallback(() => {
+    setSelectedMintedBar(null);
+    setOpenMintedBarsModal(true);
+  }, []);
+
+
 
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
       const lowerMetal = metal.toLowerCase();
-      const key = `${lowerMetal}${
-        type.charAt(0).toUpperCase() + type.slice(1)
-      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)
+        }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
     [spreadMarginData]
@@ -454,6 +477,52 @@ const SpotRate = () => {
         return 1;
     }
   }, []);
+
+  const calculateMintedBarPrices = useCallback(
+    (bar) => {
+      if (!marketData?.Gold?.bid) {
+        return { buyAED: "", sellAED: "" };
+      }
+
+      const metalBid = Number(marketData.Gold.bid);
+      const unitMultiplier = getUnitMultiplier(bar.weight);
+
+      const purity = Number(bar.purity || 0);
+      const purityDigits = String(purity).split(".")[0].length || 1;
+      const purityFactor =
+        purityDigits > 0 ? purity / Math.pow(10, purityDigits) : 0;
+
+      const ADDITIONAL_PRICE = 0.5;
+
+      const buyPremium = Number(bar.buyPremium || 0);
+      const sellPremium = Number(bar.sellPremium || 0);
+      const buyCharge = Number(bar.buyCharge || 0);
+      const sellCharge = Number(bar.sellCharge || 0);
+
+      const baseBuy =
+        ((metalBid + buyPremium) / 31.1034768) *
+        exchangeRate *
+        Number(bar.unit || 0) *
+        unitMultiplier *
+        purityFactor;
+
+      const baseSell =
+        ((metalBid + ADDITIONAL_PRICE + sellPremium) / 31.1034768) *
+        exchangeRate *
+        Number(bar.unit || 0) *
+        unitMultiplier *
+        purityFactor;
+
+      const buyAED = baseBuy + buyCharge;
+      const sellAED = baseSell + sellCharge;
+
+      return {
+        buyAED: isNaN(buyAED) ? "" : buyAED.toFixed(4),
+        sellAED: isNaN(sellAED) ? "" : sellAED.toFixed(4),
+      };
+    },
+    [marketData, exchangeRate, getUnitMultiplier]
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -482,6 +551,7 @@ const SpotRate = () => {
         const commoditiesResponse = await axiosInstance.get(
           `/spotrates/${adminDataResponse.data.data._id}`
         );
+
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
         }
@@ -498,6 +568,19 @@ const SpotRate = () => {
           );
           setCommodities(parsedCommodities);
         }
+
+
+        const mintedBarsResponse = await axiosInstance.get(`/view-mintedbars/${adminDataResponse.data.data._id}`)
+
+
+        if (mintedBarsResponse.data && mintedBarsResponse.data.data.mintedbars) {
+          setMintedBars(mintedBarsResponse.data.data.mintedbars);
+        }
+        if (mintedBarsResponse.data.data.mintedbars.length != 0) {
+          setIsMintedBarShow(true)
+        }
+
+
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -604,10 +687,10 @@ const SpotRate = () => {
 
       return (
         ((metalPrice + spread + premium) / 31.103) *
-          exchangeRate *
-          commodity.unit *
-          unitMultiplier *
-          (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
+        exchangeRate *
+        commodity.unit *
+        unitMultiplier *
+        (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
         parseFloat(charge)
       ).toFixed(4);
     },
@@ -643,7 +726,13 @@ const SpotRate = () => {
   );
 
   const handleDeleteClick = useCallback((commodity) => {
+    setMintedBarToDelete(null);
     setCommodityToDelete(commodity);
+    setDeleteDialogOpen(true);
+  }, []);
+  const handleDeleteMintedbar = useCallback((bar) => {
+    setCommodityToDelete(null);
+    setMintedBarToDelete(bar);
     setDeleteDialogOpen(true);
   }, []);
 
@@ -659,6 +748,7 @@ const SpotRate = () => {
           )
         );
         setDeleteDialogOpen(false);
+        setCommodityToDelete(null);
         toast.success("Commodity deleted successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -670,12 +760,32 @@ const SpotRate = () => {
       } catch (error) {
         console.error("Error deleting commodity:", error);
       }
+    } else if (mintedBarToDelete) {
+      try {
+        await axiosInstance.delete(`/minted-bars/${mintedBarToDelete._id}`);
+        setMintedBars((prev) =>
+          prev.filter((bar) => bar._id !== mintedBarToDelete._id)
+        );
+        setDeleteDialogOpen(false);
+        setMintedBarToDelete(null);
+        toast.success("Minted bar deleted successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } catch (error) {
+        console.error("Error deleting minted bar:", error);
+      }
     }
-  }, [adminId, commodityToDelete, setCommodities]);
+  }, [adminId, commodityToDelete, mintedBarToDelete]);
 
   const handleDeleteCancel = useCallback(() => {
     setDeleteDialogOpen(false);
     setCommodityToDelete(null);
+    setMintedBarToDelete(null);
   }, []);
 
   useEffect(() => {
@@ -771,11 +881,49 @@ const SpotRate = () => {
     },
     [adminId]
   );
+  const handleSaveMintedbars = useCallback(
+    async (mintedBarData, isEditMode) => {
+      try {
+        if (isEditMode) {
+          setMintedBars((prev) =>
+            prev.map((bar) =>
+              bar._id === mintedBarData._id ? mintedBarData : bar
+            )
+          );
+
+          toast.success("Minted bar updated successfully!");
+        } else {
+          setMintedBars((prev) => [...prev, mintedBarData]);
+          toast.success("Minted bar added successfully!");
+        }
+
+        setIsEditing(false);
+        setOpenMintedBarsModal(false);
+
+        // ✅ correct refresh API
+        const response = await axiosInstance.get(
+          `/view-mintedbars/${adminId}`
+        );
+
+        if (response.data?.data?.mintedbars) {
+          setMintedBars(response.data.data.mintedbars);
+        }
+      } catch (error) {
+        console.error("Error saving minted bars:", error);
+        toast.error("Failed to save minted bar");
+      }
+    },
+    [adminId]
+  );
+
 
   const handleCloseModal = useCallback(() => {
     setOpenModal(false);
     setSelectedCommodity(null);
     setIsEditing(false);
+    setOpenCommodityModal(false);
+    setOpenMintedBarsModal(false);
+
   }, []);
 
   const handleEditCommodity = useCallback((commodity) => {
@@ -783,7 +931,14 @@ const SpotRate = () => {
       ...commodity,
     });
     setIsEditing(true);
+    setOpenCommodityModal(true);
+
     setOpenModal(true);
+  }, []);
+
+  const handleEditMintedBar = useCallback((bar) => {
+    setSelectedMintedBar(bar);
+    setOpenMintedBarsModal(true);
   }, []);
 
   const handleCurrencyChange = useCallback(
@@ -819,8 +974,8 @@ const SpotRate = () => {
       const metalAskingPrice =
         marketData[metal] && marketData[metal].bid
           ? parseFloat(marketData[metal].bid) +
-            parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
-            (isGoldRelated ? 0.5 : 0.05)
+          parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
+          (isGoldRelated ? 0.5 : 0.05)
           : 0;
 
       const sellPrice = calculatePrice(metalAskingPrice, row, "sell");
@@ -884,6 +1039,83 @@ const SpotRate = () => {
       );
     });
   };
+
+  const renderMintedBars = () => {
+    if (isLoading) {
+      return Array.from({ length: 5 }).map((_, index) => (
+        <TableRow key={index}>
+          {Array.from({ length: 10 }).map((_, cellIndex) => (
+            <TableCell key={cellIndex}>
+              <Skeleton variant="text" />
+            </TableCell>
+          ))}
+        </TableRow>
+      ));
+    }
+    return mintedBars.filter(Boolean).map((data) => {
+      const { buyAED, sellAED } = calculateMintedBarPrices(data);
+
+      return (
+        <TableRow
+          key={data._id}
+          sx={{
+            borderTop: "2px double #e0e0e0",
+            borderBottom: "2px double #e0e0e0",
+          }}
+        >
+          <TableCell>{data.name}</TableCell>
+          <TableCell>{data.purity}</TableCell>
+          <TableCell>{`${data.unit}  ${data.weight}`}</TableCell>
+          <TableCell>{sellAED}</TableCell>
+          <TableCell>{buyAED}</TableCell>
+          <TableCell>{data.sellPremium}</TableCell>
+          <TableCell>{data.buyPremium}</TableCell>
+          <TableCell
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
+            <IconButton
+              onClick={() => handleEditMintedBar(data)}
+              sx={{
+                background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+                color: "white",
+                padding: "8px",
+                marginRight: "8px",
+                borderRadius: "8px",
+                minWidth: "60px",
+                height: "40px",
+                "&:hover": {
+                  background:
+                    "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                },
+              }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+            <IconButton
+              onClick={() => handleDeleteMintedbar(data)}
+              sx={{
+                background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+                color: "white",
+                padding: "8px",
+                borderRadius: "8px",
+                minWidth: "60px",
+                height: "40px",
+                "&:hover": {
+                  background:
+                    "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                },
+              }}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      );
+    });
+  };
   const symbolMap = {
     copper: "COMEX:HG1!",
     gold: "TVC:GOLD",
@@ -908,20 +1140,18 @@ const SpotRate = () => {
           {uniqueMetals.map((metal, index) => (
             <div
               key={metal}
-              className={`col-span-1 ${
-                index === uniqueMetals.length - 1 &&
+              className={`col-span-1 ${index === uniqueMetals.length - 1 &&
                 uniqueMetals.length % 2 !== 0
-                  ? "md:col-span-2"
-                  : ""
-              }`}
+                ? "md:col-span-2"
+                : ""
+                }`}
             >
               <div
-                className={`${metal.toLowerCase()}-content ${
-                  index === uniqueMetals.length - 1 &&
+                className={`${metal.toLowerCase()}-content ${index === uniqueMetals.length - 1 &&
                   uniqueMetals.length % 2 !== 0
-                    ? "md:grid md:grid-cols-2 md:gap-8"
-                    : ""
-                }`}
+                  ? "md:grid md:grid-cols-2 md:gap-8"
+                  : ""
+                  }`}
               >
                 <TradingViewWidget
                   symbol={symbolMap[metal.toLowerCase()]}
@@ -1014,7 +1244,9 @@ const SpotRate = () => {
           </div>
           <Button
             variant="contained"
-            onClick={handleOpenAddModal}
+            // onClick={handleOpenAddModal}
+            onClick={handleOpenAddCommodityModal}
+
             sx={{
               background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
               color: "white",
@@ -1049,7 +1281,8 @@ const SpotRate = () => {
           </Table>
         </TableContainer>
         <AddCommodityModal
-          open={openModal}
+          // open={openModal}
+          open={openCommodityModal}
           onClose={handleCloseModal}
           onSave={handleSaveCommodity}
           initialData={selectedCommodity}
@@ -1073,7 +1306,8 @@ const SpotRate = () => {
               id="alert-dialog-description"
               sx={{ marginTop: 2 }}
             >
-              Are you sure you want to delete this commodity? This action cannot
+              Are you sure you want to delete this{" "}
+              {mintedBarToDelete ? "minted bar" : "commodity"}? This action cannot
               be undone.
             </DialogContentText>
           </DialogContent>
@@ -1108,6 +1342,89 @@ const SpotRate = () => {
           </DialogActions>
         </Dialog>
       </Box>
+      {!isMintedBarShow && (
+        <Box sx={{ p: 10 }} className="-mt-10">
+
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow-md">
+            <h3 className="text-xl font-bold text-gray-700 mb-1">
+              No Minted Bars Available
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Start by adding your first Minted Bar
+            </p>
+
+            <button
+              className="px-6 py-2 rounded-md text-white font-semibold bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 transition"
+              onClick={() => setIsMintedBarShow(!isMintedBarShow)}
+
+            >
+              ADD MINTED BAR
+            </button>
+          </div>
+        </Box>
+      )}
+
+
+      {/* ---------------- Minted Bars Section ---------------- */}
+
+      {isMintedBarShow == true && (
+
+
+        <Box sx={{ p: 10 }} className="-mt-10">
+          {/* Header */}
+          <div className="flex justify-end items-center bg-white p-4 shadow-md rounded-t-lg border-b border-gray-200">
+            <Button
+              variant="contained"
+              onClick={handleOpenAddMintedBarsModal}
+              sx={{
+                background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+                color: "white",
+                textTransform: "none",
+                fontWeight: "bold",
+                borderRadius: "0.375rem",
+                "&:hover": {
+                  background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                },
+              }}
+            >
+              ADD MINTED BAR
+            </Button>
+          </div>
+
+          {/* Table */}
+          <TableContainer component={Paper} className="shadow-lg">
+            <Table sx={{ minWidth: 650 }} aria-label="minted bars table">
+              <TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableCell>Minted Bar</TableCell>
+                  <TableCell>Purity</TableCell>
+                  <TableCell>Unit</TableCell>
+                  <TableCell>Sell ({currency})</TableCell>
+                  <TableCell>Buy ({currency})</TableCell>
+                  <TableCell>Sell Premium</TableCell>
+                  <TableCell>Buy Premium</TableCell>
+                  <TableCell align="center">Action</TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody>
+                {renderMintedBars()}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Add / Edit Minted Bar Modal */}
+          <AddMintedBarsModal
+            open={openMintedBarsModal}
+            onClose={handleCloseModal}
+            onSave={handleSaveMintedbars}
+            initialData={selectedMintedBar}
+            marketData={marketData}
+            exchangeRate={exchangeRate}
+            currency={currency}
+          />
+        </Box>
+      )}
       <ToastContainer />
     </Box>
   );
