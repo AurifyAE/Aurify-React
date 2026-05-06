@@ -489,6 +489,7 @@ const SpotRate = () => {
           const parsedCommodities = commoditiesResponse.data.commodities.map(
             (commodity) => ({
               ...commodity,
+              metal_name: commodity.metal_name ?? commodity.metalName ?? null,
               purity: parseFloat(commodity.purity),
               unit: parseFloat(commodity.unit),
               weight: commodity.weight,
@@ -760,7 +761,13 @@ const SpotRate = () => {
         try {
           const response = await axiosInstance.get(`/spotrates/${adminId}`);
           if (response.data && response.data.commodities) {
-            setCommodities(response.data.commodities);
+            const normalizedCommodities = response.data.commodities.map(
+              (commodity) => ({
+                ...commodity,
+                metal_name: commodity.metal_name ?? commodity.metalName ?? null,
+              })
+            );
+            setCommodities(normalizedCommodities);
           }
         } catch (error) {
           console.error("Error fetching updated commodities:", error);
@@ -781,6 +788,7 @@ const SpotRate = () => {
   const handleEditCommodity = useCallback((commodity) => {
     setSelectedCommodity({
       ...commodity,
+      metal_name: commodity.metal_name ?? commodity.metalName ?? "",
     });
     setIsEditing(true);
     setOpenModal(true);
@@ -825,6 +833,7 @@ const SpotRate = () => {
 
       const sellPrice = calculatePrice(metalAskingPrice, row, "sell");
       const buyPrice = calculatePrice(metalBiddingPrice, row, "buy");
+console.log('sdfsdfdsfdsfds',commodities);
 
       return (
         <TableRow
@@ -834,7 +843,7 @@ const SpotRate = () => {
             borderBottom: "2px double #e0e0e0",
           }}
         >
-          <TableCell>{row.metal}</TableCell>
+          <TableCell>{row.metal_name?.trim() || row.metalName?.trim() || row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
           <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
           <TableCell>{sellPrice}</TableCell>
