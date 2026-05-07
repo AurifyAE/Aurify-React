@@ -174,9 +174,9 @@ const PriceCard = React.memo(
             <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
             <p className="text-gray-600 font-medium text-sm">
               {initialPrice !== undefined &&
-              initialPrice !== null &&
-              spread !== undefined &&
-              spread !== null
+                initialPrice !== null &&
+                spread !== undefined &&
+                spread !== null
                 ? (parseFloat(initialPrice) + parseFloat(spread)).toFixed(4)
                 : "N/A"}
             </p>
@@ -429,9 +429,8 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
       const lowerMetal = metal.toLowerCase();
-      const key = `${lowerMetal}${
-        type.charAt(0).toUpperCase() + type.slice(1)
-      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)
+        }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
     [spreadMarginData]
@@ -489,7 +488,7 @@ const SpotRate = () => {
           const parsedCommodities = commoditiesResponse.data.commodities.map(
             (commodity) => ({
               ...commodity,
-              metal_name: commodity.metal_name ?? commodity.metalName ?? null,
+              metal_name: commodity.metal_name ?? null,
               purity: parseFloat(commodity.purity),
               unit: parseFloat(commodity.unit),
               weight: commodity.weight,
@@ -764,7 +763,7 @@ const SpotRate = () => {
             const normalizedCommodities = response.data.commodities.map(
               (commodity) => ({
                 ...commodity,
-                metal_name: commodity.metal_name ?? commodity.metalName ?? null,
+                metal_name: commodity.metal_name ?? null,
               })
             );
             setCommodities(normalizedCommodities);
@@ -788,7 +787,7 @@ const SpotRate = () => {
   const handleEditCommodity = useCallback((commodity) => {
     setSelectedCommodity({
       ...commodity,
-      metal_name: commodity.metal_name ?? commodity.metalName ?? "",
+      metal_name: commodity.metal_name ?? "",
     });
     setIsEditing(true);
     setOpenModal(true);
@@ -827,14 +826,13 @@ const SpotRate = () => {
       const metalAskingPrice =
         marketData[metal] && marketData[metal].bid
           ? parseFloat(marketData[metal].bid) +
-            parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
-            (isGoldRelated ? 0.5 : 0.05)
+          parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
+          (isGoldRelated ? 0.5 : 0.05)
           : 0;
 
       const sellPrice = calculatePrice(metalAskingPrice, row, "sell");
       const buyPrice = calculatePrice(metalBiddingPrice, row, "buy");
-console.log('sdfsdfdsfdsfds',commodities);
-
+ 
       return (
         <TableRow
           key={row._id}
@@ -843,7 +841,7 @@ console.log('sdfsdfdsfdsfds',commodities);
             borderBottom: "2px double #e0e0e0",
           }}
         >
-          <TableCell>{row.metal_name?.trim() || row.metalName?.trim() || row.metal}</TableCell>
+          <TableCell>{row.metal_name?.trim() || row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
           <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
           <TableCell>{sellPrice}</TableCell>
@@ -917,20 +915,18 @@ console.log('sdfsdfdsfdsfds',commodities);
           {uniqueMetals.map((metal, index) => (
             <div
               key={metal}
-              className={`col-span-1 ${
-                index === uniqueMetals.length - 1 &&
-                uniqueMetals.length % 2 !== 0
+              className={`col-span-1 ${index === uniqueMetals.length - 1 &&
+                  uniqueMetals.length % 2 !== 0
                   ? "md:col-span-2"
                   : ""
-              }`}
+                }`}
             >
               <div
-                className={`${metal.toLowerCase()}-content ${
-                  index === uniqueMetals.length - 1 &&
-                  uniqueMetals.length % 2 !== 0
+                className={`${metal.toLowerCase()}-content ${index === uniqueMetals.length - 1 &&
+                    uniqueMetals.length % 2 !== 0
                     ? "md:grid md:grid-cols-2 md:gap-8"
                     : ""
-                }`}
+                  }`}
               >
                 <TradingViewWidget
                   symbol={symbolMap[metal.toLowerCase()]}

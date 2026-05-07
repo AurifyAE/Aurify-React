@@ -111,7 +111,7 @@ useEffect(() => {
       buyCharges: initialData.buyCharge || initialData.buyCharges || '',
       sellPremiumUSD: initialData.sellPremium || initialData.sellPremiumUSD || '',
       buyPremiumUSD: initialData.buyPremium || initialData.buyPremiumUSD || '',
-      metal_name: initialData.metal_name ?? initialData.metalName ?? '',
+      metal_name: initialData.metal_name ?? '',
       group: initialData.group ?? 'commodity',
     }));
     setCommodityId(initialData.id || initialData._id);
@@ -268,7 +268,6 @@ const handleSave = useCallback(async () => {
     if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
 
     commodityData.metal_name = formData.metal_name?.trim() ? formData.metal_name.trim() : null;
-    commodityData.metalName = commodityData.metal_name;
     commodityData.group = formData.group || 'commodity';
 
     let response;

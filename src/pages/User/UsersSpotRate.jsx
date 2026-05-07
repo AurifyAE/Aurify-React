@@ -487,12 +487,13 @@ const SpotRate = () => {
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
         }
+        
         if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
           const parsedCommodities = commoditiesResponse.data.commodities
             .filter((commodity) => commodity && commodity.metal)
             .map((commodity) => ({
               ...commodity,
-              metal_name: commodity.metal_name ?? commodity.metalName ?? null,
+              metal_name: commodity.metal_name ?? null,
               purity: parseFloat(commodity.purity),
               unit: parseFloat(commodity.unit),
               weight: commodity.weight,
@@ -846,7 +847,7 @@ const SpotRate = () => {
               borderBottom: "2px double #e0e0e0",
             }}
           >
-            <TableCell>{row.metal_name || row.metalName || row.metal}</TableCell>
+            <TableCell>{row.metal_name || row.metal}</TableCell>
             <TableCell>{row.purity}</TableCell>
             <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
             <TableCell>{sellPrice}</TableCell>

@@ -146,7 +146,7 @@ const AddCommodityModal = ({
           initialData.sellPremium || initialData.sellPremiumUSD || "",
         buyPremiumUSD:
           initialData.buyPremium || initialData.buyPremiumUSD || "",
-        metal_name: initialData.metal_name ?? initialData.metalName ?? "",
+        metal_name: initialData.metal_name ?? "",
         group: initialData.group ?? "commodity",
       }));
       setCommodityId(initialData.id || initialData._id);
@@ -379,7 +379,6 @@ const AddCommodityModal = ({
       commodityData.metal_name = formData.metal_name?.trim()
         ? formData.metal_name.trim()
         : null;
-      commodityData.metalName = commodityData.metal_name;
       commodityData.group = formData.group || "commodity";
 
       let response;
