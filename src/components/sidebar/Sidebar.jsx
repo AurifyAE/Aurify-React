@@ -430,8 +430,8 @@ const Sidebar = () => {
   return (
     <nav className="w-64 bg-gray-100 h-screen flex flex-col">
       <div className="px-4 flex-shrink-0 mt-6">
-        <div className="flex items-center mb-8">
-          <img src={logo} alt="Logo" className="w-14 h-14 mr-1" />
+        <div className="flex items-center mb-8 gap-1">
+          <img src={logo} alt="Logo" className="w-7 h-7 mr-1" />
           <span className="text-xl font-bold text-gray-800">Dashboard</span>
         </div>
       </div>
