@@ -18,6 +18,7 @@ import ScreenSlider from "../layout/ScreenSlider";
 import ProfileLayout from "../layout/ProfileLayout";
 import ShopLayout from "../layout/ShopLayout";
 import SpotRateLayout from "../layout/SpotRateLayout";
+import RetailGoldRateLayout from "../layout/RetailGoldRateLayout";
 import UsersDBLayout from "../layout/UsersDBLayout";
 import UsersLayout from "../layout/UsersLayout";
 import UsersSpotRateLayout from "../layout/UsersSpotRateLayout";
@@ -126,6 +127,7 @@ function Routers() {
       <Route element={<Protect />}>
         <Route path="dashboard" element={<DashboardLayout />} />
         <Route path="spot-rate" element={<SpotRateLayout />} />
+        <Route path="retail-gold-rate" element={<RetailGoldRateLayout />} />
         <Route path="media" element={<MediaLayout />} />
         <Route path="support" element={<MessagesLayout />} />
         <Route path="news" element={<NewsLayout />} />

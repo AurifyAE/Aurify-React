@@ -362,6 +362,7 @@ const Sidebar = () => {
   const routes = [
     { name: "Dashboard", icon: HomeIcon, path: "dashboard" },
     { name: "Spot Rate", icon: ShowChartIcon, path: "spot-rate" },
+    { name: "Retail Gold Rate", icon: MonetizationOnIcon, path: "retail-gold-rate" },
     { name: "Media", icon: ImageIcon, path: "media" },
     { name: "Support", icon: SettingsIcon, path: "support" },
     { name: "News", icon: NewspaperIcon, path: "news" },
