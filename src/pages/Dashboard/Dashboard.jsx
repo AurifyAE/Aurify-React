@@ -21,7 +21,7 @@ const MetricCard = ({ title, value, icon: Icon, additionalInfo }) => (
         )}
       </div>
     </div>
-    <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-3 rounded-lg">
+    <div className="primary-gradient p-3 rounded-lg">
       <Icon className="w-6 h-6 text-white" />
     </div>
   </div>
@@ -108,7 +108,7 @@ const DashboardContent = () => {
               </p>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-3 rounded-lg">
+          <div className="primary-gradient p-3 rounded-lg">
             <MonitorPlay className="w-6 h-6 text-white" />
           </div>
         </div>

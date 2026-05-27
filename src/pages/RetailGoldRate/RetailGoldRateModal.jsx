@@ -168,12 +168,15 @@ const RetailGoldRateModal = ({
     >
       {/* HEADER */}
       <Box
+        // className='card-line'
         sx={{
           padding: "1.8rem 2rem",
           borderBottom: "1px solid rgba(48,110,187,0.08)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          position: 'relative',
+          overflow: 'hidden',
           background:
             "linear-gradient(90deg, rgba(48,110,187,0.12), rgba(255,255,255,1))",
         }}
@@ -205,10 +208,12 @@ const RetailGoldRateModal = ({
           onClick={onClose}
           sx={{
             color: "#306ebb",
-            background: "rgba(48,110,187,0.08)",
+            background: "rgb(243, 243, 243)",
+            position: 'relative',
+            zIndex: '1',
 
             "&:hover": {
-              background: "rgba(48,110,187,0.15)",
+              background: "rgb(238, 238, 238)",
             },
           }}
         >
@@ -222,6 +227,7 @@ const RetailGoldRateModal = ({
           {rates.map((item, index) => (
             <Grid item xs={12} sm={6} key={item.name}>
               <Box
+
                 sx={{
                   position: "relative",
                   borderRadius: "15px",
@@ -240,15 +246,15 @@ const RetailGoldRateModal = ({
               >
                 {/* BLUE GLOW */}
                 <Box
+                      className='card-line'
+
                   sx={{
                     position: "absolute",
-                    top: "-50px",
-                    right: "-50px",
+                    top: "-0",
+                    right: "-0",
                     width: "120px",
                     height: "120px",
-                    borderRadius: "50%",
-                    background:
-                      "radial-gradient(circle, rgba(66,188,233,0.22), transparent)",
+                   opacity:'0.5'
                   }}
                 />
 
@@ -330,8 +336,8 @@ const RetailGoldRateModal = ({
                   value={
                     item.rate
                       ? Number(
-                          String(item.rate).replace(/,/g, ""),
-                        ).toLocaleString("en-IN")
+                        String(item.rate).replace(/,/g, ""),
+                      ).toLocaleString("en-IN")
                       : ""
                   }
                   // onChange={(e) => {
@@ -343,10 +349,10 @@ const RetailGoldRateModal = ({
                   // }}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "");
-                  
+
                     // allow only numbers + decimal
                     if (/^\d*\.?\d*$/.test(rawValue)) {
-                  
+
                       // warning only
                       if (Number(rawValue) > 1000000) {
                         toast.warning(
@@ -356,7 +362,7 @@ const RetailGoldRateModal = ({
                           }
                         );
                       }
-                  
+
                       handleRateChange(index, rawValue);
                     }
                   }}

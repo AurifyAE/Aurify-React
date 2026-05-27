@@ -29,6 +29,9 @@ code {
   transition: all 0.25s ease !important;
   font-size: 15px !important;
 }
+.primary-btn.text-large{
+  font-size: 20px !important;
+}
 
 .primary-btn:hover {
   background: linear-gradient(135deg, #2a63a8 0%, #36abd9 100%) !important;
@@ -54,3 +57,38 @@ code {
   border-color: #42bce9 !important;
   box-shadow: 0 8px 18px rgba(48, 110, 187, 0.12);
 }
+
+.primary-gradient {
+  background: linear-gradient(135deg, #2a63a8 0%, #36abd9 100%) !important;
+}
+
+.secondary-gradient {
+  background: linear-gradient(135deg, #ffffff 0%, #e7f8ff 100%) !important;
+}
+
+.card-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: auto;
+  /* adjust */
+  height: 100%;
+  width: auto;
+  aspect-ratio: 4/3;
+  background-image: url("/public/images/line.svg");
+  background-repeat: no-repeat;
+  background-position: top right;
+  background-size: contain;
+
+  opacity: 0.3;
+
+  pointer-events: none;
+}
+ 

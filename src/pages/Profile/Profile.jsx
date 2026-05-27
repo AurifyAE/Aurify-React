@@ -57,7 +57,7 @@ const ProfilePage = () => {
         // setShowToast(true);
         toast.error(
           "Error uploading logo: " +
-            (error.response?.data?.message || error.message)
+          (error.response?.data?.message || error.message),
         );
         setTimeout(() => setShowToast(false), 3000);
       }
@@ -110,7 +110,7 @@ const ProfilePage = () => {
 
   const hasChanges = () => {
     return Object.keys(profileInfo).some(
-      (key) => profileInfo[key] !== originalProfileInfo[key]
+      (key) => profileInfo[key] !== originalProfileInfo[key],
     );
   };
 
@@ -130,7 +130,7 @@ const ProfilePage = () => {
           location: profileInfo.location,
           latitude: profileInfo.latitude,
           longitude: profileInfo.longitude,
-        }
+        },
       );
       if (response.status === 200) {
         toast.success("Profile updated successfully");
@@ -162,212 +162,344 @@ const ProfilePage = () => {
     fetchUserData();
   }, []);
 
-  useEffect(() => {}, [userData]); // Dependency array contains userData
+  useEffect(() => { }, [userData]); // Dependency array contains userData
 
   return (
-    <div className="relative bg-gray-100 mt-24 mr-6">
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            zIndex: 9999, // Ensure the toast is above other elements
-          },
+    <div className="min-h-screen bg-[#f9f9f9] px-6 py-8">
+      <Toaster position="top-center" />
+
+      {/* TOP HERO */}
+      <div
+        className="relative w-[80%] mx-auto overflow-hidden rounded-[28px] border border-white/60 shadow-[0_10px_40px_rgba(0,0,0,0.06)]"
+        style={{
+          background:
+            "linear-gradient(135deg, #f7f7f8 0%,rgb(255, 255, 255) 35%, #ececee 100%)",
         }}
-      />
-      <div className="bg-gray-100 p-6 relative">
-        <div className="bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-500 h-[158px] rounded-lg shadow-lg p-6 absolute inset-x-0 z-10 top-[-6rem]">
-          {/* Content of the first div */}
-        </div>
-        {/* Header */}
-        <div className="bg-white bg-opacity-90 rounded-xl p-4 mb-6 relative mx-12  -mt-6 z-20">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-14 h-14 rounded-lg flex items-center justify-center text-white text-2xl font-bold mr-3">
-                <img
-                  src={userData?.data?.logo ? userData.data.logo : ""}
-                  alt="Company Logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  {userData?.data?.companyName ? userData.data.companyName : ""}
-                </h2>
-                <p className="text-sm text-gray-600">
-                  {userData?.data?.userName ? userData.data.userName : ""}
-                </p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <button className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600 flex items-center">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z" />
-                </svg>
-                App
-              </button>
-              <button className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600 flex items-center">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-                </svg>
-                appointments
-              </button>
-              <button className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600 flex items-center">
-                <svg
-                  className="w-4 h-4 mr-1"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z" />
-                </svg>
-                Settings
-              </button>
-            </div>
-          </div>
+      >
+        {/* BACKGROUND IMAGE */}
+        <div
+          className="absolute inset-0 overflow-hidden  flex justify-end items-center     w-auto
+      h-full"
+        >
+          <img
+            src="/images/profile-line.svg"
+            alt="background-pattern"
+            className="
+      w-auto
+      h-[180%]
+      object-contain
+      opacity-90
+      pointer-events-none
+      object-position-center
+      select-none
+    "
+          />
         </div>
 
-        {/* Main content */}
-        <div className="flex justify-center bg-gray-100 mx-6">
-          <div className="flex gap-6 max-w-4xl w-full">
-            {/* Profile Information */}
-            <div className="bg-white rounded-lg shadow-lg p-6 flex-1">
-              <h3 className="text-lg font-semibold mb-4">
-                Profile Information
-              </h3>
-              <div className="space-y-4">
+        <div className="relative z-10 flex items-center justify-between px-10 py-10">
+          {/* LEFT */}
+          <div className="flex items-center gap-5">
+            <div className="w-24 h-24 rounded-full bg-white shadow-lg flex items-center justify-center overflow-hidden border border-white">
+              <img
+                src={userData?.data?.logo || ""}
+                alt="logo"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div>
+              <h1 className="text-[34px] font-semibold text-[#1d2433] leading-none">
+                {userData?.data?.companyName || "Company"}
+              </h1>
+
+              <p className="text-[#6b7280] mt-2 text-sm font-medium">
+                {userData?.data?.userName || "username"}
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT ACTIONS */}
+          <div className="flex items-center gap-4">
+            <button className="bg-white/90 backdrop-blur-md border border-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-md hover:scale-[1.02] transition-all duration-300">
+              <svg
+                className="w-5 h-5 text-[#1f2937]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+
+              <span className="text-sm font-semibold text-[#1f2937]">Apps</span>
+            </button>
+
+            <button className="bg-white/90 backdrop-blur-md border border-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-md hover:scale-[1.02] transition-all duration-300">
+              <svg
+                className="w-5 h-5 text-[#1f2937]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M8 7V3m8 4V3m-9 8h10m-11 9h12a2 2 0 002-2V7a2 2 0 00-2-2H6a2 2 0 00-2 2v11a2 2 0 002 2z"
+                />
+              </svg>
+
+              <span className="text-sm font-semibold text-[#1f2937]">
+                Appointments
+              </span>
+            </button>
+
+            <button className="bg-white/90 backdrop-blur-md border border-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-md hover:scale-[1.02] transition-all duration-300">
+              <svg
+                className="w-5 h-5 text-[#1f2937]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+
+              <span className="text-sm font-semibold text-[#1f2937]">
+                Settings
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="mt-8 flex mx-auto w-[80%] gap-7">
+        {/* LEFT SECTION */}
+        <div className="space-y-7 flex-1">
+          {/* PROFILE CARD */}
+          <div className="relative overflow-hidden bg-white border border-[#ececec] rounded-[30px] shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
+            {/* TOP STRIP */}
+            <div className="h-[3px] w-full bg-gradient-to-r from-[#cbd5e1] via-[#6b7280] to-[#f8fafc]" />
+            <div className="p-8">
+              {/* HEADER */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#f6f3ff] to-[#ebe7ff] flex items-center justify-center shadow-sm">
+                    <svg
+                      className="w-7 h-7 text-[#6d5dfc]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.8}
+                        d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z"
+                      />
+                    </svg>
+                  </div>
+
+                  <div>
+                    <h2 className="text-[22px] font-semibold text-[#111827]">
+                      Profile Information
+                    </h2>
+
+                    <p className="text-[#8a93a6] text-sm mt-1">
+                      Manage company details & personal information
+                    </p>
+                  </div>
+                </div>
+
+                <div className="hidden md:flex items-center gap-2 bg-[#f8f9fc] border border-[#eef0f4] rounded-2xl px-4 py-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+
+                  <span className="text-xs font-semibold text-[#4b5563]">
+                    Active Profile
+                  </span>
+                </div>
+              </div>
+
+              {/* FORM */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <InputField
                   label="Company Name"
                   name="companyName"
                   value={profileInfo.companyName}
                   onChange={handleInputChange}
                 />
+
                 <InputField
-                  label="Mobile"
-                  name="mobile"
-                  value={profileInfo.mobile}
-                  onChange={handleInputChange}
-                />
-                <InputField
-                  label="WhatsApp"
-                  name="whatsapp"
-                  value={profileInfo.whatsapp}
-                  onChange={handleInputChange}
-                />
-                <InputField
-                  label="Email"
+                  label="Email Address"
                   name="email"
                   value={profileInfo.email}
                   onChange={handleInputChange}
                 />
+
                 <InputField
-                  label="Location"
-                  name="location"
-                  value={profileInfo.location}
+                  label="Mobile Number"
+                  name="mobile"
+                  value={profileInfo.mobile}
                   onChange={handleInputChange}
                 />
-                {/* New latitude and longitude input fields */}
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <InputField
-                      label="Latitude"
-                      type="number"
-                      name="latitude"
-                      value={profileInfo.latitude}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <InputField
-                      label="Longitude"
-                      type="number"
-                      name="longitude"
-                      value={profileInfo.longitude}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+
+                <InputField
+                  label="WhatsApp Number"
+                  name="whatsapp"
+                  value={profileInfo.whatsapp}
+                  onChange={handleInputChange}
+                />
+
+                <div className="md:col-span-2">
+                  <InputField
+                    label="Location"
+                    name="location"
+                    value={profileInfo.location}
+                    onChange={handleInputChange}
+                  />
                 </div>
+
+                <InputField
+                  label="Latitude"
+                  name="latitude"
+                  value={profileInfo.latitude}
+                  onChange={handleInputChange}
+                />
+
+                <InputField
+                  label="Longitude"
+                  name="longitude"
+                  value={profileInfo.longitude}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              {/* SOCIAL + ACTION */}
+              <div className="mt-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                {/* SOCIAL */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-2">
+                  <p className="text-[13px] font-semibold text-[#374151] mb-3">
                     Social Media
-                  </label>
-                  <div className="flex space-x-4">
+                  </p>
+
+                  <div className="flex items-center gap-3">
                     <SocialIcon icon="facebook" />
                     <SocialIcon icon="twitter" />
                     <SocialIcon icon="instagram" />
                   </div>
                 </div>
+
+                {/* BUTTON */}
                 <button
-                  className="w-full bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 transition duration-300 mt-4"
                   onClick={saveChanges}
                   disabled={!hasChanges()}
+                  className={`primary-btn `}
                 >
-                  SAVE CHANGES
+                  Save Changes
                 </button>
               </div>
             </div>
+          </div>
+        </div>
 
-            {/* Company Logo */}
-            <div className="bg-white rounded-lg shadow-lg p-6 flex-1">
-              <h3 className="text-lg font-semibold mb-4">Company Logo</h3>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center">
-                <div className="w-24 h-24 bg-gray-100 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+        {/* LOGO CARD */}
+        <div className="bg-white w-[40%]  rounded-[30px] border border-[#ececec] shadow-[0_10px_40px_rgba(0,0,0,0.04)] overflow-hidden">
+          {/* TOP STRIP */}
+          <div className="h-[3px] w-full bg-gradient-to-r from-[#cbd5e1] via-[#6b7280] to-[#f8fafc]" />{" "}
+          <div className="p-8">
+            {/* HEADER */}
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#f6f3ff] to-[#ebe7ff] flex items-center justify-center shadow-sm">
+                <svg
+                  className="w-7 h-7 text-[#6d5dfc]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.8}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14"
+                  />
+                </svg>
+              </div>
+
+              <div>
+                <h2 className="text-[22px] font-semibold text-[#111827]">
+                  Company Logo
+                </h2>
+
+                <p className="text-[#8a93a6] text-sm mt-1">
+                  Upload or update your company branding
+                </p>
+              </div>
+            </div>
+
+            {/* LOGO AREA */}
+            <div className="relative overflow-hidden border border-dashed border-[#d9dce3] rounded-[28px] bg-[#fbfbfd] min-h-[400px] flex flex-col items-center justify-center">
+              {/* BACK GLOW */}
+              <div className="absolute w-[300px] h-[300px] rounded-full bg-[#ede9fe] blur-[90px] opacity-60" />
+
+              <div className="relative z-10">
+                <div className="w-44 h-44 p-2 rounded-[34px] bg-white border border-[#f3f4f6] shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex items-center justify-center overflow-hidden">
                   {logo ? (
                     <img
                       src={logo}
                       alt="Selected Logo"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : userData?.data?.logo ? (
                     <img
                       src={userData.data.logo}
                       alt="Company Logo"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
-                    <svg
-                      className="w-8 h-8 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
+                    <div className="text-[#9ca3af] text-sm">
+                      No Logo Uploaded
+                    </div>
                   )}
                 </div>
-                <button
-                  className="bg-gray-100 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-200 transition duration-300 text-sm mb-2"
-                  onClick={() => document.getElementById("logoInput").click()}
-                >
-                  Change Logo
-                </button>
-                <input
-                  id="logoInput"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                {logo && !isLogoSubmitted && (
+
+                <div className="mt-10 flex flex-col items-center">
                   <button
-                    className="bg-pink-500 text-white py-2 px-4 rounded-md hover:bg-pink-600 transition duration-300 text-sm mt-2"
-                    onClick={handleLogoSubmit}
+                    onClick={() => document.getElementById("logoInput").click()}
+                    className="rounded-2xl bg-white border border-[#d8dbe3] px-8 py-4 text-sm font-semibold text-[#374151] hover:bg-[#f8f8fb] transition-all duration-300 shadow-sm"
                   >
-                    Submit Logo
+                    Upload New Logo
                   </button>
-                )}
+
+                  <input
+                    id="logoInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+
+                  <p className="text-xs text-[#9ca3af] mt-4">
+                    PNG, JPG or SVG • Max 5MB
+                  </p>
+
+                  {logo && !isLogoSubmitted && (
+                    <button
+                      onClick={handleLogoSubmit}
+                      className="mt-6 bg-gradient-to-r from-[#6d5dfc] to-[#8b7bff] text-white rounded-2xl px-8 py-3 font-semibold shadow-lg hover:scale-[1.02] transition-all duration-300"
+                    >
+                      Submit Logo
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -400,15 +532,13 @@ const SocialIcon = ({ icon }) => (
 const ToggleItem = ({ label, checked, onChange }) => (
   <div className="flex items-center space-x-4">
     <button
-      className={`relative inline-flex items-center h-6 w-11 rounded-full focus:outline-none ${
-        checked ? "bg-pink-500" : "bg-gray-300"
-      }`}
+      className={`relative inline-flex items-center h-6 w-11 rounded-full focus:outline-none ${checked ? "bg-pink-500" : "bg-gray-300"
+        }`}
       onClick={onChange}
     >
       <span
-        className={`inline-block w-4 h-4 transform transition-transform bg-white rounded-full ${
-          checked ? "translate-x-5" : "translate-x-1"
-        }`}
+        className={`inline-block w-4 h-4 transform transition-transform bg-white rounded-full ${checked ? "translate-x-5" : "translate-x-1"
+          }`}
       />
     </button>
     <span className="text-sm text-gray-600 flex-1">{label}</span>
