@@ -13,12 +13,12 @@ const FAQItem = ({ question, answer, isOpen, onClick }) => {
     >
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between gap-6 px-6 py-6 text-left transition-all duration-300"
+        className="w-full flex items-start sm:items-center justify-between gap-4 sm:gap-6 px-4 sm:px-6 py-5 sm:py-6 text-left transition-all duration-300"
       >
         {/* QUESTION */}
         <div>
           <h3
-            className={`text-[16px] leading-7 font-semibold transition-all duration-300 ${
+            className={`text-[15px] sm:text-[16px] leading-6 sm:leading-7 font-semibold transition-all duration-300 ${
               isOpen ? "text-[#2563EB]" : "text-[#0F172A]"
             }`}
           >
@@ -28,7 +28,7 @@ const FAQItem = ({ question, answer, isOpen, onClick }) => {
 
         {/* ICON */}
         <div
-          className={`min-w-[42px] h-[42px] rounded-2xl flex items-center justify-center transition-all duration-300 ${
+          className={`min-w-[38px] sm:min-w-[42px] h-[38px] sm:h-[42px] rounded-2xl flex items-center justify-center transition-all duration-300 ${
             isOpen
               ? "bg-[#2563EB] text-white rotate-45"
               : "bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#E8F0FF]"
@@ -45,10 +45,12 @@ const FAQItem = ({ question, answer, isOpen, onClick }) => {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="px-6 pb-6">
+          <div className="px-4 sm:px-6 pb-5 sm:pb-6">
             <div className="h-[1px] bg-[#E7EEF7] mb-5" />
 
-            <p className="text-[15px] leading-8 text-[#64748B]">{answer}</p>
+            <p className="text-[14px] sm:text-[15px] leading-7 sm:leading-8 text-[#64748B]">
+              {answer}
+            </p>
           </div>
         </div>
       </div>
@@ -155,7 +157,8 @@ const FAQ = () => {
   const [openSecurity, setOpenSecurity] = useState(null);
 
   return (
-    <div className="min-h-screen bg-[#F6F8FC] px-6 py-10">
+    <div className="min-h-screen bg-[#F6F8FC] px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      {" "}
       <div className="mw-full mx-auto">
         {/* HERO */}
         <div className="relative overflow-hidden rounded-[40px] border border-[#E7EEF7] bg-white mb-8">
@@ -175,7 +178,7 @@ const FAQ = () => {
             />
           </div>
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] items-center px-10 lg:px-16 py-16 gap-10">
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] items-center px-5 sm:px-8 lg:px-16 py-10 sm:py-14 lg:py-16 gap-10">
             {/* LEFT CONTENT */}
             <div>
               {/* BADGE */}
@@ -188,34 +191,38 @@ const FAQ = () => {
               </div>
 
               {/* TITLE */}
-              <h1 className="text-[58px] leading-[64px] font-semibold tracking-[-2px] text-[#0F172A]">
+              <h1 className="text-[34px] sm:text-[46px] lg:text-[50px] 2xl:text-[58px] leading-[42px] sm:leading-[54px] lg:leading-[64px] font-semibold tracking-[-1px] sm:tracking-[-2px] text-[#0F172A]">
+                {" "}
                 Frequently
                 <br />
                 Asked Questions
               </h1>
 
               {/* DESCRIPTION */}
-              <p className="text-[#64748B] text-[16px] leading-8 mt-8 max-w-[620px]">
+              <p className="text-[#64748B] text-[15px] sm:text-[15px] sm:text-[16px] leading-6 sm:leading-7 sm:leading-8 mt-6 sm:mt-8 max-w-[620px]">
+                {" "}
                 Find answers about platform features, real-time market data,
                 account security, dashboard customization and technical support.
               </p>
 
               {/* TAGS */}
               <div className="flex flex-wrap gap-4 mt-10">
-                <div className="h-[52px] px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-sm font-medium text-[#334155] shadow-sm">
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
                   Live Market Data
                 </div>
 
-                <div className="h-[52px] px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-sm font-medium text-[#334155] shadow-sm">
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
                   Enterprise Security
                 </div>
 
-                <div className="h-[52px] px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-sm font-medium text-[#334155] shadow-sm">
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
                   24/7 Assistance
                 </div>
               </div>
             </div>
-
             {/* RIGHT IMAGE */}
             <div className="relative flex justify-center lg:justify-end">
               {/* CARD */}
@@ -234,9 +241,11 @@ const FAQ = () => {
         </div>
 
         {/* FAQ GRID */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 lg:gap-8">
+          {" "}
           {/* TECHNICAL */}
-          <div className="bg-white rounded-[34px] border border-[#E7EEF7] p-8 shadow-sm">
+          <div className="bg-white rounded-[24px] sm:rounded-[34px] border border-[#E7EEF7] p-5 sm:p-8 shadow-sm">
+            {" "}
             {/* HEADER */}
             <div className="flex items-start gap-5 mb-8">
               <div className="w-16 h-16 rounded-[22px] bg-[#EEF4FF] flex items-center justify-center border border-[#DCE8FF]">
@@ -244,7 +253,7 @@ const FAQ = () => {
               </div>
 
               <div>
-                <h2 className="text-[32px] font-semibold text-[#0F172A]">
+                <h2 className="text-[24px] sm:text-[32px] font-semibold text-[#0F172A]">
                   Technical FAQs
                 </h2>
 
@@ -254,7 +263,6 @@ const FAQ = () => {
                 </p>
               </div>
             </div>
-
             {/* FAQ ITEMS */}
             <div className="space-y-4">
               {technicalFAQs.map((faq, index) => (
@@ -270,16 +278,16 @@ const FAQ = () => {
               ))}
             </div>
           </div>
-
           {/* SECURITY */}
-          <div className="bg-white rounded-[34px] border border-[#E7EEF7] p-8 shadow-sm">
+          <div className="bg-white rounded-[24px] sm:rounded-[34px] border border-[#E7EEF7] p-5 sm:p-8 shadow-sm">
+            {" "}
             {/* HEADER */}
             <div className="flex items-start gap-5 mb-8">
               <div className="w-16 h-16 rounded-[22px] bg-[#EEF4FF] flex items-center justify-center border border-[#DCE8FF]">
                 <Shield size={25} className="text-blue-500" />{" "}
               </div>
               <div>
-                <h2 className="text-[32px] font-semibold text-[#0F172A]">
+                <h2 className="text-[24px] sm:text-[32px] font-semibold text-[#0F172A]">
                   Security FAQs
                 </h2>
 
@@ -289,7 +297,6 @@ const FAQ = () => {
                 </p>
               </div>
             </div>
-
             {/* FAQ ITEMS */}
             <div className="space-y-4">
               {securityFAQs.map((faq, index) => (

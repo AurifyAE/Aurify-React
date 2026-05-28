@@ -167,110 +167,206 @@ const NewsUpload = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800">Upload News</h2>
-
-        <div className="mb-4">
-          <label htmlFor="uploadOption" className="block text-sm font-medium text-gray-700 mb-1">
-            Select Option:
-          </label>
-          <select
-            id="uploadOption"
-            value={selectedOption}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
-          >
-            <option value="Automated">Automated (API)</option>
-            <option value="Manual">Manual</option>
-          </select>
+    <div className="w-full xl:w-[88%] 2xl:w-[90%]  mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    {/* TOP SECTION */}
+    <div className="relative overflow-hidden bg-white border border-[#E5ECF6] rounded-[32px] shadow-[0_20px_60px_rgba(15,23,42,0.06)] mb-8">
+      
+      {/* BACKGROUND EFFECT */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-[-120px] right-[-120px] w-[280px] h-[280px] rounded-full bg-blue-100 blur-3xl opacity-70" />
+  
+        <div className="absolute bottom-[-100px] left-[-80px] w-[240px] h-[240px] rounded-full bg-sky-100 blur-3xl opacity-60" />
+  
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(37,99,235,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.25) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+      </div>
+  
+      <div className="relative z-10 p-5 sm:p-8 lg:p-10">
+        {/* HEADER */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+          <div>
+            <p className="uppercase tracking-[3px] text-[11px] font-semibold text-[#3B82F6] mb-3">
+              News Management
+            </p>
+  
+            <h2 className="text-[30px] sm:text-[38px] font-bold text-[#0F172A] tracking-[-1px]">
+              Upload News
+            </h2>
+  
+            <p className="text-[#64748B] text-sm sm:text-[15px] leading-7 mt-4 max-w-[550px]">
+              Manage manual and automated news updates from your dashboard.
+            </p>
+          </div>
+  
+          {/* SELECT */}
+          <div className="w-full lg:w-[320px]">
+            <label className="block text-sm font-medium text-[#475569] mb-2">
+              Upload Mode
+            </label>
+  
+            <select
+              id="uploadOption"
+              value={selectedOption}
+              onChange={handleChange}
+              className="w-full h-[56px] rounded-2xl border border-[#DCE3EE] bg-white px-5 text-[15px] text-[#0F172A] focus:outline-none focus:ring-4 focus:ring-[#DBEAFE] focus:border-[#60A5FA] transition-all shadow-sm"
+            >
+              <option value="Automated">Automated (API)</option>
+              <option value="Manual">Manual</option>
+            </select>
+          </div>
         </div>
-
-        {selectedOption === 'Manual' && (
-          <form onSubmit={editingItem ? handleUpdate : handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Title:
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
-                placeholder="Enter news title"
-                required
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
+  
+        {/* FORM */}
+        {selectedOption === "Manual" && (
+          <form
+            onSubmit={editingItem ? handleUpdate : handleSubmit}
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {/* TITLE */}
+              <div>
+                <label className="block text-sm font-medium text-[#475569] mb-2">
+                  News Title
+                </label>
+  
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter news title"
+                  className="w-full h-[58px] rounded-2xl border border-[#DCE3EE] bg-white px-5 text-[15px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-4 focus:ring-[#DBEAFE] focus:border-[#60A5FA] transition-all shadow-sm"
+                />
+              </div>
+  
+              {/* EMPTY SPACING */}
+              <div className="hidden lg:block" />
             </div>
-
+  
+            {/* CONTENT */}
             <div>
-              <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-1">
-                Content:
+              <label className="block text-sm font-medium text-[#475569] mb-2">
+                News Content
               </label>
+  
               <textarea
                 id="content"
                 name="content"
-                rows="4"
-                className="w-full p-2 border border-gray-300 rounded-md focus:ring-2"
-                placeholder="Enter news content"
+                rows="6"
                 required
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-              ></textarea>
+                placeholder="Write your news content here..."
+                className="w-full rounded-[24px] border border-[#DCE3EE] bg-white px-5 py-5 text-[15px] text-[#0F172A] placeholder:text-[#94A3B8] focus:outline-none focus:ring-4 focus:ring-[#DBEAFE] focus:border-[#60A5FA] transition-all resize-none shadow-sm"
+              />
             </div>
-
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-md font-medium focus:outline-none focus:ring-2"
-            >
-              {editingItem ? 'Update' : 'Submit'}
-            </button>
+  
+            {/* BUTTON */}
+            <div className="pt-2">
+              <button
+                type="submit"
+                className="h-[56px] sm:h-[60px] px-8 rounded-2xl primary-gradient text-white text-sm sm:text-[15px] font-semibold shadow-[0_12px_30px_rgba(37,99,235,0.25)] hover:scale-[1.02] transition-all duration-300"
+              >
+                {editingItem ? "Update News" : "Publish News"}
+              </button>
+            </div>
           </form>
         )}
       </div>
-
-      {selectedOption === 'Manual' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {newsItems.map((item) => (
-            <div key={item._id} className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-6">
-                <h3 className="text-xl font-semibold mb-2 text-gray-800">{item.title}</h3>
-                <div className={`text-gray-600 mb-4 ${expandedItems[item._id] ? 'max-h-full overflow-y-auto hide-scrollbar' : 'max-h-24 overflow-hidden'}`}>
-                  <p>{item.description}</p>
+    </div>
+  
+    {/* NEWS GRID */}
+    {selectedOption === "Manual" && (
+      <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-6">
+        {newsItems.map((item) => (
+          <div
+            key={item._id}
+            className="group bg-white border border-[#E5ECF6] rounded-[28px] overflow-hidden shadow-[0_10px_40px_rgba(15,23,42,0.05)] hover:shadow-[0_20px_50px_rgba(37,99,235,0.10)] transition-all duration-300"
+          >
+            {/* TOP STRIP */}
+            <div className="h-2 bg-gradient-to-r from-[#2563EB] via-[#3B82F6] to-[#60A5FA]" />
+  
+            <div className="p-6">
+              {/* DATE */}
+              <div className="inline-flex items-center h-[34px] px-4 rounded-full bg-[#EFF6FF] text-[#2563EB] text-xs font-semibold mb-5">
+                {new Date(item.createdAt).toLocaleString()}
+              </div>
+  
+              {/* TITLE */}
+              <h3 className="text-[22px] font-bold text-[#0F172A] leading-[32px] mb-4 line-clamp-2">
+                {item.title}
+              </h3>
+  
+              {/* CONTENT */}
+              <div
+                className={`text-[#64748B] text-[15px] leading-8 transition-all duration-300 ${
+                  expandedItems[item._id]
+                    ? "max-h-[400px] overflow-y-auto hide-scrollbar"
+                    : "max-h-28 overflow-hidden"
+                }`}
+              >
+                <p>{item.description}</p>
+              </div>
+  
+              {/* VIEW MORE */}
+              {item.description.length > 100 && (
+                <button
+                  onClick={() => toggleExpand(item._id)}
+                  className="mt-3 text-[#2563EB] hover:text-[#1D4ED8] text-sm font-semibold transition-all"
+                >
+                  {expandedItems[item._id]
+                    ? "View Less"
+                    : "Read More"}
+                </button>
+              )}
+  
+              {/* FOOTER */}
+              <div className="flex items-center justify-between pt-6 mt-6 border-t border-[#EEF2F7]">
+                
+                {/* AUTHOR */}
+                <div>
+                  <p className="text-xs uppercase tracking-[2px] text-[#94A3B8] mb-1">
+                    Uploaded By
+                  </p>
+  
+                  <p className="text-sm font-semibold text-[#0F172A]">
+                    {userName || "Admin"}
+                  </p>
                 </div>
-                {item.description.length > 100 && (
+  
+                {/* ACTIONS */}
+                <div className="flex items-center gap-3">
                   <button
-                    onClick={() => toggleExpand(item._id)}
-                    className="text-blue-500 hover:text-blue-700 mb-4 text-xs"
+                    onClick={() => handleEdit(item)}
+                    className="h-[42px] px-5 rounded-xl bg-[#EFF6FF] text-[#2563EB] text-sm font-semibold hover:bg-[#DBEAFE] transition-all"
                   >
-                    {expandedItems[item._id] ? 'View Less' : 'View More'}
+                    Edit
                   </button>
-                )}
-                <div className="flex justify-between items-center text-sm text-gray-500">
-                  <span>{new Date(item.createdAt).toLocaleString()}</span>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(item)}
-                      className="bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded-md"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => openDeleteModal(item._id)}
-                      className="bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded-md"
-                    >
-                      Delete
-                    </button>
-                  </div>
+  
+                  <button
+                    onClick={() => openDeleteModal(item._id)}
+                    className="h-[42px] px-5 rounded-xl bg-[#FEF2F2] text-[#DC2626] text-sm font-semibold hover:bg-[#FEE2E2] transition-all"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-      {isModalOpen && <DeleteConfirmationModal />}
-    </div>
+          </div>
+        ))}
+      </div>
+    )}
+  
+    {isModalOpen && <DeleteConfirmationModal />}
+  </div>
   );
 };
 

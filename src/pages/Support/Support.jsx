@@ -83,10 +83,10 @@ const ContactForm = () => {
     </div>
   
     {activeTab === "contact" ? (
-      <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[550px_1fr] gap-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-[500px_1fr] gap-6">
   
         {/* LEFT PANEL */}
-        <div className="relative overflow-hidden rounded-[36px] bg-[linear-gradient(135deg,#EAF3FF_0%,#DCEBFF_45%,#F7FBFF_100%)] backdrop-blur-xl border border-white shadow-[0_20px_60px_rgba(37,99,235,0.12)] p-10">
+        <div className="relative overflow-hidden rounded-[36px] bg-[linear-gradient(135deg,#EAF3FF_0%,#DCEBFF_45%,#F7FBFF_100%)] backdrop-blur-xl border-2 border-white shadow-[0_20px_60px_rgba(37,99,235,0.12)] p-10">
   
           {/* PREMIUM EFFECTS */}
           <div className="absolute inset-0 overflow-hidden">
@@ -297,7 +297,7 @@ const ContactForm = () => {
             {/* BUTTON */}
             <button
               type="submit"
-              className="w-full h-[66px] text-large primary-btn"
+              className="w-full h-[52px] sm:h-[58px] lg:h-[66px] text-large primary-btn"
             >
               Send Message
             </button>

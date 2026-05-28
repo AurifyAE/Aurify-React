@@ -203,7 +203,7 @@ const ProfilePage = () => {
               <img
                 src={userData?.data?.logo || ""}
                 alt="logo"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain px-2"
               />
             </div>
 
