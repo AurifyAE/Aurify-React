@@ -487,11 +487,13 @@ const SpotRate = () => {
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
         }
+        
         if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
           const parsedCommodities = commoditiesResponse.data.commodities
             .filter((commodity) => commodity && commodity.metal)
             .map((commodity) => ({
               ...commodity,
+              metal_name: commodity.metal_name ?? null,
               purity: parseFloat(commodity.purity),
               unit: parseFloat(commodity.unit),
               weight: commodity.weight,
@@ -845,7 +847,7 @@ const SpotRate = () => {
               borderBottom: "2px double #e0e0e0",
             }}
           >
-            <TableCell>{row.metal}</TableCell>
+            <TableCell>{row.metal_name || row.metal}</TableCell>
             <TableCell>{row.purity}</TableCell>
             <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
             <TableCell>{sellPrice}</TableCell>
@@ -858,17 +860,19 @@ const SpotRate = () => {
               <IconButton
                 onClick={() => handleEditCommodity(row)}
                 sx={{
-                  background:
-                    "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-                  color: "white",
-                  padding: "8px",
-                  marginRight: "8px",
-                  borderRadius: "8px",
-                  minWidth: "60px",
-                  height: "40px",
+                  width: 40,
+                  height: 40,
+                  borderRadius: "10px",
+                  background: "#fff",
+                  color: "#306ebb",
+                  border: "1px solid #e5e7eb",
+                  transition: "all 0.2s ease",
+              
                   "&:hover": {
-                    background:
-                      "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                    background: "#f4f8ff",
+                    borderColor: "#b9d8ff",
+                    transform: "translateY(-1px)",
+                    boxShadow: "0 4px 12px rgba(48,110,187,0.12)",
                   },
                 }}
               >
@@ -1029,16 +1033,17 @@ const SpotRate = () => {
           <Button
             variant="contained"
             onClick={handleOpenAddModal}
-            sx={{
-              background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-              color: "white",
-              textTransform: "none",
-              fontWeight: "bold",
-              borderRadius: "0.375rem",
-              "&:hover": {
-                background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
-              },
-            }}
+            classname='primary-btn'
+            // sx={{
+            //   background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+            //   color: "white",
+            //   textTransform: "none",
+            //   fontWeight: "bold",
+            //   borderRadius: "0.375rem",
+            //   "&:hover": {
+            //     background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+            //   },
+            // }}
           >
             ADD COMMODITY
           </Button>

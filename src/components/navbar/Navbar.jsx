@@ -146,49 +146,71 @@ const Navbar = () => {
   const formattedDateTime = `${formattedDate} - ${formattedTime}`;
 
   return (
-    <div className="bg-gray-100 p-4 flex justify-end items-center">
-      <div className="flex items-center space-x-4 relative">
-      <div className="border-2 border-purple-500 text-purple-500 px-4 py-2 rounded-lg text-sm shadow-lg">
-        {formattedDateTime}
-      </div>
-
-        <User className="text-gray-600 cursor-pointer w-5 h-5" />
+    <div className="w-full h-[72px] bg-white border-b border-[#ECEEF2] px-6 flex items-center justify-between">
+    
+      {/* RIGHT */}
+      <div className="flex items-center gap-4 ml-auto">
+        
+        {/* DATE */}
+        <div className="hidden md:flex items-center px-4 h-[42px] rounded-xl border border-[#ECEEF2] bg-[#FAFAFA]">
+          <span className="text-[13px] font-medium text-[#4B5563]">
+            {formattedDateTime}
+          </span>
+        </div>
+  
+        {/* NOTIFICATION */}
         <div className="relative" ref={notificationRef}>
-          <Bell 
-            className="text-gray-600 cursor-pointer w-5 h-5 hover:text-purple-500 transition-colors" 
-            onClick={toggleNotifications} 
-          />
-          {notifications.length > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-              {notifications.length}
-            </span>
-          )}
+          <button
+            onClick={toggleNotifications}
+            className="relative w-[42px] h-[42px] rounded-xl border border-[#ECEEF2] bg-[#FAFAFA] flex items-center justify-center hover:bg-[#F3F4F6] transition-all"
+          >
+            <Bell size={18} className="text-[#4B5563]" />
+  
+            {notifications.length > 0 && (
+              <span className="absolute top-[-4px] right-[-2px] min-w-[18px] h-[18px] px-1 rounded-full bg-[#111827] text-white text-[10px] flex items-center justify-center">
+                {notifications.length}
+              </span>
+            )}
+          </button>
+  
+          {/* DROPDOWN */}
           {showNotifications && (
-            <div className="notification-dropdown shadow-lg bg-white rounded-lg absolute right-0 mt-2 w-[300px] max-h-[400px] overflow-hidden z-50">
-              <div className="p-2 bg-purple-400 text-white font-semibold">
-                Notifications
+            <div className="absolute right-0 top-[52px] w-[320px] bg-white border border-[#ECEEF2] rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] overflow-hidden z-50">
+              
+              {/* HEADER */}
+              <div className="px-5 py-4 border-b border-[#F3F4F6]">
+                <h3 className="text-[15px] font-semibold text-[#111827]">
+                  Notifications
+                </h3>
               </div>
-              <div className="overflow-y-auto max-h-[320px] scrollbar-thin scrollbar-thumb-transparent scrollbar-track-transparent hide-scrollbar">
+  
+              {/* BODY */}
+              <div className="max-h-[360px] overflow-y-auto">
                 {notifications.length > 0 ? (
                   notifications.map((notification, index) => (
-                    <div 
-                      key={index} 
-                      className="notification-item p-4 border-b hover:bg-gray-50 transition-colors cursor-pointer"
+                    <div
+                      key={index}
                       onClick={() => handleNotificationClick(notification)}
+                      className="px-5 py-4 border-b border-[#F5F5F5] hover:bg-[#FAFAFA] transition-all cursor-pointer"
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-grow">
-                          <div className="text-sm font-medium">{notification.message}</div>
-                          <div className="text-xs text-gray-500 mt-1">
+                      <div className="flex items-start justify-between gap-3">
+                        
+                        <div className="flex-1">
+                          <p className="text-[13px] font-medium text-[#1F2937] leading-relaxed">
+                            {notification.message}
+                          </p>
+  
+                          <p className="text-[11px] text-[#9CA3AF] mt-2">
                             {moment(notification.createdAt).fromNow()}
-                          </div>
+                          </p>
                         </div>
+  
                         <button
-                          className="text-xs text-purple-500 hover:text-purple-700 ml-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleClearNotification(index);
                           }}
+                          className="text-[11px] font-medium text-[#9CA3AF] hover:text-[#111827]"
                         >
                           Clear
                         </button>
@@ -196,12 +218,21 @@ const Navbar = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-gray-500">No new notifications</div>
+                  <div className="h-[140px] flex items-center justify-center">
+                    <p className="text-[13px] text-[#9CA3AF]">
+                      No notifications
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
           )}
         </div>
+  
+        {/* PROFILE */}
+        <button className="w-[42px] h-[42px] rounded-xl border border-[#ECEEF2] bg-[#FAFAFA] flex items-center justify-center hover:bg-[#F3F4F6] transition-all">
+          <User size={18} className="text-[#4B5563]" />
+        </button>
       </div>
     </div>
   );

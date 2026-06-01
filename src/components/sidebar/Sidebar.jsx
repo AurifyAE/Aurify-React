@@ -17,7 +17,7 @@ import {
   Storefront as StorefrontIcon,
   ShoppingCart as ShoppingCartIcon,
   Slideshow as SlideshowIcon,
-  AccountBalanceWallet as AccountBalanceWalletIcon
+  AccountBalanceWallet as AccountBalanceWalletIcon,
 } from "@mui/icons-material";
 
 import {
@@ -43,18 +43,16 @@ const SidenavItem = ({ icon: Icon, name, isActive }) => (
   >
     <div
       className={`p-2 rounded-lg mr-3 ${
-        isActive
-          ? "bg-gradient-to-r from-purple-600 to-pink-500"
-          : "bg-purple-100"
+        isActive ? "primary-gradient" : "bg-blue-100"
       }`}
     >
       <Icon
-        className={`w-5 h-5 ${isActive ? "text-white" : "text-purple-600"}`}
+        className={`w-5 h-5 ${isActive ? "text-white" : "text-blue-600"}`}
       />
     </div>
     <span
       className={`text-sm font-medium ${
-        isActive ? "text-purple-600" : "text-gray-600"
+        isActive ? "text-blue-600" : "text-gray-600"
       }`}
     >
       {name}
@@ -77,7 +75,7 @@ const SignOutButton = () => {
   return (
     <Button
       onClick={handleSignOut}
-      className="w-full mt-auto bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center shadow-lg mb-8"
+      className="w-full mt-auto primary-btn shadow-lg mb-8"
     >
       Sign Out
     </Button>
@@ -212,7 +210,7 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
           primary: "#FFFFFF",
           secondary: "#10B981",
         },
-      }
+      },
     );
   };
 
@@ -289,19 +287,18 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
                 onMouseEnter={() => setHoveredFeature(feature)}
                 onMouseLeave={() => setHoveredFeature(null)}
               >
-                <div className="p-2 rounded-lg mr-3 bg-purple-100">
-                  <Icon className="w-5 h-5 text-purple-600" />
+                <div className="p-2 rounded-lg mr-3 bg-blue-100">
+                  <Icon className="w-5 h-5 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-600 mr-20">
                   {feature}
-                        
                 </span>
                 {hoveredFeature === feature && (
                   <div className="absolute right-0 top-0 bottom-0 flex items-center">
                     <Button
                       size="sm"
                       auto
-                      className="bg-purple-600 text-white ml-4"
+                      className="bg-blue-600 text-white ml-4"
                       onClick={() => handleRequestFeature(feature)}
                     >
                       Request
@@ -319,8 +316,8 @@ const AdditionalFeaturesDropdown = ({ features, isLoading, userEmail }) => {
             requestStatus.type === "success"
               ? "bg-green-100 text-green-800"
               : requestStatus.type === "error"
-              ? "bg-red-100 text-red-800"
-              : "bg-blue-100 text-blue-800"
+                ? "bg-red-100 text-red-800"
+                : "bg-blue-100 text-blue-800"
           }`}
         >
           {requestStatus.message}
@@ -362,6 +359,11 @@ const Sidebar = () => {
   const routes = [
     { name: "Dashboard", icon: HomeIcon, path: "dashboard" },
     { name: "Spot Rate", icon: ShowChartIcon, path: "spot-rate" },
+    {
+      name: "Retail Gold Rate",
+      icon: MonetizationOnIcon,
+      path: "retail-gold-rate",
+    },
     { name: "Media", icon: ImageIcon, path: "media" },
     { name: "Support", icon: SettingsIcon, path: "support" },
     { name: "News", icon: NewspaperIcon, path: "news" },
@@ -410,8 +412,8 @@ const Sidebar = () => {
         setUserEmail(response.data.data.email);
         setAdditionalFeatures(
           allFeatures.filter(
-            (f) => !response.data.data.features.some((rf) => rf.name === f)
-          )
+            (f) => !response.data.data.features.some((rf) => rf.name === f),
+          ),
         );
       } else {
         setError(response.data.message || "Failed to fetch features");
@@ -428,14 +430,14 @@ const Sidebar = () => {
   }, []);
 
   return (
-    <nav className="w-64 bg-gray-100 h-screen flex flex-col">
+    <nav className="w-64 bg-[#F6F8FB] border-r border-r-[#f1f1f1] h-screen flex flex-col">
+      {" "}
       <div className="px-4 flex-shrink-0 mt-6">
-        <div className="flex items-center mb-8">
-          <img src={logo} alt="Logo" className="w-14 h-14 mr-1" />
+        <div className="flex items-center mb-8 gap-1">
+          <img src={logo} alt="Logo" className="w-7 h-7 mr-1" />
           <span className="text-xl font-bold text-gray-800">Dashboard</span>
         </div>
       </div>
-
       <div className="flex-grow overflow-y-auto hide-scrollbar px-4">
         <ul className="space-y-1">
           {routes.map((route) => (
@@ -492,7 +494,6 @@ const Sidebar = () => {
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       </div>
-
       <div className="p-4 flex-shrink-0 mt-2">
         <SignOutButton />
       </div>

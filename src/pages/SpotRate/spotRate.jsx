@@ -174,9 +174,9 @@ const PriceCard = React.memo(
             <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
             <p className="text-gray-600 font-medium text-sm">
               {initialPrice !== undefined &&
-              initialPrice !== null &&
-              spread !== undefined &&
-              spread !== null
+                initialPrice !== null &&
+                spread !== undefined &&
+                spread !== null
                 ? (parseFloat(initialPrice) + parseFloat(spread)).toFixed(4)
                 : "N/A"}
             </p>
@@ -429,9 +429,8 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
       const lowerMetal = metal.toLowerCase();
-      const key = `${lowerMetal}${
-        type.charAt(0).toUpperCase() + type.slice(1)
-      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)
+        }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
     [spreadMarginData]
@@ -489,6 +488,7 @@ const SpotRate = () => {
           const parsedCommodities = commoditiesResponse.data.commodities.map(
             (commodity) => ({
               ...commodity,
+              metal_name: commodity.metal_name ?? null,
               purity: parseFloat(commodity.purity),
               unit: parseFloat(commodity.unit),
               weight: commodity.weight,
@@ -604,10 +604,10 @@ const SpotRate = () => {
 
       return (
         ((metalPrice + spread + premium) / 31.103) *
-          exchangeRate *
-          commodity.unit *
-          unitMultiplier *
-          (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
+        exchangeRate *
+        commodity.unit *
+        unitMultiplier *
+        (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
         parseFloat(charge)
       ).toFixed(4);
     },
@@ -760,7 +760,13 @@ const SpotRate = () => {
         try {
           const response = await axiosInstance.get(`/spotrates/${adminId}`);
           if (response.data && response.data.commodities) {
-            setCommodities(response.data.commodities);
+            const normalizedCommodities = response.data.commodities.map(
+              (commodity) => ({
+                ...commodity,
+                metal_name: commodity.metal_name ?? null,
+              })
+            );
+            setCommodities(normalizedCommodities);
           }
         } catch (error) {
           console.error("Error fetching updated commodities:", error);
@@ -781,6 +787,7 @@ const SpotRate = () => {
   const handleEditCommodity = useCallback((commodity) => {
     setSelectedCommodity({
       ...commodity,
+      metal_name: commodity.metal_name ?? "",
     });
     setIsEditing(true);
     setOpenModal(true);
@@ -819,8 +826,8 @@ const SpotRate = () => {
       const metalAskingPrice =
         marketData[metal] && marketData[metal].bid
           ? parseFloat(marketData[metal].bid) +
-            parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
-            (isGoldRelated ? 0.5 : 0.05)
+          parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
+          (isGoldRelated ? 0.5 : 0.05)
           : 0;
 
       const sellPrice = calculatePrice(metalAskingPrice, row, "sell");
@@ -834,7 +841,7 @@ const SpotRate = () => {
             borderBottom: "2px double #e0e0e0",
           }}
         >
-          <TableCell>{row.metal}</TableCell>
+          <TableCell>{row.metal_name?.trim() || row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
           <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
           <TableCell>{sellPrice}</TableCell>
@@ -847,16 +854,19 @@ const SpotRate = () => {
             <IconButton
               onClick={() => handleEditCommodity(row)}
               sx={{
-                background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-                color: "white",
-                padding: "8px",
-                marginRight: "8px",
-                borderRadius: "8px",
-                minWidth: "60px",
-                height: "40px",
+                width: 40,
+                height: 40,
+                borderRadius: "10px",
+                background: "#fff",
+                color: "#306ebb",
+                border: "1px solid #e5e7eb",
+                transition: "all 0.2s ease",
+                margin: '1px',
                 "&:hover": {
-                  background:
-                    "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                  background: "#f4f8ff",
+                  borderColor: "#b9d8ff",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 12px rgba(48,110,187,0.12)",
                 },
               }}
             >
@@ -865,15 +875,20 @@ const SpotRate = () => {
             <IconButton
               onClick={() => handleDeleteClick(row)}
               sx={{
-                background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-                color: "white",
-                padding: "8px",
-                borderRadius: "8px",
-                minWidth: "60px",
-                height: "40px",
+                width: 40,
+                height: 40,
+                borderRadius: "10px",
+                background: "#fff",
+                color: "#ef4444",
+                border: "1px solid #e5e7eb",
+                transition: "all 0.2s ease",
+                margin: '1px',
+
                 "&:hover": {
-                  background:
-                    "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+                  background: "#fef2f2",
+                  borderColor: "#fecaca",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 4px 12px rgba(239,68,68,0.12)",
                 },
               }}
             >
@@ -908,20 +923,18 @@ const SpotRate = () => {
           {uniqueMetals.map((metal, index) => (
             <div
               key={metal}
-              className={`col-span-1 ${
-                index === uniqueMetals.length - 1 &&
+              className={`col-span-1 ${index === uniqueMetals.length - 1 &&
                 uniqueMetals.length % 2 !== 0
-                  ? "md:col-span-2"
-                  : ""
-              }`}
+                ? "md:col-span-2"
+                : ""
+                }`}
             >
               <div
-                className={`${metal.toLowerCase()}-content ${
-                  index === uniqueMetals.length - 1 &&
+                className={`${metal.toLowerCase()}-content ${index === uniqueMetals.length - 1 &&
                   uniqueMetals.length % 2 !== 0
-                    ? "md:grid md:grid-cols-2 md:gap-8"
-                    : ""
-                }`}
+                  ? "md:grid md:grid-cols-2 md:gap-8"
+                  : ""
+                  }`}
               >
                 <TradingViewWidget
                   symbol={symbolMap[metal.toLowerCase()]}
@@ -1015,16 +1028,17 @@ const SpotRate = () => {
           <Button
             variant="contained"
             onClick={handleOpenAddModal}
-            sx={{
-              background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-              color: "white",
-              textTransform: "none",
-              fontWeight: "bold",
-              borderRadius: "0.375rem",
-              "&:hover": {
-                background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
-              },
-            }}
+            className="primary-btn"
+          // sx={{
+          //   background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+          //   color: "white",
+          //   textTransform: "none",
+          //   fontWeight: "bold",
+          //   borderRadius: "0.375rem",
+          //   "&:hover": {
+          //     background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+          //   },
+          // }}
           >
             ADD COMMODITY
           </Button>

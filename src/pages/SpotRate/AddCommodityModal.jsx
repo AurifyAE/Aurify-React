@@ -24,6 +24,8 @@ const [toastMessage, setToastMessage] = useState('');
     buyUSD: '',
     sellAED: '',
     sellUSD: '',
+    metal_name: '',
+    group: 'commodity',
   });
   const [commodities, setCommodities] = useState([]);
   const [spotRates, setSpotRates] = useState(null);
@@ -70,6 +72,8 @@ const [toastMessage, setToastMessage] = useState('');
       buyUSD: '',
       sellAED: '',
       sellUSD: '',
+      metal_name: '',
+      group: 'commodity',
     });
     setIsEditMode(false);
     setCommodityId(null);
@@ -107,6 +111,8 @@ useEffect(() => {
       buyCharges: initialData.buyCharge || initialData.buyCharges || '',
       sellPremiumUSD: initialData.sellPremium || initialData.sellPremiumUSD || '',
       buyPremiumUSD: initialData.buyPremium || initialData.buyPremiumUSD || '',
+      metal_name: initialData.metal_name ?? '',
+      group: initialData.group ?? 'commodity',
     }));
     setCommodityId(initialData.id || initialData._id);
     setIsEditMode(true);
@@ -194,7 +200,7 @@ useEffect(() => {
     let updatedValue = value;
     if (['purity', 'unit'].includes(name)) {
       updatedValue = value === '' ? '' : value;
-    } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD'].includes(name)) {
+    } else if (['sellPremiumUSD', 'sellCharges', 'buyPremiumUSD', 'buyCharges', 'buyAED', 'buyUSD', 'sellAED', 'sellUSD', 'metal_name'].includes(name)) {
       updatedValue = value === '' ? '' : value;
     }
 
@@ -260,6 +266,9 @@ const handleSave = useCallback(async () => {
     if (formData.buyCharges !== '') commodityData.buyCharge = parseFloat(formData.buyCharges) || 0;
     if (formData.sellPremiumUSD !== '') commodityData.sellPremium = parseFloat(formData.sellPremiumUSD) || 0;
     if (formData.buyPremiumUSD !== '') commodityData.buyPremium = parseFloat(formData.buyPremiumUSD) || 0;
+
+    commodityData.metal_name = formData.metal_name?.trim() ? formData.metal_name.trim() : null;
+    commodityData.group = formData.group || 'commodity';
 
     let response;
     if (isEditMode) {
@@ -443,6 +452,33 @@ const handleSave = useCallback(async () => {
               size="small"
               sx={inputStyle}
             />
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Alternate Metal Name</Typography>
+            <TextField
+              name="metal_name"
+              placeholder="Optional"
+              value={formData.metal_name}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <Typography variant="body2" fontWeight="medium" mb={1}>Group</Typography>
+            <Select
+              name="group"
+              value={formData.group}
+              onChange={handleChange}
+              fullWidth
+              size="small"
+              sx={inputStyle}
+            >
+              <MenuItem value="commodity">Commodity</MenuItem>
+              <MenuItem value="group1">Group 1</MenuItem>
+              <MenuItem value="group2">Group 2</MenuItem>
+            </Select>
           </Grid>
           <Grid item xs={12}>
             <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px' }}>

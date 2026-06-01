@@ -1,23 +1,62 @@
 import React, { useState } from "react";
 import faqImg from "../../assets/faqImg.png";
+import { MessageCircle, Shield } from "lucide-react";
 
-const FAQItem = ({ question, answer }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
+const FAQItem = ({ question, answer, isOpen, onClick }) => {
   return (
-    <div className="border-b border-gray-200 py-4">
+    <div
+      className={`group rounded-[24px] border transition-all duration-300 overflow-hidden ${
+        isOpen
+          ? "border-[#CFE0FF] bg-[#F8FBFF] shadow-[0_10px_30px_rgba(37,99,235,0.08)]"
+          : "border-[#E7EEF7] bg-white hover:border-[#D6E4FF] hover:shadow-sm"
+      }`}
+    >
       <button
-        className="flex justify-between items-center w-full text-left"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={onClick}
+        className="w-full flex items-start sm:items-center justify-between gap-4 sm:gap-6 px-4 sm:px-6 py-5 sm:py-4 text-left transition-all duration-300"
       >
-        <span className="font-medium">{question}</span>
-        <span>{isOpen ? "-" : "+"}</span>
+        {/* QUESTION */}
+        <div>
+          <h3
+            className={`text-[15px] sm:text-[16px] leading-6 sm:leading-7 font-semibold transition-all duration-300 ${
+              isOpen ? "text-[#2563EB]" : "text-[#0F172A]"
+            }`}
+          >
+            {question}
+          </h3>
+        </div>
+
+        {/* ICON */}
+        <div
+          className={`min-w-[38px] sm:min-w-[42px] h-[38px] sm:h-[42px] rounded-2xl flex items-center justify-center transition-all duration-300 ${
+            isOpen
+              ? "bg-[#2563EB] text-white rotate-45"
+              : "bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#E8F0FF]"
+          }`}
+        >
+          <span className="text-[24px]  leading-none mt-[-5px]">+</span>
+        </div>
       </button>
-      {isOpen && <p className="mt-2 text-gray-600">{answer}</p>}
+
+      {/* ANSWER */}
+      <div
+        className={`grid transition-all duration-500 ease-in-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="px-4 sm:px-6 pb-5 sm:pb-6">
+            <div className="h-[1px] bg-[#E7EEF7] mb-5" />
+
+            <p className="text-[14px] sm:text-[15px] leading-7 sm:leading-8 text-[#64748B]">
+              {answer}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
-
 const FAQ = () => {
   const technicalFAQs = [
     {
@@ -114,51 +153,165 @@ const FAQ = () => {
     },
   ];
 
-  return (
-    <div className="flex flex-col lg:flex-row">
-      <div className="lg:w-full p-4">
-        <div className="bg-purple-600 text-white p-8 rounded-lg mb-8 flex flex-col lg:flex-row items-center justify-between w-full min-h-[400px]">
-          {/* Left section: Text */}
-          <div className="w-full lg:w-1/2 mb-4 lg:mb-0">
-            <h1 className="text-3xl font-bold mb-4">
-              Frequently Asked Questions
-            </h1>
-            <p className="mb-4">
-              Need help with something? Here are our most frequently asked
-              questions.
-            </p>
-          </div>
+  const [openTechnical, setOpenTechnical] = useState(null);
+  const [openSecurity, setOpenSecurity] = useState(null);
 
-          {/* Right section: Image */}
-          <div className="w-full lg:w-1/2 flex justify-center lg:justify-end">
-            <img
-              src={faqImg}
-              alt="Dashboard mockup"
-              className="max-w-full h-auto object-contain rounded-lg shadow-lg"
+  return (
+    <div className="min-h-screen bg-[#F6F8FC] px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      {" "}
+      <div className="mw-full mx-auto">
+        {/* HERO */}
+        <div className="relative overflow-hidden rounded-[40px] border border-[#E7EEF7] bg-white mb-8">
+          {/* SOFT BACKGROUND */}
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute top-[-180px] right-[-120px] w-[500px] h-[500px] rounded-full bg-[#EAF2FF] blur-3xl opacity-80" />
+
+            <div className="absolute bottom-[-180px] left-[-100px] w-[420px] h-[420px] rounded-full bg-[#F2F7FF] blur-3xl opacity-90" />
+
+            <div
+              className="absolute inset-0 opacity-[0.03]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(rgba(37,99,235,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.25) 1px, transparent 1px)",
+                backgroundSize: "70px 70px",
+              }}
             />
           </div>
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] items-center px-5 sm:px-8 lg:px-16 py-10 sm:py-14 lg:py-16 gap-10">
+            {/* LEFT CONTENT */}
+            <div>
+              {/* BADGE */}
+              <div className="inline-flex items-center gap-3 h-[46px] px-5 rounded-full bg-[#F4F8FF] border border-[#DCE8FF] mb-8">
+                <div className="w-2 h-2 rounded-full bg-[#2563EB]" />
+
+                <span className="text-[13px] font-semibold tracking-[1px] text-[#2563EB] uppercase">
+                  Support Center
+                </span>
+              </div>
+
+              {/* TITLE */}
+              <h1 className="text-[34px] sm:text-[46px] lg:text-[50px] 2xl:text-[58px] leading-[42px] sm:leading-[54px] lg:leading-[64px] font-semibold tracking-[-1px] sm:tracking-[-2px] text-[#0F172A]">
+                {" "}
+                Frequently
+                <br />
+                Asked Questions
+              </h1>
+
+              {/* DESCRIPTION */}
+              <p className="text-[#64748B] text-[15px] sm:text-[15px] sm:text-[16px] leading-6 sm:leading-7 sm:leading-8 mt-6 sm:mt-8 max-w-[620px]">
+                {" "}
+                Find answers about platform features, real-time market data,
+                account security, dashboard customization and technical support.
+              </p>
+
+              {/* TAGS */}
+              <div className="flex flex-wrap gap-4 mt-10">
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
+                  Live Market Data
+                </div>
+
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
+                  Enterprise Security
+                </div>
+
+                <div className="h-[46px] sm:h-[52px] px-4 sm:px-6 rounded-2xl bg-white border border-[#E2E8F0] flex items-center text-[13px] sm:text-sm font-medium text-[#334155] shadow-sm">
+                  {" "}
+                  24/7 Assistance
+                </div>
+              </div>
+            </div>
+            {/* RIGHT IMAGE */}
+            <div className="relative flex justify-center lg:justify-end">
+              {/* CARD */}
+              <div className="relative w-full max-w-[500px] rounded-[36px] bg-gradient-to-br from-[#F8FBFF] to-[#EEF4FF] border border-[#E4ECF8] p-6 shadow-[0_20px_60px_rgba(37,99,235,0.08)]">
+                {/* IMAGE */}
+                <div className="relative rounded-[28px] overflow-hidden bg-white border border-[#E8EEF7] p-4">
+                  <img
+                    src={faqImg}
+                    alt="FAQ"
+                    className="w-full h-auto object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="bg-white p-8 rounded-lg mb-8">
-          <h2 className="text-2xl font-bold mb-4">Technical FAQs</h2>
-          <p className="mb-4">
-            Everything you need to know about the technical aspects of our
-            trading dashboard.
-          </p>
-          {technicalFAQs.map((faq, index) => (
-            <FAQItem key={index} question={faq.question} answer={faq.answer} />
-          ))}
-        </div>
+        {/* FAQ GRID */}
+        <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 lg:gap-8">
+          {" "}
+          {/* TECHNICAL */}
+          <div className="bg-white rounded-[24px] sm:rounded-[34px] border border-[#E7EEF7] p-5 sm:p-8 shadow-sm">
+            {" "}
+            {/* HEADER */}
+            <div className="flex items-start gap-5 mb-8">
+              <div className="w-16 h-16 rounded-[22px] bg-[#EEF4FF] flex items-center justify-center border border-[#DCE8FF]">
+                <MessageCircle size={25} className="text-blue-500" />
+              </div>
 
-        <div className="bg-white p-8 rounded-lg">
-          <h2 className="text-2xl font-bold mb-4">Security FAQs</h2>
-          <p className="mb-4">
-            Learn about the security measures we have in place to protect your
-            account and data.
-          </p>
-          {securityFAQs.map((faq, index) => (
-            <FAQItem key={index} question={faq.question} answer={faq.answer} />
-          ))}
+              <div>
+                <h2 className="text-[24px] sm:text-[32px] font-semibold text-[#0F172A]">
+                  Technical FAQs
+                </h2>
+
+                <p className="text-[#64748B] text-[15px] leading-7 mt-3 max-w-[480px]">
+                  Learn more about live rates, dashboard features, supported
+                  platforms and customization options.
+                </p>
+              </div>
+            </div>
+            {/* FAQ ITEMS */}
+            <div className="space-y-4">
+              {technicalFAQs.map((faq, index) => (
+                <FAQItem
+                  key={index}
+                  question={faq.question}
+                  answer={faq.answer}
+                  isOpen={openTechnical === index}
+                  onClick={() =>
+                    setOpenTechnical(openTechnical === index ? null : index)
+                  }
+                />
+              ))}
+            </div>
+          </div>
+          {/* SECURITY */}
+          <div className="bg-white rounded-[24px] sm:rounded-[34px] border border-[#E7EEF7] p-5 sm:p-8 shadow-sm">
+            {" "}
+            {/* HEADER */}
+            <div className="flex items-start gap-5 mb-8">
+              <div className="w-16 h-16 rounded-[22px] bg-[#EEF4FF] flex items-center justify-center border border-[#DCE8FF]">
+                <Shield size={25} className="text-blue-500" />{" "}
+              </div>
+              <div>
+                <h2 className="text-[24px] sm:text-[32px] font-semibold text-[#0F172A]">
+                  Security FAQs
+                </h2>
+
+                <p className="text-[#64748B] text-[15px] leading-7 mt-3 max-w-[480px]">
+                  Understand how we protect your account, transactions and
+                  personal data security.
+                </p>
+              </div>
+            </div>
+            {/* FAQ ITEMS */}
+            <div className="space-y-4">
+              {securityFAQs.map((faq, index) => (
+                <FAQItem
+                  key={index}
+                  question={faq.question}
+                  answer={faq.answer}
+                  isOpen={openSecurity === index}
+                  onClick={() =>
+                    setOpenSecurity(openSecurity === index ? null : index)
+                  }
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

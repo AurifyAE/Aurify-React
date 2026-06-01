@@ -1,4 +1,4 @@
-import { MonitorPlay, ShoppingCart, SquareUser, CreditCard } from "lucide-react";
+import { MonitorPlay, ShoppingCart, SquareUser, CreditCard, Bell, User } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import {
   Area,
@@ -21,7 +21,7 @@ const MetricCard = ({ title, value, icon: Icon, additionalInfo }) => (
         )}
       </div>
     </div>
-    <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-3 rounded-lg">
+    <div className="primary-gradient p-3 rounded-lg">
       <Icon className="w-6 h-6 text-white" />
     </div>
   </div>
@@ -97,136 +97,255 @@ const DashboardContent = () => {
   const clientsData = [400, 200, 100, 200, 400, 100, 400, 200, 400];
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen flex-1 overflow-x-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-4">
-        <div className="bg-white rounded-lg shadow-md p-4 flex justify-between items-center">
-          <div>
-            <h3 className="text-gray-500 text-sm">My Screen</h3>
-            <div className="flex items-center">
-              <p className="text-2xl font-bold">
-                {activeDeviceCount}/{userData?.data?.screenLimit || 0}
-              </p>
+    <div className="min-h-screen bg-[#f4f7fb] p-5 overflow-x-hidden">
+      
+  
+      {/* Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+        {/* Card */}
+        <div className="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-100 blur-3xl opacity-60 rounded-full"></div>
+  
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <p className="text-slate-500 text-sm mb-2">My Screen</p>
+  
+                <h2 className="text-4xl font-bold text-slate-800">
+                  {activeDeviceCount}/
+                  <span className="text-slate-400">
+                    {userData?.data?.screenLimit || 0}
+                  </span>
+                </h2>
+              </div>
+  
+              <div className="w-14 h-14 rounded-2xl bg-cyan-50 border-1 border-cyan-200 flex items-center justify-center">
+                <MonitorPlay className="w-7 h-7 text-cyan-600" />
+              </div>
+            </div>
+  
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="w-[70%] h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full"></div>
             </div>
           </div>
-          <div className="bg-gradient-to-r from-purple-600 to-pink-500 p-3 rounded-lg">
-            <MonitorPlay className="w-6 h-6 text-white" />
+        </div>
+  
+        {/* Users */}
+        <div className="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-lg transition-all">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-violet-100 blur-3xl opacity-60 rounded-full"></div>
+  
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-slate-500 text-sm mb-2">Users</p>
+  
+              <h2 className="text-4xl font-bold text-slate-800">
+                {userCount || 0}
+              </h2>
+  
+              <p className="text-sm text-slate-400 mt-2">
+                Total active users
+              </p>
+            </div>
+  
+            <div className="w-14 h-14 rounded-2xl bg-violet-50 border border-violet-200 flex items-center justify-center">
+              <SquareUser className="w-7 h-7 text-violet-600" />
+            </div>
           </div>
         </div>
-        <MetricCard
-          title="Users"
-          value={userCount ? userCount : 0}
-          icon={SquareUser}
-        />
-        <MetricCard
-          title="Txn Requests"
-          value="34"
-          icon={ShoppingCart}
-          additionalInfo="0%"
-        />
-        <MetricCard
-          title="Total Revenue"
-          value="$12,345"
-          icon={CreditCard}
-          additionalInfo="+5.2%"
-        />
+  
+        {/* Transaction */}
+        <div className="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-lg transition-all">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 blur-3xl opacity-60 rounded-full"></div>
+  
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-slate-500 text-sm mb-2">Txn Requests</p>
+  
+              <h2 className="text-4xl font-bold text-slate-800">34</h2>
+  
+              <p className="text-emerald-600 text-sm font-semibold mt-2">
+                ↑ 0% vs last week
+              </p>
+            </div>
+  
+            <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center">
+              <ShoppingCart className="w-7 h-7 text-emerald-600" />
+            </div>
+          </div>
+        </div>
+  
+        {/* Revenue */}
+        <div className="relative bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-lg transition-all">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-pink-100 blur-3xl opacity-60 rounded-full"></div>
+  
+          <div className="relative z-10 flex items-center justify-between">
+            <div>
+              <p className="text-slate-500 text-sm mb-2">Revenue</p>
+  
+              <h2 className="text-4xl font-bold text-slate-800">
+                $12,345
+              </h2>
+  
+              <p className="text-pink-600 text-sm font-semibold mt-2">
+                ↑ 5.2% growth
+              </p>
+            </div>
+  
+            <div className="w-14 h-14 rounded-2xl bg-pink-50 border border-pink-200  flex items-center justify-center">
+              <CreditCard className="w-7 h-7 text-pink-600" />
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div className="bg-teal-900 rounded-lg p-6 text-white mb-6">
-        <div className="flex justify-between items-center mb-4">
+  
+      {/* Reminder */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6">
+        {/* Input */}
+        <div className="flex flex-col xl:flex-row gap-4 mb-5">
           <input
             type="text"
-            placeholder="Add a new reminder"
-            className="w-full bg-white text-gray-800 p-3 rounded-lg"
+            placeholder="Add a reminder..."
+            className="flex-1 h-14 rounded-xl border border-slate-200 bg-slate-50 px-5 outline-none focus:ring-2 focus:ring-violet-500 text-slate-700"
           />
-          <button className="bg-purple-600 text-white px-4 py-2 rounded-lg ml-4 uppercase text-sm font-bold">
+  
+          <button className="h-14 px-8 rounded-xl primary-gradient  text-white font-semibold shadow-lg shadow-blue-200 hover:scale-[1.02] transition-all">
             Clear All
           </button>
         </div>
-        <div className="flex space-x-4 mb-4">
-          <button
-            onClick={() => setActiveTab("All")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${
-              activeTab === "All"
-                ? "bg-transparent text-purple-600"
-                : "bg-transparent border-gray-600 text-gray-300"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setActiveTab("Pending")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${
-              activeTab === "Pending"
-                ? "bg-transparent text-purple-600"
-                : "bg-transparent border-gray-600 text-gray-300"
-            }`}
-          >
-            Pending
-          </button>
-          <button
-            onClick={() => setActiveTab("Completed")}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${
-              activeTab === "Completed"
-                ? "bg-transparent text-purple-600"
-                : "bg-transparent border-gray-600 text-gray-300"
-            }`}
-          >
-            Completed
-          </button>
+  
+        {/* Tabs */}
+        <div className="flex items-center gap-3 mb-8">
+          {["All", "Pending", "Completed"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === tab
+                  ? "primary-gradient text-white shadow-md"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-        <hr className="border-teal-800 mb-4" />
-        <p className="text-gray-400 mb-24">You don't have any reminder here</p>
+  
+        {/* Empty State */}
+        <div className="border-t border-slate-200 pt-14 pb-10 flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-5">
+            <MonitorPlay className="w-9 h-9 text-slate-400" />
+          </div>
+  
+          <h3 className="text-2xl font-bold text-slate-800 mb-2">
+            No reminders available
+          </h3>
+  
+          <p className="text-slate-500 max-w-md">
+            Create reminders and manage your daily workflow more efficiently.
+          </p>
+        </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Active Clients Chart */}
-        <div className="bg-slate-800 rounded-lg shadow-md p-4">
-          <h2 className="text-white text-lg font-semibold mb-2">
-            Active Clients
-          </h2>
-          <p className="text-gray-400 text-sm mb-4">(+0%) than last week</p>
-          <div className="h-40 flex items-end justify-between">
+  
+      {/* Charts */}
+      <div className="grid grid-cols-2 2xl:grid-cols-1 gap-5">
+        {/* Active Clients */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">
+                Active Clients
+              </h2>
+  
+              <p className="text-emerald-600 text-sm font-medium mt-1">
+                ↑ 0% compared to last week
+              </p>
+            </div>
+  
+            <select className="h-11 px-4 pr-8 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none">
+              <option>This Week</option>
+            </select>
+          </div>
+  
+          <div className="h-72 flex items-end justify-between gap-3">
             {clientsData.map((value, index) => (
               <div
                 key={index}
-                className="bg-white w-6 rounded-t"
+                className="flex-1 rounded-t-xl bg-gradient-to-t from-cyan-500 to-sky-400 hover:opacity-90 transition-all"
                 style={{ height: `${value / 4}%` }}
               ></div>
             ))}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <h2 className="text-gray-800 text-lg font-semibold mb-2">
-            Sales Overview
-          </h2>
-          <p className="text-green-500 text-sm mb-4">↑ 0% more in 2023</p>
-          <ResponsiveContainer width="100%" height={200}>
+  
+        {/* Sales Overview */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">
+                Sales Overview
+              </h2>
+  
+              <p className="text-emerald-600 text-sm font-medium mt-1">
+                ↑ 0% growth this year
+              </p>
+            </div>
+  
+            <select className="h-11 px-4 pr-8 rounded-xl border border-slate-200 bg-slate-50 text-sm outline-none">
+              <option>This Year</option>
+            </select>
+          </div>
+  
+          <ResponsiveContainer width="100%" height={320}>
             <AreaChart data={salesData}>
               <defs>
-                <linearGradient id="colorValue1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
+                <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
                 </linearGradient>
-                <linearGradient id="colorValue2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
+  
+                <linearGradient id="silverGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="name" axisLine={false} tickLine={false} />
-              <YAxis axisLine={false} tickLine={false} />
-              <Tooltip />
+  
+              <XAxis
+                dataKey="name"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#64748b", fontSize: 12 }}
+              />
+  
+              <YAxis
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: "#64748b", fontSize: 12 }}
+              />
+  
+              <Tooltip
+                contentStyle={{
+                  borderRadius: "14px",
+                  border: "1px solid #e2e8f0",
+                  background: "#fff",
+                }}
+              />
+  
               <Area
                 type="monotone"
                 dataKey="Gold"
-                stroke="#8884d8"
+                stroke="#0ea5e9"
                 fillOpacity={1}
-                fill="url(#colorValue1)"
+                fill="url(#goldGradient)"
+                strokeWidth={3}
               />
+  
               <Area
                 type="monotone"
                 dataKey="Silver"
-                stroke="#82ca9d"
+                stroke="#7c3aed"
                 fillOpacity={1}
-                fill="url(#colorValue2)"
+                fill="url(#silverGradient)"
+                strokeWidth={3}
               />
             </AreaChart>
           </ResponsiveContainer>
