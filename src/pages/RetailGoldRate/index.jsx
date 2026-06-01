@@ -16,7 +16,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { io } from "socket.io-client";
 import axiosInstance from "../../axios/axiosInstance";
-import RetailGoldRateModal, { DEFAULT_GOLD_RATES } from "./RetailGoldRateModal";
+import RetailGoldRateModal from "./RetailGoldRateModal";
 
 const SOCKET_SERVER_URL =
   process.env.REACT_APP_API_URL?.replace("/api", "") || "";
@@ -34,8 +34,6 @@ const gradientButtonSx = {
     background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
   },
 };
-
-const DISPLAY_ORDER = DEFAULT_GOLD_RATES.map((r) => r.name);
 
 const RetailGoldRate = () => {
   const [rates, setRates] = useState([]);
@@ -111,10 +109,13 @@ const RetailGoldRate = () => {
     await fetchRetailRates();
   }, [fetchRetailRates]);
 
-  const sortedRates = useMemo(() => {
-    const byName = new Map(rates.map((r) => [r.name, r]));
-    return DISPLAY_ORDER.map((name) => byName.get(name)).filter(Boolean);
-  }, [rates]);
+  const sortedRates = useMemo(
+    () =>
+      [...rates].sort(
+        (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+      ),
+    [rates],
+  );
 
   const renderRows = () => {
     if (isLoading) {

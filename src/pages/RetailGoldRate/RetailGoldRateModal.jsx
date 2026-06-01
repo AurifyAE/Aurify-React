@@ -16,6 +16,7 @@ import DiamondRoundedIcon from "@mui/icons-material/DiamondRounded";
 import CurrencyExchangeRoundedIcon from "@mui/icons-material/CurrencyExchangeRounded";
 import axiosInstance from "../../axios/axiosInstance";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
+import DriveFileRenameOutlineRoundedIcon from "@mui/icons-material/DriveFileRenameOutlineRounded";
 export const DEFAULT_GOLD_RATES = [
   { name: "14K Gold", rate: "", unit: "AED" },
   { name: "21K Gold", rate: "", unit: "AED" },
@@ -31,12 +32,19 @@ const gradientButtonSx = {
   },
 };
 
-const buildRatesFromExisting = (existingRates = []) =>
-  DEFAULT_GOLD_RATES.map((defaultItem) => {
-    const found = existingRates.find((r) => r.name === defaultItem.name);
+const sortByDisplayOrder = (rates = []) =>
+  [...rates].sort(
+    (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
+  );
+
+const buildRatesFromExisting = (existingRates = []) => {
+  const sorted = sortByDisplayOrder(existingRates);
+
+  return DEFAULT_GOLD_RATES.map((defaultItem, index) => {
+    const found = sorted[index];
     return {
       _id: found?._id,
-      name: defaultItem.name,
+      name: found?.name ?? defaultItem.name,
       rate:
         found && found.rate !== undefined && found.rate !== null
           ? String(found.rate)
@@ -44,6 +52,7 @@ const buildRatesFromExisting = (existingRates = []) =>
       unit: found?.unit || "AED",
     };
   });
+};
 
 const RetailGoldRateModal = ({
   open,
@@ -71,10 +80,23 @@ const RetailGoldRateModal = ({
     setRates((prev) =>
       prev.map((item, i) => (i === index ? { ...item, rate: value } : item)),
     );
-    if (errors[index]) {
+    if (errors[`rate-${index}`]) {
       setErrors((prev) => {
         const next = { ...prev };
-        delete next[index];
+        delete next[`rate-${index}`];
+        return next;
+      });
+    }
+  };
+
+  const handleNameChange = (index, value) => {
+    setRates((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, name: value } : item)),
+    );
+    if (errors[`name-${index}`]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[`name-${index}`];
         return next;
       });
     }
@@ -83,12 +105,15 @@ const RetailGoldRateModal = ({
   const validate = () => {
     const nextErrors = {};
     rates.forEach((item, index) => {
+      if (!item.name?.trim()) {
+        nextErrors[`name-${index}`] = "Name is required";
+      }
       if (item.rate === "" || item.rate === null) {
-        nextErrors[index] = "Rate is required";
+        nextErrors[`rate-${index}`] = "Rate is required";
       } else if (isNaN(parseFloat(item.rate))) {
-        nextErrors[index] = "Rate must be numeric";
+        nextErrors[`rate-${index}`] = "Rate must be numeric";
       } else if (parseFloat(item.rate) < 0) {
-        nextErrors[index] = "Rate cannot be negative";
+        nextErrors[`rate-${index}`] = "Rate cannot be negative";
       }
     });
     setErrors(nextErrors);
@@ -102,26 +127,24 @@ const RetailGoldRateModal = ({
     }
 
     if (!validate()) {
-      toast.error("Please enter valid rates for all gold types.");
+      toast.error("Please enter valid names and rates for all gold types.");
       return;
     }
 
     setSaving(true);
     try {
       const latestRes = await axiosInstance.get(`/retail-gold-rate/${adminId}`);
-      const latestRates = latestRes.data || [];
-      const latestByName = Object.fromEntries(
-        latestRates.map((r) => [r.name, r]),
-      );
+      const latestSorted = sortByDisplayOrder(latestRes.data || []);
 
-      for (const item of rates) {
+      for (let index = 0; index < rates.length; index++) {
+        const item = rates[index];
         const payload = {
-          name: item.name,
+          name: item.name.trim(),
           rate: parseFloat(item.rate),
           unit: item.unit || "AED",
         };
 
-        const existingId = item._id || latestByName[item.name]?._id;
+        const existingId = item._id || latestSorted[index]?._id;
 
         if (existingId) {
           await axiosInstance.patch(`/retail-gold-rate/${existingId}`, payload);
@@ -225,7 +248,7 @@ const RetailGoldRateModal = ({
       <DialogContent sx={{ padding: "2rem" }}>
         <Grid container spacing={2.5}>
           {rates.map((item, index) => (
-            <Grid item xs={12} sm={6} key={item.name}>
+            <Grid item xs={12} sm={6} key={item._id || `slot-${index}`}>
               <Box
 
                 sx={{
@@ -311,16 +334,6 @@ const RetailGoldRateModal = ({
                   <Box>
                     <Typography
                       sx={{
-                        color: "#111",
-                        fontWeight: 700,
-                        fontSize: "1.05rem",
-                      }}
-                    >
-                      {item.name}
-                    </Typography>
-
-                    <Typography
-                      sx={{
                         color: "rgba(0,0,0,0.45)",
                         fontSize: "0.8rem",
                       }}
@@ -329,6 +342,42 @@ const RetailGoldRateModal = ({
                     </Typography>
                   </Box>
                 </Box>
+
+                <TextField
+                  fullWidth
+                  label="Gold type name"
+                  value={item.name}
+                  onChange={(e) => handleNameChange(index, e.target.value)}
+                  error={Boolean(errors[`name-${index}`])}
+                  helperText={errors[`name-${index}`]}
+                  placeholder="e.g. 14K Gold"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <DriveFileRenameOutlineRoundedIcon
+                          sx={{ color: "#306ebb" }}
+                        />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    mb: 1.5,
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: "12px",
+                      background:
+                        "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
+                      "& fieldset": {
+                        borderColor: "rgba(48,110,187,0.28)",
+                      },
+                      "&:hover fieldset": {
+                        borderColor: "#42bce9",
+                      },
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#306ebb",
+                      },
+                    },
+                  }}
+                />
 
                 <TextField
                   fullWidth
@@ -366,8 +415,8 @@ const RetailGoldRateModal = ({
                       handleRateChange(index, rawValue);
                     }
                   }}
-                  error={Boolean(errors[index])}
-                  helperText={errors[index]}
+                  error={Boolean(errors[`rate-${index}`])}
+                  helperText={errors[`rate-${index}`]}
                   placeholder="Enter Gold Rate"
                   InputProps={{
                     startAdornment: (
