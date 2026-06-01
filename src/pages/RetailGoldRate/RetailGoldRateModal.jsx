@@ -34,9 +34,7 @@ const gradientButtonSx = {
 };
 
 const sortByDisplayOrder = (rates = []) =>
-  [...rates].sort(
-    (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
-  );
+  [...rates].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
 
 const mapRateToForm = (found) => ({
   _id: found?._id,
@@ -181,7 +179,9 @@ const RetailGoldRateModal = ({
         displayOrder: index,
       }));
 
-      await axiosInstance.put(`/retail-gold-rate/${adminId}`, { rates: payload });
+      await axiosInstance.put(`/retail-gold-rate/${adminId}`, {
+        rates: payload,
+      });
 
       await onSave();
       onClose();
@@ -226,8 +226,8 @@ const RetailGoldRateModal = ({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          position: 'relative',
-          overflow: 'hidden',
+          position: "relative",
+          overflow: "hidden",
           background:
             "linear-gradient(90deg, rgba(48,110,187,0.12), rgba(255,255,255,1))",
         }}
@@ -260,8 +260,8 @@ const RetailGoldRateModal = ({
           sx={{
             color: "#306ebb",
             background: "rgb(243, 243, 243)",
-            position: 'relative',
-            zIndex: '1',
+            position: "relative",
+            zIndex: "1",
 
             "&:hover": {
               background: "rgb(238, 238, 238)",
@@ -321,15 +321,14 @@ const RetailGoldRateModal = ({
                 )}
                 {/* BLUE GLOW */}
                 <Box
-                      className='card-line'
-
+                  className="card-line"
                   sx={{
                     position: "absolute",
                     top: "-0",
                     right: "-0",
                     width: "120px",
                     height: "120px",
-                   opacity:'0.5'
+                    opacity: "0.5",
                   }}
                 />
 
@@ -437,8 +436,8 @@ const RetailGoldRateModal = ({
                   value={
                     item.rate
                       ? Number(
-                        String(item.rate).replace(/,/g, ""),
-                      ).toLocaleString("en-IN")
+                          String(item.rate).replace(/,/g, ""),
+                        ).toLocaleString("en-IN")
                       : ""
                   }
                   // onChange={(e) => {
@@ -453,14 +452,13 @@ const RetailGoldRateModal = ({
 
                     // allow only numbers + decimal
                     if (/^\d*\.?\d*$/.test(rawValue)) {
-
                       // warning only
                       if (Number(rawValue) > 1000000) {
                         toast.warning(
                           "Warning: This gold rate looks unusually high",
                           {
                             toastId: "high-rate-warning",
-                          }
+                          },
                         );
                       }
 
@@ -532,7 +530,7 @@ const RetailGoldRateModal = ({
           ))}
         </Grid>
 
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 5 ,display:'flex',justifyContent:'space-between'}}>
           <Button
             variant="outlined"
             startIcon={<AddRoundedIcon />}
@@ -542,38 +540,38 @@ const RetailGoldRateModal = ({
               textTransform: "none",
               color: "#306ebb",
               borderRadius: "10px",
-              border:'0',
+              border: "0",
               fontWeight: 600,
               "&:hover": {
-                border:'0',
+                border: "0",
                 background: "rgba(48,110,187,0.06)",
               },
             }}
           >
-            Add Retail Gold 
-          </Button>
-        </Box>
-
-        {/* ACTIONS */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "1rem",
-            marginTop: "2rem",
-          }}
-        >
-          <Button onClick={onClose} className="primary-btn cancel-btn">
-            Cancel
+            Add Retail Gold
           </Button>
 
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="primary-btn"
+          {/* ACTIONS */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: "1rem",
+              // marginTop: "2rem",
+            }}
           >
-            {saving ? "Saving..." : "Save Rates"}
-          </Button>
+            <Button onClick={onClose} className="primary-btn cancel-btn">
+              Cancel
+            </Button>
+
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="primary-btn"
+            >
+              {saving ? "Saving..." : "Save Rates"}
+            </Button>
+          </Box>
         </Box>
       </DialogContent>
     </Dialog>
