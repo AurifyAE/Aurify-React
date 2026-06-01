@@ -334,6 +334,7 @@ const RetailGoldRate = () => {
                               fontSize: "0.78rem",
                               boxShadow: "0 8px 18px rgba(48,110,187,0.05)",
                               flexShrink: 0,
+                              overflow: "hidden",
                             }}
                           >
                             {row.name?.split("K")[0]}K
