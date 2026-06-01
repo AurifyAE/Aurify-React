@@ -18,20 +18,6 @@ import CurrencyExchangeRoundedIcon from "@mui/icons-material/CurrencyExchangeRou
 import axiosInstance from "../../axios/axiosInstance";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import DriveFileRenameOutlineRoundedIcon from "@mui/icons-material/DriveFileRenameOutlineRounded";
-export const DEFAULT_GOLD_RATES = [
-  { name: "14K Gold", rate: "", unit: "AED" },
-  { name: "21K Gold", rate: "", unit: "AED" },
-  { name: "22K Gold", rate: "", unit: "AED" },
-  { name: "24K Gold", rate: "", unit: "AED" },
-];
-
-const gradientButtonSx = {
-  background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-  color: "white",
-  "&:hover": {
-    background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
-  },
-};
 
 const sortByDisplayOrder = (rates = []) =>
   [...rates].sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
@@ -54,11 +40,7 @@ const buildRatesFromExisting = (existingRates = []) => {
     return sorted.map(mapRateToForm);
   }
 
-  return DEFAULT_GOLD_RATES.map((defaultItem) => ({
-    ...mapRateToForm(defaultItem),
-    name: defaultItem.name,
-    clientKey: `default-${defaultItem.name}`,
-  }));
+  return [createEmptyRate()];
 };
 
 const createEmptyRate = () => ({
@@ -75,7 +57,7 @@ const RetailGoldRateModal = ({
   existingRates,
   adminId,
 }) => {
-  const [rates, setRates] = useState(DEFAULT_GOLD_RATES);
+  const [rates, setRates] = useState([createEmptyRate()]);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -401,7 +383,7 @@ const RetailGoldRateModal = ({
                   onChange={(e) => handleNameChange(index, e.target.value)}
                   error={Boolean(errors[`name-${index}`])}
                   helperText={errors[`name-${index}`]}
-                  placeholder="e.g. 14K Gold"
+                  placeholder="e.g. 18K Gold"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
