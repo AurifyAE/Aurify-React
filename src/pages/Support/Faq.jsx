@@ -13,7 +13,7 @@ const FAQItem = ({ question, answer, isOpen, onClick }) => {
     >
       <button
         onClick={onClick}
-        className="w-full flex items-start sm:items-center justify-between gap-4 sm:gap-6 px-4 sm:px-6 py-5 sm:py-6 text-left transition-all duration-300"
+        className="w-full flex items-start sm:items-center justify-between gap-4 sm:gap-6 px-4 sm:px-6 py-5 sm:py-4 text-left transition-all duration-300"
       >
         {/* QUESTION */}
         <div>
