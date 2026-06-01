@@ -12,7 +12,8 @@ import {
 } from "@mui/material";
 import { toast } from "react-toastify";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import DiamondRoundedIcon from "@mui/icons-material/DiamondRounded";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import CurrencyExchangeRoundedIcon from "@mui/icons-material/CurrencyExchangeRounded";
 import axiosInstance from "../../axios/axiosInstance";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
@@ -37,22 +38,37 @@ const sortByDisplayOrder = (rates = []) =>
     (a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0),
   );
 
+const mapRateToForm = (found) => ({
+  _id: found?._id,
+  clientKey: found?._id || `existing-${found?.name}`,
+  name: found?.name ?? "",
+  rate:
+    found && found.rate !== undefined && found.rate !== null
+      ? String(found.rate)
+      : "",
+  unit: found?.unit || "AED",
+});
+
 const buildRatesFromExisting = (existingRates = []) => {
   const sorted = sortByDisplayOrder(existingRates);
 
-  return DEFAULT_GOLD_RATES.map((defaultItem, index) => {
-    const found = sorted[index];
-    return {
-      _id: found?._id,
-      name: found?.name ?? defaultItem.name,
-      rate:
-        found && found.rate !== undefined && found.rate !== null
-          ? String(found.rate)
-          : "",
-      unit: found?.unit || "AED",
-    };
-  });
+  if (sorted.length > 0) {
+    return sorted.map(mapRateToForm);
+  }
+
+  return DEFAULT_GOLD_RATES.map((defaultItem) => ({
+    ...mapRateToForm(defaultItem),
+    name: defaultItem.name,
+    clientKey: `default-${defaultItem.name}`,
+  }));
 };
+
+const createEmptyRate = () => ({
+  clientKey: `new-${Date.now()}`,
+  name: "",
+  rate: "",
+  unit: "AED",
+});
 
 const RetailGoldRateModal = ({
   open,
@@ -102,6 +118,30 @@ const RetailGoldRateModal = ({
     }
   };
 
+  const handleAddRate = () => {
+    setRates((prev) => [...prev, createEmptyRate()]);
+  };
+
+  const handleRemoveRate = (index) => {
+    if (rates.length <= 1) {
+      toast.warning("At least one gold type is required.");
+      return;
+    }
+    setRates((prev) => prev.filter((_, i) => i !== index));
+    setErrors((prev) => {
+      const next = {};
+      Object.entries(prev).forEach(([key, value]) => {
+        const match = key.match(/^(name|rate)-(\d+)$/);
+        if (!match) return;
+        const idx = Number(match[2]);
+        if (idx === index) return;
+        const newIdx = idx > index ? idx - 1 : idx;
+        next[`${match[1]}-${newIdx}`] = value;
+      });
+      return next;
+    });
+  };
+
   const validate = () => {
     const nextErrors = {};
     rates.forEach((item, index) => {
@@ -133,28 +173,15 @@ const RetailGoldRateModal = ({
 
     setSaving(true);
     try {
-      const latestRes = await axiosInstance.get(`/retail-gold-rate/${adminId}`);
-      const latestSorted = sortByDisplayOrder(latestRes.data || []);
+      const payload = rates.map((item, index) => ({
+        ...(item._id ? { _id: item._id } : {}),
+        name: item.name.trim(),
+        rate: parseFloat(item.rate),
+        unit: item.unit || "AED",
+        displayOrder: index,
+      }));
 
-      for (let index = 0; index < rates.length; index++) {
-        const item = rates[index];
-        const payload = {
-          name: item.name.trim(),
-          rate: parseFloat(item.rate),
-          unit: item.unit || "AED",
-        };
-
-        const existingId = item._id || latestSorted[index]?._id;
-
-        if (existingId) {
-          await axiosInstance.patch(`/retail-gold-rate/${existingId}`, payload);
-        } else {
-          await axiosInstance.post("/retail-gold-rate", {
-            adminId,
-            ...payload,
-          });
-        }
-      }
+      await axiosInstance.put(`/retail-gold-rate/${adminId}`, { rates: payload });
 
       await onSave();
       onClose();
@@ -183,6 +210,7 @@ const RetailGoldRateModal = ({
         sx: {
           borderRadius: "15px",
           overflow: "hidden",
+          scrollbarWidth: "none",
           background: "#ffffff",
           boxShadow: "0 8px 25px rgba(48,110,187,0.08)",
           boxShadow: "0 25px 80px rgba(48,110,187,0.12)",
@@ -248,9 +276,13 @@ const RetailGoldRateModal = ({
       <DialogContent sx={{ padding: "2rem" }}>
         <Grid container spacing={2.5}>
           {rates.map((item, index) => (
-            <Grid item xs={12} sm={6} key={item._id || `slot-${index}`}>
+            <Grid
+              item
+              xs={12}
+              sm={6}
+              key={item._id || item.clientKey || `slot-${index}`}
+            >
               <Box
-
                 sx={{
                   position: "relative",
                   borderRadius: "15px",
@@ -259,14 +291,34 @@ const RetailGoldRateModal = ({
                   boxShadow: "0 8px 25px rgba(48,110,187,0.08)",
                   overflow: "hidden",
                   transition: "0.3s",
-                  borderColor: "#b9d8ff",
-                  borderWidth: "1px",
+                  border: "1px solid #b9d8ff",
 
                   "&:hover": {
                     boxShadow: "0 15px 35px rgba(48,110,187,0.12)",
                   },
                 }}
               >
+                {rates.length > 1 && (
+                  <IconButton
+                    size="small"
+                    onClick={() => handleRemoveRate(index)}
+                    aria-label="Remove gold type"
+                    sx={{
+                      position: "absolute",
+                      top: 12,
+                      right: 12,
+                      zIndex: 2,
+                      color: "#9CA3AF",
+                      background: "rgba(255,255,255,0.9)",
+                      "&:hover": {
+                        color: "#ef4444",
+                        background: "#FEF2F2",
+                      },
+                    }}
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                )}
                 {/* BLUE GLOW */}
                 <Box
                       className='card-line'
@@ -435,8 +487,8 @@ const RetailGoldRateModal = ({
                       background:
                         "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
                       color: "#111",
-                      fontSize: "1.2rem",
-                      fontWeight: 700,
+                      fontSize: "1rem",
+                      // fontWeight: 700,
 
                       "& fieldset": {
                         borderColor: "rgba(48,110,187,0.28)",
@@ -479,6 +531,28 @@ const RetailGoldRateModal = ({
             </Grid>
           ))}
         </Grid>
+
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="outlined"
+            startIcon={<AddRoundedIcon />}
+            onClick={handleAddRate}
+            className="primary-btn"
+            sx={{
+              textTransform: "none",
+              color: "#306ebb",
+              borderRadius: "10px",
+              border:'0',
+              fontWeight: 600,
+              "&:hover": {
+                border:'0',
+                background: "rgba(48,110,187,0.06)",
+              },
+            }}
+          >
+            Add Retail Gold 
+          </Button>
+        </Box>
 
         {/* ACTIONS */}
         <Box
