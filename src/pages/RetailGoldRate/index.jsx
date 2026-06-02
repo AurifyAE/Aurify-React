@@ -375,7 +375,7 @@ const RetailGoldRate = () => {
                         >
                           {Number(row.rate || 0).toLocaleString("en-IN", {
                             minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
+                            maximumFractionDigits: 4,
                           })}{" "}
                         </Typography>
                       </TableCell>
