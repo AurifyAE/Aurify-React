@@ -323,13 +323,14 @@ const RetailGoldRate = () => {
                               width: 42,
                               height: 42,
                               borderRadius: "12px",
-                              // background:
-                              //   "linear-gradient(135deg, #306ebb 0%, #42bce9 100%)",
+                              background:
+                                "linear-gradient(135deg, #306ebb 0%, #42bce9 100%)",
                                 border: "1px solid #306ebb",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              color: "#306ebb",
+                              // color: "#306ebb",
+                              color: "#fff",
                               fontWeight: 800,
                               fontSize: "0.78rem",
                               boxShadow: "0 8px 18px rgba(48,110,187,0.05)",
