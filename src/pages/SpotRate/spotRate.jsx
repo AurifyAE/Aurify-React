@@ -37,7 +37,7 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
       setCurrency(newCurrency);
       onCurrencyChange(newCurrency, exchangeRates[newCurrency]);
     },
-    [onCurrencyChange, exchangeRates]
+    [onCurrencyChange, exchangeRates],
   );
 
   return (
@@ -112,15 +112,23 @@ const PriceCard = React.memo(
     }
 
     return (
-      <div className="relative bg-white rounded-lg shadow-lg p-4">
+      <div
+        className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5"
+      >
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{
+            background:
+              "linear-gradient(to left,#BBD5F63D 0%,#3A96D2 50%,#C4FFF751 100%)",
+          }}
+        />
         {!isEditing && (
           <button
             onClick={handleEditClick}
-            className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
-            style={{ width: "80px", height: "30px" }}
+            className=" absolute top-4 right-4 h-9 px-3 rounded-xl border border-[#306EBB]/15 bg-[#F8FBFD] text-[#306EBB] flex items-center justify-center gap-2 hover:bg-[#EEF7FD] transition-all "
           >
             <svg
-              className="w-4 h-4 text-pink-500"
+              className="w-4 h-4  "
               aria-hidden="true"
               focusable="false"
               xmlns="http://www.w3.org/2000/svg"
@@ -131,19 +139,20 @@ const PriceCard = React.memo(
                 d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
               ></path>
             </svg>
+
+            <span className="text-xs font-semibold">Edit</span>
           </button>
         )}
         {isEditing && (
           <button
             onClick={handleSave}
-            className="absolute top-2 right-2 p-2 bg-pink-400 text-white rounded-md flex items-center justify-center"
-            style={{ width: "80px", height: "30px" }}
+            className="primary-gradient absolute top-4 right-4 h-9 px-4 rounded-lg text-white text-sm font-semibold shadow-lg transition-all hover:scale-[1.02]"
           >
             Save
           </button>
         )}
 
-        <div className="pt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="pt-8 grid grid-cols-3 gap-6">
           <div className="flex flex-col">
             <h6 className="text-gray-600 mb-1 font-bold">{title}</h6>
             <p className="text-gray-600 font-medium text-sm">
@@ -184,7 +193,7 @@ const PriceCard = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 // ValueCard Component
@@ -207,10 +216,10 @@ const ValueCard = React.memo(
       return spreadMarginData[key] || 0;
     }, [spreadMarginData, metal]);
     const [lowMargin, setLowMargin] = useState(() =>
-      getSpreadOrMarginFromDB(metal, "low")
+      getSpreadOrMarginFromDB(metal, "low"),
     );
     const [highMargin, setHighMargin] = useState(() =>
-      getSpreadOrMarginFromDB(metal, "high")
+      getSpreadOrMarginFromDB(metal, "high"),
     );
     const [isLoading, setIsLoading] = useState(true);
 
@@ -231,14 +240,14 @@ const ValueCard = React.memo(
         const value = parseFloat(e.target.value) || 0;
         setter(value);
       },
-      []
+      [],
     );
 
     const handleMarginBlur = useCallback(
       (setter, value) => () => {
         setter(parseFloat(value) || 0);
       },
-      []
+      [],
     );
 
     const handleSave = useCallback(() => {
@@ -262,15 +271,23 @@ const ValueCard = React.memo(
       );
     }
     return (
-      <div className="relative bg-white rounded-lg shadow-lg p-4">
+      <div
+        className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5"
+      >
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{
+            background:
+              "linear-gradient(to left,#BBD5F63D 0%,#3A96D2 50%,#C4FFF751 100%)",
+          }}
+        />
         {!isEditing && (
           <button
             onClick={handleEditClick}
-            className="absolute top-2 right-2 p-2 bg-white border-2 border-pink-500 rounded-md flex items-center justify-center"
-            style={{ width: "80px", height: "30px" }}
+            className=" absolute top-4 right-4 h-9 px-3 rounded-xl border border-[#306EBB]/15 bg-[#F8FBFD] text-[#306EBB] flex items-center justify-center gap-2 hover:bg-[#EEF7FD] transition-all "
           >
             <svg
-              className="w-4 h-4 text-pink-500"
+              className="w-4 h-4  "
               aria-hidden="true"
               focusable="false"
               xmlns="http://www.w3.org/2000/svg"
@@ -281,18 +298,20 @@ const ValueCard = React.memo(
                 d="M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0zm-47.4 168l-144 144c-6.2 6.2-16.4 6.2-22.6 0s-6.2-16.4 0-22.6l144-144c6.2-6.2 16.4-6.2 22.6 0s6.2 16.4 0 22.6z"
               ></path>
             </svg>
+
+
+            <span className="text-xs font-semibold">Edit</span>
+
           </button>
         )}
         {isEditing && (
           <button
             onClick={handleSave}
-            className="absolute top-2 right-2 p-2 bg-pink-400 text-white rounded-md flex items-center justify-center"
-            style={{ width: "80px", height: "30px" }}
+            className="primary-gradient absolute top-4 right-4 h-9 px-4 rounded-lg text-white text-sm font-semibold shadow-lg transition-all hover:scale-[1.02]"
           >
             Save
           </button>
         )}
-
         <div className="space-y-6 pt-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col">
@@ -358,7 +377,7 @@ const ValueCard = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 // TradingViewWidget Component
@@ -372,23 +391,85 @@ const TradingViewWidget = React.memo(({ symbol, title }) => {
   }, []);
 
   return (
-    <div className="bg-white rounded-lg shadow-lg">
-      <div className="px-4 py-3">
-        <h6 className="text-gray-800 font-medium mb-1">{title}</h6>
+    <div
+      className="
+    relative
+    overflow-hidden
+    rounded-2xl
+    bg-white
+    border
+    border-[#53CABB]/15
+    shadow-[0_8px_30px_rgba(48,110,187,0.08)]
+    hover:shadow-[0_15px_45px_rgba(48,110,187,0.12)]
+    transition-all
+    duration-300
+  "
+    >
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{
+          background:
+            "linear-gradient(to left,#BBD5F63D 0%,#3A95D26D 50%,#C4FFF751 100%)",
+        }}
+      />
+
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h6 className="text-[15px] font-semibold text-slate-800">
+              {title}
+            </h6>
+
+            <p className="text-[11px] text-slate-400 mt-1 uppercase tracking-wider">
+              Live Market Chart
+            </p>
+          </div>
+
+          <div
+            className="
+          px-3
+          py-1
+          rounded-full
+          text-[11px]
+          font-medium
+          bg-[#53CABB]/10
+          text-[#306EBB]
+        "
+          >
+            LIVE
+          </div>
+        </div>
       </div>
-      <div className="relative" style={{ height: "300px" }}>
+
+      {/* Chart Area */}
+      <div
+        className="relative bg-gradient-to-b from-white to-slate-50"
+        style={{ height: "300px" }}
+      >
         {isLoading && (
-          <Skeleton variant="rectangular" width="100%" height={300} />
+          <Skeleton
+            variant="rectangular"
+            width="100%"
+            height={300}
+            sx={{
+              borderRadius: 0,
+            }}
+          />
         )}
+
         <div
           className="tradingview-widget-container"
-          style={{ width: "100%", height: "300px" }}
+          style={{
+            width: "100%",
+            height: "300px",
+          }}
         >
           <iframe
             scrolling="no"
             allowTransparency="true"
             frameBorder="0"
-            src={`https://www.tradingview-widget.com/embed-widget/symbol-overview/?locale=in#%7B%22symbols%22%3A%5B%5B%22${symbol}%7C1D%22%5D%5D%2C%22chartOnly%22%3Afalse%2C%22width%22%3A%22100%25%22%2C%22height%22%3A300%2C%22colorTheme%22%3A%22light%22%2C%22showVolume%22%3Afalse%2C%22showMA%22%3Afalse%2C%22hideDateRanges%22%3Afalse%2C%22hideMarketStatus%22%3Afalse%2C%22hideSymbolLogo%22%3Afalse%2C%22scalePosition%22%3A%22right%22%2C%22scaleMode%22%3A%22Normal%22%2C%22fontFamily%22%3A%22-apple-system%2C%20BlinkMacSystemFont%2C%20Trebuchet%20MS%2C%20Roboto%2C%20Ubuntu%2C%20sans-serif%22%2C%22fontSize%22%3A%2210%22%2C%22noTimeScale%22%3Afalse%2C%22valuesTracking%22%3A%221%22%2C%22changeMode%22%3A%22price-and-percent%22%2C%22chartType%22%3A%22area%22%2C%22maLineColor%22%3A%22%232962FF%22%2C%22maLineWidth%22%3A1%2C%22maLength%22%3A9%2C%22lineWidth%22%3A2%2C%22lineType%22%3A0%2C%22dateRanges%22%3A%5B%221d%7C1%22%2C%221m%7C30%22%2C%223m%7C60%22%2C%2212m%7C1D%22%2C%2260m%7C1W%22%2C%22all%7C1M%22%5D%2C%22utm_source%22%3A%22admin.aurify.ae%22%2C%22utm_medium%22%3A%22widget%22%2C%22utm_campaign%22%3A%22symbol-overview%22%2C%22page-uri%22%3A%22admin.aurify.ae%2Fpages%2Fspotrate.html%22%7D`}
+            src={`https://www.tradingview-widget.com/embed-widget/symbol-overview/?locale=in#%7B%22symbols%22%3A%5B%5B%22${symbol}%7C1D%22%5D%5D%2C%22chartOnly%22%3Afalse%2C%22width%22%3A%22100%25%22%2C%22height%22%3A300%2C%22colorTheme%22%3A%22light%22%2C%22showVolume%22%3Afalse%2C%22showMA%22%3Afalse%2C%22hideDateRanges%22%3Afalse%2C%22hideMarketStatus%22%3Afalse%2C%22hideSymbolLogo%22%3Afalse%2C%22scalePosition%22%3A%22right%22%2C%22scaleMode%22%3A%22Normal%22%2C%22fontSize%22%3A%2210%22%2C%22chartType%22%3A%22area%22%7D`}
             title="symbol overview TradingView widget"
             lang="en"
             className="w-full h-full"
@@ -433,7 +514,7 @@ const SpotRate = () => {
         }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
-    [spreadMarginData]
+    [spreadMarginData],
   );
 
   const getUnitMultiplier = useCallback((unit) => {
@@ -467,19 +548,19 @@ const SpotRate = () => {
       const uniqueSymbols = [
         ...new Set(
           adminDataResponse.data.data.commodities.map(
-            (commodity) => commodity.symbol
-          )
+            (commodity) => commodity.symbol,
+          ),
         ),
       ];
       const uppercaseSymbols = uniqueSymbols.map((symbol) =>
-        symbol.toUpperCase()
+        symbol.toUpperCase(),
       );
       setSymbols(uppercaseSymbols);
       setUniqueMetals(uniqueSymbols);
 
       if (adminDataResponse.data.data._id) {
         const commoditiesResponse = await axiosInstance.get(
-          `/spotrates/${adminDataResponse.data.data._id}`
+          `/spotrates/${adminDataResponse.data.data._id}`,
         );
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
@@ -494,7 +575,7 @@ const SpotRate = () => {
               weight: commodity.weight,
               sellCharge: parseFloat(commodity.sellCharge),
               buyCharge: parseFloat(commodity.buyCharge),
-            })
+            }),
           );
           setCommodities(parsedCommodities);
         }
@@ -548,12 +629,12 @@ const SpotRate = () => {
           updatedCommodity.sellAED = calculatePrice(
             metalBiddingPrice,
             commodity,
-            "sell"
+            "sell",
           );
           updatedCommodity.buyAED = calculatePrice(
             metalAskingPrice,
             commodity,
-            "buy"
+            "buy",
           );
           updatedCommodity.sellUSD = (
             updatedCommodity.sellAED / exchangeRate
@@ -564,7 +645,7 @@ const SpotRate = () => {
         }
 
         return updatedCommodity;
-      })
+      }),
     );
   }, [marketData, getSpreadOrMarginFromDB, exchangeRate]);
 
@@ -589,7 +670,7 @@ const SpotRate = () => {
     (metalPrice, commodity, type) => {
       const unitMultiplier = getUnitMultiplier(commodity.weight);
       const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(
-        commodity.purity
+        commodity.purity,
       );
       const premium =
         type === "sell" ? commodity.sellPremium : commodity.buyPremium;
@@ -599,7 +680,7 @@ const SpotRate = () => {
         ? "Gold"
         : commodity.metal;
       const spread = parseFloat(
-        getSpreadOrMarginFromDB(metal, type === "sell" ? "ask" : "bid")
+        getSpreadOrMarginFromDB(metal, type === "sell" ? "ask" : "bid"),
       );
 
       return (
@@ -616,7 +697,7 @@ const SpotRate = () => {
       getNumberOfDigitsBeforeDecimal,
       getSpreadOrMarginFromDB,
       exchangeRate,
-    ]
+    ],
   );
 
   const handleSpreadOrMarginUpdate = useCallback(
@@ -639,7 +720,7 @@ const SpotRate = () => {
         console.error("Error updating spread:", error);
       }
     },
-    [adminId]
+    [adminId],
   );
 
   const handleDeleteClick = useCallback((commodity) => {
@@ -651,12 +732,12 @@ const SpotRate = () => {
     if (commodityToDelete) {
       try {
         await axiosInstance.delete(
-          `/commodities/${adminId}/${commodityToDelete._id}`
+          `/commodities/${adminId}/${commodityToDelete._id}`,
         );
         setCommodities((prevCommodities) =>
           prevCommodities.filter(
-            (commodity) => commodity._id !== commodityToDelete._id
-          )
+            (commodity) => commodity._id !== commodityToDelete._id,
+          ),
         );
         setDeleteDialogOpen(false);
         toast.success("Commodity deleted successfully!", {
@@ -729,8 +810,8 @@ const SpotRate = () => {
           prevCommodities.map((commodity) =>
             commodity._id === commodityData._id
               ? { ...commodity, ...commodityData }
-              : commodity
-          )
+              : commodity,
+          ),
         );
         toast.success("Commodity updated successfully!", {
           position: "top-right",
@@ -764,7 +845,7 @@ const SpotRate = () => {
               (commodity) => ({
                 ...commodity,
                 metal_name: commodity.metal_name ?? null,
-              })
+              }),
             );
             setCommodities(normalizedCommodities);
           }
@@ -775,7 +856,7 @@ const SpotRate = () => {
 
       fetchUpdatedCommodities();
     },
-    [adminId]
+    [adminId],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -798,7 +879,7 @@ const SpotRate = () => {
       setCurrency(newCurrency);
       setExchangeRate(parseFloat(newExchangeRate));
     },
-    [setCurrency]
+    [setCurrency],
   );
 
   const renderCommodityRows = () => {
@@ -861,7 +942,7 @@ const SpotRate = () => {
                 color: "#306ebb",
                 border: "1px solid #e5e7eb",
                 transition: "all 0.2s ease",
-                margin: '1px',
+                margin: "1px",
                 "&:hover": {
                   background: "#f4f8ff",
                   borderColor: "#b9d8ff",
@@ -882,7 +963,7 @@ const SpotRate = () => {
                 color: "#ef4444",
                 border: "1px solid #e5e7eb",
                 transition: "all 0.2s ease",
-                margin: '1px',
+                margin: "1px",
 
                 "&:hover": {
                   background: "#fef2f2",
