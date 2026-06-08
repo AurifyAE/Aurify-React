@@ -9,10 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: client
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -21,6 +17,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
       - name: Create Environment File
         run: |
@@ -61,11 +58,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "client/build/*"
+          source: "build/*"
           target: "/var/www/html/Aurify_Admin"
-          strip_components: 2
           overwrite: true
-
       - name: Verify Nginx
         uses: appleboy/ssh-action@v1.0.3
         with:
