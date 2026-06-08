@@ -415,27 +415,13 @@ const RetailGoldRateModal = ({
                 <TextField
                   fullWidth
                   type="text"
-                  value={
-                    item.rate
-                      ? Number(
-                          String(item.rate).replace(/,/g, ""),
-                        ).toLocaleString("en-IN")
-                      : ""
-                  }
-                  // onChange={(e) => {
-                  //   const rawValue = e.target.value.replace(/,/g, "");
-
-                  //    if (/^\d*\.?\d*$/.test(rawValue)) {
-                  //     handleRateChange(index, rawValue);
-                  //   }
-                  // }}
+                  value={item.rate}
                   onChange={(e) => {
                     const rawValue = e.target.value.replace(/,/g, "");
 
-                    // allow only numbers + decimal
+                    // Allow numbers and one decimal point
                     if (/^\d*\.?\d*$/.test(rawValue)) {
-                      // warning only
-                      if (Number(rawValue) > 1000000) {
+                      if (rawValue && Number(rawValue) > 1000000) {
                         toast.warning(
                           "Warning: This gold rate looks unusually high",
                           {
@@ -468,7 +454,6 @@ const RetailGoldRateModal = ({
                         "linear-gradient(180deg, #ffffff 0%, #f8fbff 100%)",
                       color: "#111",
                       fontSize: "1rem",
-                      // fontWeight: 700,
 
                       "& fieldset": {
                         borderColor: "rgba(48,110,187,0.28)",
@@ -497,7 +482,6 @@ const RetailGoldRateModal = ({
                     },
                   }}
                 />
-
                 <Typography
                   sx={{
                     color: "rgba(0,0,0,0.45)",
@@ -512,7 +496,7 @@ const RetailGoldRateModal = ({
           ))}
         </Grid>
 
-        <Box sx={{ mt: 5 ,display:'flex',justifyContent:'space-between'}}>
+        <Box sx={{ mt: 5, display: "flex", justifyContent: "space-between" }}>
           <Button
             variant="outlined"
             startIcon={<AddRoundedIcon />}
