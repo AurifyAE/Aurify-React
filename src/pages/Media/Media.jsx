@@ -9,7 +9,8 @@ import {
   Box,
   Container,
   CircularProgress,
-  Grid
+  Grid,
+  Stack
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import { styled } from '@mui/system';
@@ -121,92 +122,223 @@ const Media = () => {
   };
 
   return (
-    <Box className="bg-gray-100" sx={{ flexGrow: 1, fontFamily: 'Open Sans, sans-serif' }}>
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        <GradientTypography variant="h4" gutterBottom align="center">
-          {existingImage ? 'Update Your Background' : 'Add New Background'}
-        </GradientTypography>
-        <Typography variant="body1" color="text.secondary" gutterBottom align="center" sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-          {existingImage ? 'Update your existing background or upload a new one.' : 'Upload your Background.'}
-        </Typography>
+<Box
+  sx={{
+    minHeight: "100vh",
+    background: "#F4F7FB",
+    py: 6,
+    fontFamily: "Open Sans, sans-serif",
+  }}
+>
+  <Container maxWidth="md">
+    {/* HEADER */}
+    <Box textAlign="center" mb={4}>
+      <Typography
+        sx={{
+          fontSize: "36px",
+          fontWeight: 700,
+          color: "#0F172A",
+          mb: 1,
+        }}
+      >
+        {existingImage ? "Update Background" : "Upload Background"}
+      </Typography>
 
-        <Card sx={{ mt: 3 }}>
-          <CardContent>
+      <Typography
+        sx={{
+          color: "#64748B",
+          fontSize: "15px",
+        }}
+      >
+        Manage your screen background image.
+      </Typography>
+    </Box>
 
-            <Box 
-              sx={{ 
-                border: '2px dashed #ccc', 
-                borderRadius: 2, 
-                p: 3, 
-                textAlign: 'center',
-                backgroundColor: '#f9f9f9',
-                '&:hover': {
-                  backgroundColor: '#f0f0f0',
-                },
-                fontFamily: 'Open Sans, sans-serif'
+    {/* CARD */}
+    <Card
+      sx={{
+        borderRadius: "28px",
+        border: "1px solid #E6EDF5",
+        boxShadow: "0 10px 30px rgba(15,23,42,0.04)",
+      }}
+    >
+      <CardContent sx={{ p: 4 }}>
+        <Box
+          sx={{
+            border: "2px dashed #DCE8FF",
+            borderRadius: "24px",
+            background: "#F8FBFF",
+            p: 5,
+            textAlign: "center",
+          }}
+        >
+          {/* IMAGE PREVIEW */}
+          {existingImage ? (
+            <Box mb={3}>
+              <Typography
+                sx={{
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: "#475569",
+                  mb: 2,
+                }}
+              >
+                Current Background
+              </Typography>
+
+              <Box
+                sx={{
+                  borderRadius: "18px",
+                  overflow: "hidden",
+                  border: "1px solid #E6EDF5",
+                  maxWidth: 450,
+                  mx: "auto",
+                }}
+              >
+                <img
+                  src={existingImage}
+                  alt="Background"
+                  style={{
+                    width: "100%",
+                    display: "block",
+                  }}
+                />
+              </Box>
+            </Box>
+          ) : (
+            <CloudUploadIcon
+              sx={{
+                fontSize: 56,
+                color: "#2563EB",
+                mb: 2,
+              }}
+            />
+          )}
+
+          <Typography
+            sx={{
+              fontSize: "22px",
+              fontWeight: 600,
+              color: "#0F172A",
+              mb: 1,
+            }}
+          >
+            {existingImage
+              ? "Replace Background"
+              : "Choose Background"}
+          </Typography>
+
+          <Typography
+            sx={{
+              color: "#64748B",
+              fontSize: "14px",
+              mb: 4,
+            }}
+          >
+            PNG, JPG or WEBP • Maximum 2 MB
+          </Typography>
+
+          {/* ACTIONS */}
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={2}
+            justifyContent="center"
+          >
+            <Button
+              component="label"
+              variant="outlined"
+              sx={{
+                height: 52,
+                px: 4,
+                borderRadius: "14px",
+                borderColor: "#DCE8FF",
+                color: "#2563EB",
+                textTransform: "none",
+                fontWeight: 600,
               }}
             >
-              {existingImage ? (
-                <Box sx={{ mb: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-                    Current Image
-                  </Typography>
-                  <img src={existingImage} alt="Current media" style={{ maxWidth: '100%', maxHeight: '200px', marginBottom: '16px' }} />
-                </Box>
+              Select File
+
+              <input
+                hidden
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </Button>
+
+            <Button
+              variant="contained"
+              onClick={handleUpload}
+              disabled={uploading || (!file && !existingImage)}
+              sx={{
+                height: 52,
+                px: 4,
+                borderRadius: "14px",
+                background: "#2563EB",
+                textTransform: "none",
+                fontWeight: 600,
+                boxShadow: "none",
+
+                "&:hover": {
+                  background: "#1D4ED8",
+                  boxShadow: "none",
+                },
+              }}
+            >
+              {uploading ? (
+                <CircularProgress
+                  size={20}
+                  color="inherit"
+                />
               ) : (
-                <CloudUploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
+                "Save Background"
               )}
-              <Typography variant="h6" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-                {existingImage ? 'Update Background' : 'Upload Background'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" gutterBottom sx={{ fontFamily: 'Open Sans, sans-serif' }}>
-                Images must be less than 2 MB in size.
-              </Typography>
-              <Grid container spacing={2} justifyContent="center" alignItems="center" sx={{ mt: 2 }}>
-                <Grid item>
-                  <UploadButton
-                    variant="contained"
-                    component="label"
-                  >
-                    {existingImage ? 'Change' : 'Select File'}
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                  </UploadButton>
-                </Grid>
-                <Grid item>
-                  <GradientButton 
-                    variant="contained" 
-                    onClick={handleUpload} 
-                    disabled={uploading || (!file && !existingImage)}
-                  >
-                    {uploading ? <CircularProgress size={24} color="inherit" /> : 'Post'}
-                  </GradientButton>
-                </Grid>
-              </Grid>
-              {file && (
-                <Typography variant="body2" sx={{ mt: 2, fontFamily: 'Open Sans, sans-serif' }}>
-                  Selected file: {file.name}
-                </Typography>
-              )}
-            </Box>
-            {uploadStatus && (
-              <Typography variant="body2" color={uploadStatus.includes('failed') ? 'error' : 'success'} sx={{ mt: 2, textAlign: 'center' }}>
-                {uploadStatus}
-              </Typography>
-            )}
-            {error && (
-              <Typography variant="body2" color="error" sx={{ mt: 2, textAlign: 'center' }}>
-                {error}
-              </Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Container>
-    </Box>
+            </Button>
+          </Stack>
+
+          {file && (
+            <Typography
+              sx={{
+                mt: 3,
+                fontSize: "14px",
+                color: "#475569",
+              }}
+            >
+              Selected: {file.name}
+            </Typography>
+          )}
+        </Box>
+
+        {uploadStatus && (
+          <Typography
+            sx={{
+              mt: 3,
+              textAlign: "center",
+              color: uploadStatus.includes("failed")
+                ? "#DC2626"
+                : "#16A34A",
+            }}
+          >
+            {uploadStatus}
+          </Typography>
+        )}
+
+        {error && (
+          <Typography
+            sx={{
+              mt: 2,
+              textAlign: "center",
+              color: "#DC2626",
+            }}
+          >
+            {error}
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  </Container>
+</Box>
   );
 }
 
