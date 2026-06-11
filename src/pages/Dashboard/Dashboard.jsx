@@ -247,7 +247,7 @@ const DashboardContent = () => {
       </div>
   
       {/* Charts */}
-      <div className="grid grid-cols-2 2xl:grid-cols-1 gap-5">
+      <div className="grid grid-cols-2 gap-5">
         {/* Active Clients */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-6">
