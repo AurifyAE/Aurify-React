@@ -19,7 +19,8 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import CountryGoldRateSection from "../CountryGoldPrice/CountryGoldRateSection";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import io from "socket.io-client";
@@ -507,6 +508,15 @@ const SpotRate = () => {
   const [commodityToDelete, setCommodityToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Get the live gold bid price for country gold conversion
+  const goldBidSpot = useMemo(() => {
+    const goldData = marketData["Gold"] || marketData["gold"];
+    if (goldData && goldData.bid) {
+      return parseFloat(goldData.bid);
+    }
+    return 0;
+  }, [marketData]);
+
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
       const lowerMetal = metal.toLowerCase();
@@ -773,7 +783,12 @@ const SpotRate = () => {
     });
 
     socket.on("connect", () => {
-      socket.emit("request-data", symbols);
+      const requestSymbols = [...symbols];
+      const hasGold = requestSymbols.some(s => s.toLowerCase() === "gold");
+      if (!hasGold) {
+        requestSymbols.push("Gold");
+      }
+      socket.emit("request-data", requestSymbols);
     });
 
     socket.on("market-data", (data) => {
@@ -1155,6 +1170,10 @@ const SpotRate = () => {
           currency={currency}
           spreadMarginData={spreadMarginData}
         />
+
+        {/* Country Gold Conversion Rates */}
+        <CountryGoldRateSection adminId={adminId} goldBidSpot={goldBidSpot} />
+
         <Dialog
           open={deleteDialogOpen}
           onClose={handleCloseDialog}
