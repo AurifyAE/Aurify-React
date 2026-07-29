@@ -488,6 +488,9 @@ const SpotRate = () => {
         );
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
+          if (commoditiesResponse.data.StockCommodities) {
+            setSelectedStockCommodities(commoditiesResponse.data.StockCommodities);
+          }
         }
 
         if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
@@ -684,6 +687,24 @@ const SpotRate = () => {
     setDeleteDialogOpen(false);
     setCommodityToDelete(null);
   }, []);
+
+  const handleUpdateSelectedStockCommodities = useCallback(async (updatedList) => {
+    try {
+      setSelectedStockCommodities(updatedList);
+      await axiosInstance.put(`/selected-stock-commodities/${adminId}/${categoryId}`, {
+        adminId,
+        categoryId,
+        StockCommodities: updatedList,
+      });
+      toast.success("Commodity selection updated successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error updating selected commodities:", error);
+      toast.error("Failed to update commodity selection.");
+    }
+  }, [adminId, categoryId]);
 
   useEffect(() => {
     const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
@@ -1087,7 +1108,9 @@ const SpotRate = () => {
           marketData={marketData}
           exchangeRate={exchangeRate}
           currency={currency}
+          isAdmin={true}
           selectedStockCommodities={selectedStockCommodities}
+          onUpdateSelectedCommodities={handleUpdateSelectedStockCommodities}
         />
         <AddCommodityModal
           open={openModal}

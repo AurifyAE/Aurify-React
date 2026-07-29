@@ -551,7 +551,10 @@ const SpotRate = () => {
       ]);
       setServerURL(serverURLResponse.data.selectedServerURL);
       setAdminId(adminDataResponse.data.data._id);
-      setSelectedStockCommodities(adminDataResponse.data.data.selectedStockCommodities || []);
+      setSelectedStockCommodities(
+        adminDataResponse.data.data.StockCommodities ||
+        []
+      );
 
       const uniqueSymbols = [
         ...new Set(
@@ -772,6 +775,7 @@ const SpotRate = () => {
       setSelectedStockCommodities(updatedList);
       await axiosInstance.put("/selected-stock-commodities", {
         userName: localStorage.getItem("userName"),
+        StockCommodities: updatedList,
         selectedStockCommodities: updatedList
       });
       toast.success("Commodity selection updated successfully!", {

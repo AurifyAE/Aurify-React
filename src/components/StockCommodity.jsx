@@ -321,6 +321,8 @@ const StockCommodity = ({
   };
 
   const selectedList = selectedStockCommodities || [];
+  const getItemKey = (item) => (typeof item === "object" && item !== null ? item.key : item);
+  const selectedKeys = selectedList.map(getItemKey).filter(Boolean);
 
   return (
     <Box className="mt-8 mb-6">
@@ -383,8 +385,11 @@ const StockCommodity = ({
                 </TableCell>
               </TableRow>
             ) : (
-              selectedList.map((key) => {
-                const comm = AVAILABLE_COMMODITIES.find((c) => c.key === key);
+              selectedList.map((item) => {
+                const itemKey = getItemKey(item);
+                const comm =
+                  AVAILABLE_COMMODITIES.find((c) => c.key === itemKey) ||
+                  (typeof item === "object" ? item : null);
                 if (!comm) return null;
 
                 const { priceUSD, highUSD, lowUSD, prevUSD } =
@@ -407,7 +412,7 @@ const StockCommodity = ({
                     onDelete={() => {
                       if (onUpdateSelectedCommodities) {
                         onUpdateSelectedCommodities(
-                          selectedList.filter((k) => k !== comm.key),
+                          selectedList.filter((i) => getItemKey(i) !== comm.key),
                         );
                       }
                     }}
@@ -454,8 +459,11 @@ const StockCommodity = ({
                 Currently Selected:
               </Typography>
               <Box className="flex flex-wrap gap-2">
-                {selectedList.map((key) => {
-                  const comm = AVAILABLE_COMMODITIES.find((c) => c.key === key);
+                {selectedList.map((item) => {
+                  const itemKey = getItemKey(item);
+                  const comm =
+                    AVAILABLE_COMMODITIES.find((c) => c.key === itemKey) ||
+                    (typeof item === "object" ? item : null);
                   if (!comm) return null;
                   return (
                     <Chip
@@ -464,7 +472,7 @@ const StockCommodity = ({
                       onDelete={() => {
                         if (onUpdateSelectedCommodities) {
                           onUpdateSelectedCommodities(
-                            selectedList.filter((k) => k !== key),
+                            selectedList.filter((i) => getItemKey(i) !== comm.key),
                           );
                         }
                       }}
@@ -498,7 +506,7 @@ const StockCommodity = ({
                   const key = e.target.value;
                   if (
                     key &&
-                    !selectedList.includes(key) &&
+                    !selectedKeys.includes(key) &&
                     onUpdateSelectedCommodities
                   ) {
                     onUpdateSelectedCommodities([...selectedList, key]);
@@ -506,14 +514,14 @@ const StockCommodity = ({
                 }}
               >
                 {AVAILABLE_COMMODITIES.filter(
-                  (comm) => !selectedList.includes(comm.key),
+                  (comm) => !selectedKeys.includes(comm.key),
                 ).map((comm) => (
                   <MenuItem key={comm.key} value={comm.key}>
                     {comm.name}
                   </MenuItem>
                 ))}
                 {AVAILABLE_COMMODITIES.filter(
-                  (comm) => !selectedList.includes(comm.key),
+                  (comm) => !selectedKeys.includes(comm.key),
                 ).length === 0 && (
                   <MenuItem disabled>All commodities selected</MenuItem>
                 )}
