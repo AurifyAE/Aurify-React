@@ -27,6 +27,7 @@ import io from "socket.io-client";
 import axiosInstance from "../../axios/axiosInstance";
 import { useCurrency } from "../../context/CurrencyContext";
 import AddCommodityModal from "./AddCommodityModal";
+import StockCommodity, { AVAILABLE_COMMODITIES } from "../../components/StockCommodity";
 
 const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState("AED");
@@ -113,9 +114,7 @@ const PriceCard = React.memo(
     }
 
     return (
-      <div
-        className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5"
-      >
+      <div className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5">
         <div
           className="absolute top-0 left-0 right-0 h-[2px]"
           style={{
@@ -184,9 +183,9 @@ const PriceCard = React.memo(
             <h6 className="text-gray-600 mb-1 font-bold">{`${title}ing Price`}</h6>
             <p className="text-gray-600 font-medium text-sm">
               {initialPrice !== undefined &&
-                initialPrice !== null &&
-                spread !== undefined &&
-                spread !== null
+              initialPrice !== null &&
+              spread !== undefined &&
+              spread !== null
                 ? (parseFloat(initialPrice) + parseFloat(spread)).toFixed(4)
                 : "N/A"}
             </p>
@@ -272,9 +271,7 @@ const ValueCard = React.memo(
       );
     }
     return (
-      <div
-        className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5"
-      >
+      <div className=" relative overflow-hidden rounded-2xl border border-[#53CABB]/15 bg-white shadow-[0_8px_30px_rgba(48,110,187,0.08)] hover:shadow-[0_12px_40px_rgba(48,110,187,0.12)] transition-all duration-300 p-5">
         <div
           className="absolute top-0 left-0 right-0 h-[2px]"
           style={{
@@ -300,9 +297,7 @@ const ValueCard = React.memo(
               ></path>
             </svg>
 
-
             <span className="text-xs font-semibold">Edit</span>
-
           </button>
         )}
         {isEditing && (
@@ -499,6 +494,7 @@ const SpotRate = () => {
   const [serverURL, setServerURL] = useState("");
   const [adminId, setAdminId] = useState("");
   const [commodities, setCommodities] = useState([]);
+  const [selectedStockCommodities, setSelectedStockCommodities] = useState([]);
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -520,8 +516,9 @@ const SpotRate = () => {
   const getSpreadOrMarginFromDB = useCallback(
     (metal, type) => {
       const lowerMetal = metal.toLowerCase();
-      const key = `${lowerMetal}${type.charAt(0).toUpperCase() + type.slice(1)
-        }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
+      const key = `${lowerMetal}${
+        type.charAt(0).toUpperCase() + type.slice(1)
+      }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
     [spreadMarginData],
@@ -554,6 +551,7 @@ const SpotRate = () => {
       ]);
       setServerURL(serverURLResponse.data.selectedServerURL);
       setAdminId(adminDataResponse.data.data._id);
+      setSelectedStockCommodities(adminDataResponse.data.data.selectedStockCommodities || []);
 
       const uniqueSymbols = [
         ...new Set(
@@ -695,10 +693,10 @@ const SpotRate = () => {
 
       return (
         ((metalPrice + spread + premium) / 31.103) *
-        exchangeRate *
-        commodity.unit *
-        unitMultiplier *
-        (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
+          exchangeRate *
+          commodity.unit *
+          unitMultiplier *
+          (parseInt(commodity.purity) / Math.pow(10, digitsBeforeDecimal)) +
         parseFloat(charge)
       ).toFixed(4);
     },
@@ -769,6 +767,27 @@ const SpotRate = () => {
     setCommodityToDelete(null);
   }, []);
 
+  const handleUpdateSelectedStockCommodities = useCallback(async (updatedList) => {
+    try {
+      setSelectedStockCommodities(updatedList);
+      await axiosInstance.put("/selected-stock-commodities", {
+        userName: localStorage.getItem("userName"),
+        selectedStockCommodities: updatedList
+      });
+      toast.success("Commodity selection updated successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error updating selected commodities:", error);
+      const errMsg = error.response?.data?.message || error.message || "Failed to update commodity selection.";
+      toast.error(errMsg, {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
 
@@ -784,14 +803,27 @@ const SpotRate = () => {
 
     socket.on("connect", () => {
       const requestSymbols = [...symbols];
-      const hasGold = requestSymbols.some(s => s.toLowerCase() === "gold");
+      const hasGold = requestSymbols.some((s) => s.toLowerCase() === "gold");
       if (!hasGold) {
         requestSymbols.push("Gold");
       }
+
+      // Add only selected commodities' socketSymbols
+      selectedStockCommodities.forEach((key) => {
+        const comm = AVAILABLE_COMMODITIES.find((c) => c.key === key);
+        if (comm && comm.socketSymbol) {
+          if (!requestSymbols.some(s => s.toLowerCase() === comm.socketSymbol.toLowerCase())) {
+            requestSymbols.push(comm.socketSymbol);
+          }
+        }
+      });
+
+      console.log("Socket connected! Requesting symbols:", requestSymbols);
       socket.emit("request-data", requestSymbols);
     });
 
     socket.on("market-data", (data) => {
+      console.log("Socket market-data received:", data);
       if (data && data.symbol) {
         setMarketData((prevData) => ({
           ...prevData,
@@ -816,7 +848,7 @@ const SpotRate = () => {
     return () => {
       socket.disconnect();
     };
-  }, [symbols, serverURL]);
+  }, [symbols, serverURL, selectedStockCommodities]);
 
   const handleSaveCommodity = useCallback(
     async (commodityData, isEditMode) => {
@@ -922,8 +954,8 @@ const SpotRate = () => {
       const metalAskingPrice =
         marketData[metal] && marketData[metal].bid
           ? parseFloat(marketData[metal].bid) +
-          parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
-          (isGoldRelated ? 0.5 : 0.05)
+            parseFloat(getSpreadOrMarginFromDB(metal, "bid")) +
+            (isGoldRelated ? 0.5 : 0.05)
           : 0;
 
       const sellPrice = calculatePrice(metalAskingPrice, row, "sell");
@@ -940,8 +972,8 @@ const SpotRate = () => {
           <TableCell>{row.metal_name?.trim() || row.metal}</TableCell>
           <TableCell>{row.purity}</TableCell>
           <TableCell>{`${row.unit}  ${row.weight}`}</TableCell>
-          <TableCell>{sellPrice}</TableCell>
           <TableCell>{buyPrice}</TableCell>
+          <TableCell>{sellPrice}</TableCell>
           <TableCell>{row.sellPremium}</TableCell>
           <TableCell>{row.buyPremium}</TableCell>
           <TableCell>{row.sellCharge}</TableCell>
@@ -1019,18 +1051,20 @@ const SpotRate = () => {
           {uniqueMetals.map((metal, index) => (
             <div
               key={metal}
-              className={`col-span-1 ${index === uniqueMetals.length - 1 &&
+              className={`col-span-1 ${
+                index === uniqueMetals.length - 1 &&
                 uniqueMetals.length % 2 !== 0
-                ? "md:col-span-2"
-                : ""
-                }`}
+                  ? "md:col-span-2"
+                  : ""
+              }`}
             >
               <div
-                className={`${metal.toLowerCase()}-content ${index === uniqueMetals.length - 1 &&
+                className={`${metal.toLowerCase()}-content ${
+                  index === uniqueMetals.length - 1 &&
                   uniqueMetals.length % 2 !== 0
-                  ? "md:grid md:grid-cols-2 md:gap-8"
-                  : ""
-                  }`}
+                    ? "md:grid md:grid-cols-2 md:gap-8"
+                    : ""
+                }`}
               >
                 <TradingViewWidget
                   symbol={symbolMap[metal.toLowerCase()]}
@@ -1125,16 +1159,16 @@ const SpotRate = () => {
             variant="contained"
             onClick={handleOpenAddModal}
             className="primary-btn"
-          // sx={{
-          //   background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
-          //   color: "white",
-          //   textTransform: "none",
-          //   fontWeight: "bold",
-          //   borderRadius: "0.375rem",
-          //   "&:hover": {
-          //     background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
-          //   },
-          // }}
+            // sx={{
+            //   background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
+            //   color: "white",
+            //   textTransform: "none",
+            //   fontWeight: "bold",
+            //   borderRadius: "0.375rem",
+            //   "&:hover": {
+            //     background: "linear-gradient(310deg, #8a3dd1 0%, #ff339a 100%)",
+            //   },
+            // }}
           >
             ADD COMMODITY
           </Button>
@@ -1146,8 +1180,8 @@ const SpotRate = () => {
                 <TableCell>Metal</TableCell>
                 <TableCell>Purity</TableCell>
                 <TableCell>Unit</TableCell>
-                <TableCell>Sell ({currency})</TableCell>
                 <TableCell>Buy ({currency})</TableCell>
+                <TableCell>Sell ({currency})</TableCell>
                 <TableCell>Sell Premium</TableCell>
                 <TableCell>Buy Premium</TableCell>
                 <TableCell>Sell Charges</TableCell>
@@ -1158,6 +1192,14 @@ const SpotRate = () => {
             <TableBody>{renderCommodityRows()}</TableBody>
           </Table>
         </TableContainer>
+        <StockCommodity
+          marketData={marketData}
+          exchangeRate={exchangeRate}
+          currency={currency}
+          isAdmin={true}
+          selectedStockCommodities={selectedStockCommodities}
+          onUpdateSelectedCommodities={handleUpdateSelectedStockCommodities}
+        />
         <AddCommodityModal
           open={openModal}
           onClose={handleCloseModal}
