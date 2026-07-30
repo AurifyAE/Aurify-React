@@ -723,11 +723,16 @@ const SpotRate = () => {
       const requestSymbols = [...symbols];
       
       // Dynamic subscription for selected commodities
-      selectedStockCommodities.forEach((key) => {
-        const comm = AVAILABLE_COMMODITIES.find((c) => c.key === key);
-        if (comm && comm.socketSymbol) {
-          if (!requestSymbols.some(s => s.toLowerCase() === comm.socketSymbol.toLowerCase())) {
-            requestSymbols.push(comm.socketSymbol);
+      selectedStockCommodities.forEach((item) => {
+        const itemKey = typeof item === "object" && item !== null ? item.key : item;
+        const socketSymbol = typeof item === "object" && item !== null ? item.socketSymbol : null;
+        const comm =
+          AVAILABLE_COMMODITIES.find((c) => c.key === itemKey) ||
+          (typeof item === "object" ? item : null);
+        const sym = socketSymbol || comm?.socketSymbol;
+        if (sym) {
+          if (!requestSymbols.some((s) => s.toLowerCase() === sym.toLowerCase())) {
+            requestSymbols.push(sym);
           }
         }
       });

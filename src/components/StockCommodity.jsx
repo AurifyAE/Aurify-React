@@ -307,12 +307,19 @@ const StockCommodity = ({
 
     const data =
       (comm.socketSymbol && marketData?.[comm.socketSymbol]) ||
-      marketData?.[comm.marketDataKey];
+      (comm.marketDataKey && marketData?.[comm.marketDataKey]) ||
+      (comm.key && marketData?.[comm.key]) ||
+      (comm.key && marketData?.[comm.key.toUpperCase()]);
+
     const priceUSD = data?.offer
       ? parseFloat(data.offer)
       : data?.bid
         ? parseFloat(data.bid)
-        : undefined;
+        : data?.price
+          ? parseFloat(data.price)
+          : data?.ask
+            ? parseFloat(data.ask)
+            : undefined;
     const highUSD = data?.high ? parseFloat(data.high) : priceUSD;
     const lowUSD = data?.low ? parseFloat(data.low) : priceUSD;
     const prevUSD = prevPricesState[comm.key];
