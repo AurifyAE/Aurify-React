@@ -27,6 +27,7 @@ import io from "socket.io-client";
 import axiosInstance from "../../axios/axiosInstance";
 import { useCurrency } from "../../context/CurrencyContext";
 import AddCommodityModal from "./AddCommodityModal";
+import StockCommodity, { AVAILABLE_COMMODITIES } from "../../components/StockCommodity";
 
 const CurrencySelector = React.memo(({ onCurrencyChange }) => {
   const [currency, setCurrency] = useState("AED");
@@ -38,7 +39,7 @@ const CurrencySelector = React.memo(({ onCurrencyChange }) => {
       setCurrency(newCurrency);
       onCurrencyChange(newCurrency, exchangeRates[newCurrency]);
     },
-    [onCurrencyChange, exchangeRates]
+    [onCurrencyChange, exchangeRates],
   );
 
   return (
@@ -185,7 +186,7 @@ const PriceCard = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 // ValueCard Component
@@ -208,10 +209,10 @@ const ValueCard = React.memo(
       return spreadMarginData[key] || 0;
     }, [spreadMarginData, metal]);
     const [lowMargin, setLowMargin] = useState(() =>
-      getSpreadOrMarginFromDB(metal, "low")
+      getSpreadOrMarginFromDB(metal, "low"),
     );
     const [highMargin, setHighMargin] = useState(() =>
-      getSpreadOrMarginFromDB(metal, "high")
+      getSpreadOrMarginFromDB(metal, "high"),
     );
     const [isLoading, setIsLoading] = useState(true);
 
@@ -232,14 +233,14 @@ const ValueCard = React.memo(
         const value = parseFloat(e.target.value) || 0;
         setter(value);
       },
-      []
+      [],
     );
 
     const handleMarginBlur = useCallback(
       (setter, value) => () => {
         setter(parseFloat(value) || 0);
       },
-      []
+      [],
     );
 
     const handleSave = useCallback(() => {
@@ -359,7 +360,7 @@ const ValueCard = React.memo(
         </div>
       </div>
     );
-  }
+  },
 );
 
 // TradingViewWidget Component
@@ -419,6 +420,7 @@ const SpotRate = () => {
   const [serverURL, setServerURL] = useState("");
   const [adminId, setAdminId] = useState("");
   const [commodities, setCommodities] = useState([]);
+  const [selectedStockCommodities, setSelectedStockCommodities] = useState([]);
   const [uniqueMetals, setUniqueMetals] = useState([]);
   const [loadng, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -436,7 +438,7 @@ const SpotRate = () => {
       }${type === "low" || type === "high" ? "Margin" : "Spread"}`;
       return spreadMarginData[key] || 0;
     },
-    [spreadMarginData]
+    [spreadMarginData],
   );
 
   const getUnitMultiplier = useCallback((unit) => {
@@ -466,28 +468,31 @@ const SpotRate = () => {
       ]);
       setServerURL(serverURLResponse.data.selectedServerURL);
       setAdminId(adminDataResponse.data.data._id);
-
+      setSelectedStockCommodities(adminDataResponse.data.data.selectedStockCommodities || []);
       const uniqueSymbols = [
         ...new Set(
           adminDataResponse.data.data.commodities.map(
-            (commodity) => commodity.symbol
-          )
+            (commodity) => commodity.symbol,
+          ),
         ),
       ];
       const uppercaseSymbols = uniqueSymbols.map((symbol) =>
-        symbol.toUpperCase()
+        symbol.toUpperCase(),
       );
       setSymbols(uppercaseSymbols);
       setUniqueMetals(uniqueSymbols);
 
       if (adminDataResponse.data.data._id) {
         const commoditiesResponse = await axiosInstance.get(
-          `/spotrates/${adminDataResponse.data.data._id}/${categoryId}`
+          `/spotrates/${adminDataResponse.data.data._id}/${categoryId}`,
         );
         if (commoditiesResponse.data) {
           setSpreadMarginData(commoditiesResponse.data);
+          if (commoditiesResponse.data.StockCommodities) {
+            setSelectedStockCommodities(commoditiesResponse.data.StockCommodities);
+          }
         }
-        
+
         if (commoditiesResponse.data && commoditiesResponse.data.commodities) {
           const parsedCommodities = commoditiesResponse.data.commodities
             .filter((commodity) => commodity && commodity.metal)
@@ -552,12 +557,12 @@ const SpotRate = () => {
           updatedCommodity.sellAED = calculatePrice(
             metalBiddingPrice,
             commodity,
-            "sell"
+            "sell",
           );
           updatedCommodity.buyAED = calculatePrice(
             metalAskingPrice,
             commodity,
-            "buy"
+            "buy",
           );
           updatedCommodity.sellUSD = (
             updatedCommodity.sellAED / exchangeRate
@@ -568,7 +573,7 @@ const SpotRate = () => {
         }
 
         return updatedCommodity;
-      })
+      }),
     );
   }, [marketData, getSpreadOrMarginFromDB, exchangeRate]);
 
@@ -593,7 +598,7 @@ const SpotRate = () => {
     (metalPrice, commodity, type) => {
       const unitMultiplier = getUnitMultiplier(commodity.weight);
       const digitsBeforeDecimal = getNumberOfDigitsBeforeDecimal(
-        commodity.purity
+        commodity.purity,
       );
       const premium =
         type === "sell" ? commodity.sellPremium : commodity.buyPremium;
@@ -603,7 +608,7 @@ const SpotRate = () => {
         ? "Gold"
         : commodity.metal;
       const spread = parseFloat(
-        getSpreadOrMarginFromDB(metal, type === "sell" ? "ask" : "bid")
+        getSpreadOrMarginFromDB(metal, type === "sell" ? "ask" : "bid"),
       );
 
       return (
@@ -620,7 +625,7 @@ const SpotRate = () => {
       getNumberOfDigitsBeforeDecimal,
       getSpreadOrMarginFromDB,
       exchangeRate,
-    ]
+    ],
   );
 
   const handleSpreadOrMarginUpdate = useCallback(
@@ -644,7 +649,7 @@ const SpotRate = () => {
         console.error("Error updating spread:", error);
       }
     },
-    [adminId, categoryId]
+    [adminId, categoryId],
   );
 
   const handleDeleteClick = useCallback((commodity) => {
@@ -656,12 +661,12 @@ const SpotRate = () => {
     if (commodityToDelete) {
       try {
         await axiosInstance.delete(
-          `/commodities/${adminId}/${categoryId}/${commodityToDelete._id}`
+          `/commodities/${adminId}/${categoryId}/${commodityToDelete._id}`,
         );
         setCommodities((prevCommodities) =>
           prevCommodities.filter(
-            (commodity) => commodity._id !== commodityToDelete._id
-          )
+            (commodity) => commodity._id !== commodityToDelete._id,
+          ),
         );
         setDeleteDialogOpen(false);
         toast.success("Commodity deleted successfully!", {
@@ -683,6 +688,24 @@ const SpotRate = () => {
     setCommodityToDelete(null);
   }, []);
 
+  const handleUpdateSelectedStockCommodities = useCallback(async (updatedList) => {
+    try {
+      setSelectedStockCommodities(updatedList);
+      await axiosInstance.put(`/selected-stock-commodities/${adminId}/${categoryId}`, {
+        adminId,
+        categoryId,
+        StockCommodities: updatedList,
+      });
+      toast.success("Commodity selection updated successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (error) {
+      console.error("Error updating selected commodities:", error);
+      toast.error("Failed to update commodity selection.");
+    }
+  }, [adminId, categoryId]);
+
   useEffect(() => {
     const socketSecret = process.env.REACT_APP_SOCKET_SECRET;
 
@@ -697,10 +720,29 @@ const SpotRate = () => {
     });
 
     socket.on("connect", () => {
-      socket.emit("request-data", symbols);
+      const requestSymbols = [...symbols];
+      
+      // Dynamic subscription for selected commodities
+      selectedStockCommodities.forEach((item) => {
+        const itemKey = typeof item === "object" && item !== null ? item.key : item;
+        const socketSymbol = typeof item === "object" && item !== null ? item.socketSymbol : null;
+        const comm =
+          AVAILABLE_COMMODITIES.find((c) => c.key === itemKey) ||
+          (typeof item === "object" ? item : null);
+        const sym = socketSymbol || comm?.socketSymbol;
+        if (sym) {
+          if (!requestSymbols.some((s) => s.toLowerCase() === sym.toLowerCase())) {
+            requestSymbols.push(sym);
+          }
+        }
+      });
+
+      console.log("User socket connected! Requesting symbols:", requestSymbols);
+      socket.emit("request-data", requestSymbols);
     });
 
     socket.on("market-data", (data) => {
+      console.log("User socket market-data received:", data);
       if (data && data.symbol) {
         setMarketData((prevData) => ({
           ...prevData,
@@ -725,7 +767,7 @@ const SpotRate = () => {
     return () => {
       socket.disconnect();
     };
-  }, [symbols, serverURL]);
+  }, [symbols, serverURL, selectedStockCommodities]);
 
   const handleSaveCommodity = useCallback(
     async (commodityData, isEditMode) => {
@@ -734,8 +776,8 @@ const SpotRate = () => {
           prevCommodities.map((commodity) =>
             commodity._id === commodityData._id
               ? { ...commodity, ...commodityData }
-              : commodity
-          )
+              : commodity,
+          ),
         );
         toast.success("Commodity updated successfully!", {
           position: "top-right",
@@ -764,7 +806,7 @@ const SpotRate = () => {
       const fetchUpdatedCommodities = async () => {
         try {
           const response = await axiosInstance.get(
-            `/spotrates/${adminId}/${categoryId}`
+            `/spotrates/${adminId}/${categoryId}`,
           );
           if (response.data && response.data.commodities) {
             setCommodities(response.data.commodities);
@@ -776,7 +818,7 @@ const SpotRate = () => {
 
       fetchUpdatedCommodities();
     },
-    [adminId]
+    [adminId],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -798,7 +840,7 @@ const SpotRate = () => {
       setCurrency(newCurrency);
       setExchangeRate(parseFloat(newExchangeRate));
     },
-    [setCurrency]
+    [setCurrency],
   );
 
   const renderCommodityRows = () => {
@@ -867,7 +909,7 @@ const SpotRate = () => {
                   color: "#306ebb",
                   border: "1px solid #e5e7eb",
                   transition: "all 0.2s ease",
-              
+
                   "&:hover": {
                     background: "#f4f8ff",
                     borderColor: "#b9d8ff",
@@ -1033,7 +1075,7 @@ const SpotRate = () => {
           <Button
             variant="contained"
             onClick={handleOpenAddModal}
-            classname='primary-btn'
+            classname="primary-btn"
             // sx={{
             //   background: "linear-gradient(310deg, #7928CA 0%, #FF0080 100%)",
             //   color: "white",
@@ -1067,6 +1109,14 @@ const SpotRate = () => {
             <TableBody>{renderCommodityRows()}</TableBody>
           </Table>
         </TableContainer>
+        <StockCommodity
+          marketData={marketData}
+          exchangeRate={exchangeRate}
+          currency={currency}
+          isAdmin={true}
+          selectedStockCommodities={selectedStockCommodities}
+          onUpdateSelectedCommodities={handleUpdateSelectedStockCommodities}
+        />
         <AddCommodityModal
           open={openModal}
           onClose={handleCloseModal}
